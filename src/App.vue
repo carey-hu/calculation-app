@@ -411,7 +411,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .btnPrimary { 
   width: 100%; height: 50px; line-height: 50px; 
   border-radius: 16px; 
-  background: linear-gradient(135deg, #007aff 0%, #0062cc 100%);
+  background: linear-gradient(135deg, #34c759 0%, #28a745 100%);
   color: #fff; font-size: 20px; font-weight: 700; 
   box-shadow: 0 10px 25px rgba(0,122,255,0.25);
   transition: transform 0.1s;
@@ -452,7 +452,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .main-action-btn { font-size: 20px !important; height: 54px !important; line-height: 54px !important; }
 
 /* --- 游戏界面 --- */
-.gameRoot { min-height: 100vh; display: flex; flex-direction: column;  padding-bottom: calc(10px + env(safe-area-inset-bottom));}
+.gameRoot { min-height: 100vh; display: flex; flex-direction: column;  padding-bottom: calc(18px + env(safe-area-inset-bottom));}
 
 /* 顶部栏 */
 .safe-top { 
@@ -552,5 +552,6 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
+
 
 
