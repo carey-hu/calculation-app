@@ -115,9 +115,9 @@
       
       <div class="keypad card glass-panel">
         <div class="fnRow">
-          <button class="kFn glass-key style-skip" @click="leftAction">{{leftText}}</button>
-          <button class="kFn glass-key style-clear" @click="clearInput">清空</button>
-          <button class="kFn glass-key style-del" @click="backspace">退格</button>
+          <button class="kFn style-skip" @click="leftAction">{{leftText}}</button>
+          <button class="kFn style-clear" @click="clearInput">清空</button>
+          <button class="kFn style-del" @click="backspace">退格</button>
         </div>
         <div class="grid">
           <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k glass-key" @click="pressDigit(item)">{{item}}</button>
@@ -223,7 +223,7 @@
           <button 
             v-if="historyList.length > 1000" 
             class="btnGhost glass-btn" 
-            style="margin:0; height: 44px; font-size: 16px; color: #ff3b30; background: rgba(255,59,48,0.08); border-color: rgba(255,59,48,0.2);" 
+            style="margin:0; height: 40px; font-size: 16px; color: #ff3b30; background: rgba(255,59,48,0.08); border-color: rgba(255,59,48,0.2);" 
             @click="clearOldest"
           >
             🗑️ 清理最早的 1000 条
@@ -269,7 +269,6 @@ export default {
       const option = {
         grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, 
         yAxis: [ 
-          /* 修改点2：添加单位 % 和 s */
           { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff', formatter: '{value}%'} }, 
           { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30', formatter: '{value}s'} } 
         ], 
@@ -320,9 +319,9 @@ export default {
     _saveRecord(meta, summary, detailLog){ const record = { ts: this.now(), timeStr: this.formatTime(this.now()), mode: this.mode, modeName: this.getModeName(this.mode, this.selectedDivisor), duration: meta.totalSec.toFixed(1) + 's', summary: summary, detail: detailLog }; let history = this.historyList; history.unshift(record); if(history.length > 5000) history = history.slice(0, 5000); this.historyList = history; localStorage.setItem('calc_history', JSON.stringify(history)); },
     _finish(){ if(this.timer) clearInterval(this.timer); const { mode, totalStartTs, results, trainLog, selectedDivisor } = this; const totalSec = (this.now() - totalStartTs)/1000; let title = '训练完成！'; if(mode==='plus') title='一位数进位加完成！'; else if(mode==='minus') title='一位数退位减完成！'; else if(mode==='doublePlus') title='双进位加完成！'; else if(mode==='doubleMinus') title='双退位减完成！'; else if(mode==='triplePlus') title='三进位加完成！'; else if(mode==='tripleMinus') title='三退位减完成！'; else if(mode==='speed') title='竞速完成！'; else if(mode==='first') title='商首位完成！'; else if(mode==='divSpecA') title='反向放缩完成！'; else if(mode==='divSpecB') title='平移法完成！'; else if(mode==='firstSpec') title=`商首位(除${selectedDivisor})完成！`; let metaText = ''; let recordSummary = ''; let detailLog = []; if(mode === 'train'){ metaText = `用时：${totalSec.toFixed(1)}s｜错误：${this.trainWrong}｜跳过：${this.trainSkip}`; recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = trainLog; } else { const correctCount = results.filter(x=>x.ok).length; const totalCount = results.length; metaText = `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = results; } this.viewState = 'result'; this.resultTitle = title; this.resultMeta = metaText; this.isHistoryReview = false; this._saveRecord({ totalSec }, recordSummary, detailLog); },
     goHome(){ if(this.timer) clearInterval(this.timer); this.viewState = 'home'; },
-    openHistory(){ this.viewState = 'history'; },
+    openHistory(){ this.viewState = 'history'; if(this.showChart) this.$nextTick(() => this.renderChart(this.chartTab)); },
     viewHistoryDetail(index){ const record = this.historyList[index]; if(!record) return; let title = record.modeName + ' 回顾'; if(record.mode === 'train'){ this.mode = record.mode; this.trainLog = record.detail || []; this.results = []; this.viewState = 'result'; this.resultTitle = title; this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`; this.isHistoryReview = true; } else { this.mode = record.mode; this.results = record.detail || []; this.trainLog = []; this.viewState = 'result'; this.resultTitle = title; this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`; this.isHistoryReview = true; } },
-    backToHistory(){ this.viewState = 'history'; },
+    backToHistory(){ this.viewState = 'history'; if(this.showChart) this.$nextTick(() => this.renderChart(this.chartTab)); },
     closeHistory(){ this.viewState = 'home'; },
     clearOldest() { if(confirm(`当前共有 ${this.historyList.length} 条记录。\n确定要清除【最早的 1000 条】数据吗？`)){ const keepCount = this.historyList.length - 1000; this.historyList = this.historyList.slice(0, keepCount); localStorage.setItem('calc_history', JSON.stringify(this.historyList)); this.showToast('清理成功'); if(this.showChart) this.initChart(); } },
     clearHistory(){ if(confirm('【严重警告】\n确定要清空【所有】历史记录吗？\n此操作不可恢复！')){ localStorage.removeItem('calc_history'); this.historyList = []; this.showToast('所有记录已清空'); } }
@@ -333,7 +332,6 @@ export default {
 <style scoped>
 .page {
   min-height: 100vh;
-  /* 梦幻网格流体背景 */
   background: 
     radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%), 
     radial-gradient(at 100% 0%, hsla(260,100%,94%,1) 0, transparent 50%), 
@@ -401,7 +399,6 @@ export default {
   border-color: transparent; 
   box-shadow: 0 8px 20px rgba(0,122,255,0.3);
 }
-/* 增加未选中状态的文字对比度 */
 .modeTitle { display: block; font-size: 16px; font-weight: 700; color: #1c1c1e; }
 .modeItem.active .modeTitle { color: #fff; }
 
@@ -429,7 +426,6 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .btnGhost:active { background: rgba(255,255,255,0.8); }
 
 /* 修改点1 & 2：自定义颜色的按钮类 */
-/* 历史记录按钮 - 蓝色系 */
 .btnHistory {
   width: 100%; height: 48px;
   line-height: 48px; margin-top: 9px;
@@ -440,7 +436,6 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 }
 .btnHistory:active { background: rgba(88, 86, 214, 0.2); }
 
-/* 危险操作按钮 (清空全部) - 红色系 */
 .btnDanger {
   width: 100%; height: 48px; line-height: 48px;
   border-radius: 16px;
@@ -450,13 +445,12 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 }
 .btnDanger:active { background: rgba(255, 59, 48, 0.2); }
 
-/* 统一字体大小类 */
 .main-action-btn { font-size: 20px !important; height: 54px !important; line-height: 54px !important; }
 
 /* --- 游戏界面 --- */
 .gameRoot { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* 顶部栏：Safe Area */
+/* 顶部栏 */
 .safe-top { 
   padding-top: max(44px, env(safe-area-inset-top)); 
   padding-bottom: 12px; height: auto; box-sizing: content-box; 
@@ -478,10 +472,8 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
 .gameMain { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .qCard { text-align: center; padding: 30px 20px; }
-/* 长算式修正：word-break 和 line-height */
 .qText { 
   font-size: 64px; font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px;
-  word-break: break-all; line-height: 1; 
 }
 .qNote { margin-top: 8px; font-size: 16px; color: #8e8e93; font-weight: 500; }
 .ansBox { 
@@ -493,38 +485,35 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 }
 .hint { margin-top: 15px; color: #8e8e93; font-size: 15px; font-weight: 600; }
 
-.keypad { border-radius: 32px; padding: 16px; margin-top: 20px; }
+.keypad { border-radius: 15px; padding: 9px; margin-top: 20px; }
 
-/* 修复1：功能键高度增加 (60px) */
-.fnRow { display: flex; gap: 10px; margin-bottom: 12px; }
+.fnRow { display: flex; gap: 9px; margin-bottom: 9px; }
 .kFn { 
-  flex: 1; height: 60px; line-height: 60px; border-radius: 16px; 
-  font-size: 20px; font-weight: 600; margin: 0; color: #fff;
+  flex: 1; height: 53px; line-height: 53px; border-radius: 11px; 
+  font-size: 20px; font-weight: 900; margin: 0; color: #fff; /* 修正：文字改白 */
   border: 1px solid rgba(0,0,0,0.05);
   backdrop-filter: blur(10px);
 }
 /* 修改点3：练习界面功能键着色 (实色填充) */
-.style-skip { background: #34c759; border-color: #248a3d; } /* 绿色 */
-.style-clear { background: #ff9500; border-color: #e08600; } /* 橙色 */
-.style-del { background: #ff3b30; border-color: #d63329; } /* 红色 */
+.style-skip { background: #34c759; border-color: #248a3d; } 
+.style-clear { background: #ff9500; border-color: #e08600; } 
+.style-del { background: #ff3b30; border-color: #d63329; } 
 
-/* 修复3：数字键增高 (70px) */
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.glass-key {
-  width: 100%; height: 70px; line-height: 70px; border-radius: 16px; /* 统一圆角 */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.k { 
+  width: 100%; height: 60px; line-height: 60px; border-radius: 11px; 
   background: rgba(255,255,255,0.85); 
   border: 1px solid rgba(0,0,0,0.03); 
-  font-size: 32px; font-weight: 600; margin: 0; color: #000;
+  font-size: 30px; font-weight: 900; margin: 0; color: #000;
   box-shadow: 0 4px 0 rgba(0,0,0,0.04); 
   transition: all 0.1s;
 }
-.glass-key:active { transform: translateY(4px); box-shadow: none; background: #fff; }
+.k:active { transform: translateY(4px); box-shadow: none; background: #fff; }
 
-/* 确认键 */
 .glass-key-confirm { 
-  background: #34c759; color: #fff; border:none; font-size: 26px; 
+  background: #34c759; color: #fff; border:none; font-size: 28px; 
   box-shadow: 0 4px 0 #248a3d; 
-  border-radius: 16px; /* 修复：与数字键一致 */
+  border-radius: 11px; /* 保持与数字键一致 */
 }
 .glass-key-confirm:active { background: #28a745; box-shadow: none; transform: translateY(4px); }
 
