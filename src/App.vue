@@ -267,7 +267,13 @@ export default {
       filteredData.forEach(item => { let accuracy = 0; if(item.mode === 'train') { let wrong = 0; if(item.detail && item.detail.length > 0) { wrong = item.detail.filter(x => x.wrong > 0).length; } else { const match = item.summary.match(/错(\d+)/); if(match) wrong = parseInt(match[1]); } accuracy = ((81 - wrong) / 81) * 100; } else { if(item.detail && item.detail.length > 0) { const correctCount = item.detail.filter(x => x.ok).length; accuracy = (correctCount / item.detail.length) * 100; } else { const match = item.summary.match(/(\d+)%/); if(match) accuracy = parseInt(match[1]); } } let duration = 0; if(item.duration) { duration = parseFloat(item.duration.replace('s', '')); } dateList.push(item.timeStr); accuracyList.push(accuracy.toFixed(0)); timeList.push(duration.toFixed(1)); });
       if(dateList.length === 0) { this.chartInstance.setOption({ title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } } }); return; }
       const option = {
-        grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, yAxis: [ { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff'} }, { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30'} } ], series: [ { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 3 }, itemStyle: { color: '#007aff' }, data: accuracyList }, { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#ff3b30', width: 2, type: 'dashed' }, itemStyle: { color: '#ff3b30' }, data: timeList } ]
+        grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, 
+        yAxis: [ 
+          /* 修改点2：添加单位 % 和 s */
+          { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff', formatter: '{value}%'} }, 
+          { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30', formatter: '{value}s'} } 
+        ], 
+        series: [ { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 3 }, itemStyle: { color: '#007aff' }, data: accuracyList }, { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#ff3b30', width: 2, type: 'dashed' }, itemStyle: { color: '#ff3b30' }, data: timeList } ]
       };
       this.chartInstance.setOption(option);
     },
@@ -395,6 +401,7 @@ export default {
   border-color: transparent; 
   box-shadow: 0 8px 20px rgba(0,122,255,0.3);
 }
+/* 增加未选中状态的文字对比度 */
 .modeTitle { display: block; font-size: 16px; font-weight: 700; color: #1c1c1e; }
 .modeItem.active .modeTitle { color: #fff; }
 
@@ -424,30 +431,32 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 /* 修改点1 & 2：自定义颜色的按钮类 */
 /* 历史记录按钮 - 蓝色系 */
 .btnHistory {
-  margin-top: 9px; width: 100%; height: 48px; line-height: 48px;
-  border-radius: 16px; background: #1890ff; color: #fff; 
-  font-size: 22px; font-weight: 700;
-  border: 1px solid rgba(24, 144, 255, 0.2);
+  width: 100%; height: 48px;
+  line-height: 48px; margin-top: 9px;
+  border-radius: 16px;
+  background: rgba(88, 86, 214, 0.1); 
+  color: #5856d6; font-size: 20px; font-weight: 700;
+  border: 1px solid rgba(88, 86, 214, 0.2);
 }
-.btnHistory:active { background: rgba(24, 144, 255, 0.8); }
+.btnHistory:active { background: rgba(88, 86, 214, 0.2); }
 
 /* 危险操作按钮 (清空全部) - 红色系 */
 .btnDanger {
   width: 100%; height: 48px; line-height: 48px;
   border-radius: 16px;
-  background: #ff4d4f;
-  color: #fff; font-size: 22px; font-weight: 700;
-  border: 1px solid rgba(255, 77, 79, 0.2);
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30; font-size: 20px; font-weight: 700;
+  border: 1px solid rgba(255, 59, 48, 0.2);
 }
-.btnDanger:active { background: rgba(255, 77, 79, 0.8); }
+.btnDanger:active { background: rgba(255, 59, 48, 0.2); }
 
 /* 统一字体大小类 */
-.main-action-btn { font-size: 22px !important; height: 50px !important; line-height: 50px !important; }
+.main-action-btn { font-size: 20px !important; height: 54px !important; line-height: 54px !important; }
 
 /* --- 游戏界面 --- */
 .gameRoot { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* 顶部栏 */
+/* 顶部栏：Safe Area */
 .safe-top { 
   padding-top: max(44px, env(safe-area-inset-top)); 
   padding-bottom: 12px; height: auto; box-sizing: content-box; 
@@ -469,10 +478,10 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
 .gameMain { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .qCard { text-align: center; padding: 30px 20px; }
+/* 长算式修正：word-break 和 line-height */
 .qText { 
-  font-size: clamp(32px, 8vw, 64px); 
-  font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px; 
-  word-break: break-word; line-height: 1.1;
+  font-size: 64px; font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px;
+  word-break: break-all; line-height: 1; 
 }
 .qNote { margin-top: 8px; font-size: 16px; color: #8e8e93; font-weight: 500; }
 .ansBox { 
@@ -486,7 +495,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
 .keypad { border-radius: 32px; padding: 16px; margin-top: 20px; }
 
-/* 修正：功能键高度增加 (60px) */
+/* 修复1：功能键高度增加 (60px) */
 .fnRow { display: flex; gap: 10px; margin-bottom: 12px; }
 .kFn { 
   flex: 1; height: 60px; line-height: 60px; border-radius: 16px; 
@@ -495,11 +504,11 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   backdrop-filter: blur(10px);
 }
 /* 修改点3：练习界面功能键着色 (实色填充) */
-.style-skip { background: #007aff; border-color: #005ec4; } /* 蓝色 */
+.style-skip { background: #34c759; border-color: #248a3d; } /* 绿色 */
 .style-clear { background: #ff9500; border-color: #e08600; } /* 橙色 */
 .style-del { background: #ff3b30; border-color: #d63329; } /* 红色 */
 
-/* 修正：数字键增高 (70px) */
+/* 修复3：数字键增高 (70px) */
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .glass-key {
   width: 100%; height: 70px; line-height: 70px; border-radius: 16px; /* 统一圆角 */
