@@ -460,7 +460,6 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   /* iOS 新旧版本 + 安卓都能工作 */
   padding-bottom: 10px;
   padding-bottom: calc(0px + env(safe-area-inset-bottom));
-  padding-bottom: calc(0px + constant(safe-area-inset-bottom));
 }
 /* 顶部栏 */
 .safe-top { 
@@ -497,11 +496,17 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 }
 .hint { margin-top: 15px; color: #8e8e93; font-size: 15px; font-weight: 600; }
 
-.keypad { border-radius: 26px; padding: 9px; margin-top: 20px; }
+.keypad {
+  border-radius: 28px;
+  overflow: hidden;
+  clip-path: inset(0 0 0 0 round 28px);
+  margin-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
 
 .fnRow { display: flex; gap: 9px; margin-bottom: 9px; }
 .kFn { 
-  flex: 1; height: 65px; line-height: 65px; border-radius: 11px; 
+  flex: 1; height: 65px; line-height: 65px; border-radius: 14px; 
   font-size: 20px; font-weight: 900; margin: 0; color: #fff; /* 修正：文字改白 */
   border: 1px solid rgba(0,0,0,0.05);
   backdrop-filter: blur(10px);
@@ -513,7 +518,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 .k { 
-  width: 100%; height: 70px; line-height: 70px; border-radius: 11px; 
+  width: 100%; height: 70px; line-height: 70px; border-radius: 14px; 
   background: rgba(255,255,255,0.85); 
   border: 1px solid rgba(0,0,0,0.03); 
   font-size: 30px; font-weight: 900; margin: 0; color: #000;
@@ -560,6 +565,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
+
 
 
 
