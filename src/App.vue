@@ -458,9 +458,9 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   flex-direction: column;
 
   /* iOS 新旧版本 + 安卓都能工作 */
-  padding-bottom: 20px;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom));
-  padding-bottom: calc(20px + constant(safe-area-inset-bottom));
+  padding-bottom: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  padding-bottom: calc(10px + constant(safe-area-inset-bottom));
 }
 /* 顶部栏 */
 .safe-top { 
@@ -560,6 +560,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
+
 
 
 
