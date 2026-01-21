@@ -452,7 +452,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .main-action-btn { font-size: 20px !important; height: 54px !important; line-height: 54px !important; }
 
 /* --- 游戏界面 --- */
-.gameRoot { min-height: 100vh; display: flex; flex-direction: column; }
+.gameRoot { min-height: 100vh; display: flex; flex-direction: column;  padding-bottom: calc(10px + env(safe-area-inset-bottom));}
 
 /* 顶部栏 */
 .safe-top { 
@@ -552,4 +552,5 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
+
 
