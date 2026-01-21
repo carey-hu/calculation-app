@@ -1,22 +1,14 @@
 <template>
   <div class="page">
-    <div class="mesh-bg">
-      <div class="orb orb-1"></div>
-      <div class="orb orb-2"></div>
-      <div class="orb orb-3"></div>
-    </div>
-
     <div v-if="toast.show" class="toast-mask">
       <div class="toast-content">{{ toast.title }}</div>
     </div>
 
     <div v-if="viewState==='home'" class="wrap homeWrap">
-      <div class="header-area">
-        <div class="title">计算助手</div>
-        <div class="subtitle">专项练习：进位加、退位减、大九九除法</div>
-      </div>
+      <div class="title">计算助手</div>
+      <div class="subtitle">专项练习：进位加、退位减、大九九除法</div>
 
-      <div class="card glass-panel">
+      <div class="card">
         <div class="rowLabel">大九九/除法</div>
         <div class="modeRow">
           <div :class="['modeItem', mode==='train'?'active':'']" @click="setMode('train')">
@@ -31,7 +23,7 @@
         </div>
 
         <div class="rowLabel">商首位专项 (指定除数 2-19)</div>
-        <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
+        <button class="btnGhost" style="margin-top:0; height:40px; line-height:40px; font-size:16px;" @click="toSelectDivisor">
           进入除数选择模式
         </button>
 
@@ -75,71 +67,64 @@
           </div>
         </div>
 
-        <button class="btnPrimary glass-primary main-action-btn" @click="startGame">开始练习</button>
-        <button class="btnGhost glass-btn main-action-btn" @click="openHistory">历史记录</button>
+        <button class="btnPrimary" @click="startGame" style="margin-top: 15px;">开始练习</button>
+        <button class="btnHistory" @click="openHistory">历史记录</button>
       </div>
     </div>
 
     <div v-if="viewState==='selectDivisor'" class="wrap homeWrap">
-      <div class="header-area">
-        <div class="title">选择除数</div>
-        <div class="subtitle">点击下方数字开始练习商首位</div>
-      </div>
-      <div class="card glass-panel">
+      <div class="title">选择除数</div>
+      <div class="subtitle">点击下方数字开始练习商首位</div>
+      <div class="card">
         <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">
           <button v-for="item in [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]" :key="item" 
-                  class="k glass-key" style="font-size:20px; height:50px; line-height:50px;" 
+                  class="k" style="font-size:20px; height:50px; line-height:50px; background:rgba(255,255,255,0.4);" 
                   @click="selectDivisorAndStart(item)">{{item}}</button>
         </div>
-        <button class="btnGhost glass-btn main-action-btn" style="margin-top: 20px;" @click="goHome">返回主页</button>
+        <button class="btnGhost" style="margin-top: 20px;" @click="goHome">返回主页</button>
       </div>
     </div>
 
     <div v-if="viewState==='game'" class="wrap gameRoot" :style="{ paddingBottom: safeBottom + 'px' }">
-      <div class="topbar safe-top">
-        <button class="btnBack glass-btn" @click="goHome">返回</button>
+      <div class="topbar" :style="{ marginTop: (safeTop + 8) + 'px' }">
+        <button class="btnBack" @click="goHome">返回</button>
         <div class="topStats">
-          <div class="stat glass-pill">{{progressText}}</div>
-          <div class="stat glass-pill timer">⏱ {{totalText}}</div>
+          <div class="stat">{{progressText}}</div>
+          <div class="stat">⏱ {{totalText}}</div>
         </div>
       </div>
-      
       <div class="gameMain">
-        <div class="card qCard glass-panel">
+        <div class="card qCard">
           <div class="qText">{{qText}}</div>
           <div class="qNote">{{hintNote}}</div>
-          <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
+          <div class="ansBox">答案：{{input ? input : '—'}}</div>
           <div class="hint">{{hint}}</div>
         </div>
       </div>
-      
-      <div class="keypad card glass-panel">
+      <div class="keypad card">
         <div class="fnRow">
-          <button class="kFn glass-key style-skip" @click="leftAction">{{leftText}}</button>
-          <button class="kFn glass-key style-clear" @click="clearInput">清空</button>
-          <button class="kFn danger glass-key style-del" @click="backspace">退格</button>
+          <button class="kFn skip" @click="leftAction">{{leftText}}</button>
+          <button class="kFn clear" @click="clearInput">清空</button>
+          <button class="kFn danger" @click="backspace">退格</button>
         </div>
         <div class="grid">
-          <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k glass-key" @click="pressDigit(item)">{{item}}</button>
-          <button class="k wide glass-key" @click="pressDigit(0)">0</button>
-          <button class="k confirm wide2 glass-key-confirm" @click="confirmAnswer">确认</button>
+          <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k" @click="pressDigit(item)">{{item}}</button>
+          <button class="k wide" @click="pressDigit(0)">0</button>
+          <button class="k confirm wide2" @click="confirmAnswer">确认</button>
         </div>
       </div>
     </div>
 
     <div v-if="viewState==='result'" class="wrap full-height">
-      <div class="header-area safe-header">
-        <div class="title">{{resultTitle}}</div>
-        <div class="subtitle">{{resultMeta}}</div>
-      </div>
-      
-      <div class="card full-flex glass-panel">
+      <div class="title">{{resultTitle}}</div>
+      <div class="subtitle">{{resultMeta}}</div>
+      <div class="card full-flex">
         <div class="resultScroll">
           <template v-if="mode==='train'">
             <div v-for="(item, index) in trainLog" :key="index" class="row">
               <span class="rowLeft">{{index+1}}. {{item.q}}</span>
               <span class="rowRight">
-                <span :style="{ color: parseFloat(item.usedStr) > 2 ? '#ff3b30' : 'inherit' }">{{item.usedStr}}</span> 
+                <span :style="{ color: parseFloat(item.usedStr) > 2 ? '#ff4d4f' : 'inherit' }">{{item.usedStr}}</span> 
                 / 错{{item.wrong}}{{item.skipped?'(跳)':''}}
               </span>
             </div>
@@ -148,34 +133,32 @@
             <div v-for="(item, index) in results" :key="index" class="row">
               <span class="rowLeft">{{index+1}}. {{item.q}} = {{item.yourAns}}</span>
               <span class="rowRight">
-                 <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
+                 <span style="margin-right:4px; font-size:12px; color:#666;">{{item.usedStr}}</span>
                  <span>{{item.ok ? '✅' : '❌'}}</span>
-                 <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
+                 <span v-if="!item.ok" style="color:#ff4d4f; font-size:12px; margin-left:2px;">({{item.realAns}})</span>
               </span>
             </div>
           </template>
         </div>
-        <div style="margin-top: 15px;">
+        <div style="margin-top: 10px;">
           <div v-if="isHistoryReview">
-            <button class="btnPrimary glass-primary main-action-btn" @click="backToHistory">返回列表</button>
+            <button class="btnPrimary" @click="backToHistory">返回列表</button>
           </div>
           <div v-else>
-            <button class="btnPrimary glass-primary main-action-btn" @click="goHome">返回主页</button>
-            <button class="btnGhost glass-btn main-action-btn" @click="startGame" style="margin-top:10px;">再来一局</button>
+            <button class="btnPrimary" @click="goHome">返回主页</button>
+            <button class="btnGhost" @click="startGame">再来一局</button>
           </div>
         </div>
       </div>
     </div>
 
     <div v-if="viewState==='history'" class="wrap full-height">
-      <div class="header-area safe-header">
-        <div class="title">历史记录</div>
-        <div class="subtitle">仅保留最近5000条训练数据</div>
-      </div>
+      <div class="title">历史记录</div>
+      <div class="subtitle">仅保留最近5000条训练数据</div>
       
-      <div class="card full-flex glass-panel">
+      <div class="card full-flex">
         
-        <div v-if="showChart" class="chart-container glass-inner">
+        <div v-if="showChart" class="chart-container">
            <div class="chart-tabs">
              <div 
                v-for="m in availableModes" 
@@ -187,18 +170,20 @@
              </div>
            </div>
            <div id="accChart" style="width: 100%; height: 220px;"></div>
-           <button class="btnGhost small" style="margin-top:5px; font-size:13px;" @click="closeChart">收起图表</button>
+           <button class="btnGhost" style="height:32px; line-height:32px; font-size:14px; margin: 5px 0 0;" @click="closeChart">
+             收起图表
+           </button>
         </div>
         
         <div v-else>
-           <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#007aff;" @click="initChart">
+           <button class="btnGhost" style="height:40px; line-height:40px; font-size:16px; margin-bottom:10px; border-color:#0d6b3f; color:#0d6b3f; background:rgba(13,107,63,0.1);" @click="initChart">
              📊 按模块分析趋势
            </button>
         </div>
 
-        <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:0 8px; font-weight:700; color:#8e8e93; font-size:13px;">
-           <span>时间 / 模式</span>
-           <span>成绩 / 耗时</span>
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px; padding:0 5px;">
+           <span style="font-weight:900; opacity:0.6;">时间 / 模式</span>
+           <span style="font-weight:900; opacity:0.6;">成绩 / 耗时</span>
         </div>
         
         <div class="resultScroll">
@@ -206,32 +191,33 @@
             暂无记录，快去练习吧！
           </div>
           <div v-else>
-            <div v-for="(item, index) in historyList" :key="item.ts" class="row hover-row" @click="viewHistoryDetail(index)" style="cursor:pointer;">
+            <div v-for="(item, index) in historyList" :key="item.ts" class="row" @click="viewHistoryDetail(index)" style="cursor:pointer;">
               <div class="rowLeft" style="display:flex; flex-direction:column;">
-                <span style="font-size:12px; color:#8e8e93;">{{item.timeStr}}</span>
-                <span style="font-weight:700; color:#1d1d1f; font-size:15px;">{{item.modeName}}</span>
+                <span style="font-size:12px; opacity:0.6;">{{item.timeStr}}</span>
+                <span>{{item.modeName}}</span>
               </div>
               <div class="rowRight" style="display:flex; flex-direction:column; align-items:flex-end;">
-                <span style="font-size:16px; color:#007aff; font-weight:800;">{{item.summary}}</span>
-                <span style="font-size:12px; color:#8e8e93;">{{item.duration}} > </span>
+                <span style="font-size:16px; color:#0d6b3f;">{{item.summary}}</span>
+                <span style="font-size:12px; opacity:0.6;">{{item.duration}} > </span>
               </div>
             </div>
           </div>
         </div>
         
-        <div style="margin-top: 15px; display:flex; flex-direction: column; gap:10px;">
+        <div style="margin-top: 10px; display:flex; flex-direction: column; gap:10px;">
+          
           <button 
             v-if="historyList.length > 1000" 
-            class="btnGhost glass-btn" 
-            style="margin:0; height: 44px; font-size: 16px; color: #ff3b30; background: rgba(255,59,48,0.08); border-color: rgba(255,59,48,0.2);" 
+            class="btnGhost" 
+            style="margin:0; height: 40px; font-size: 16px; color: #d9534f; border-color: #d9534f; background: rgba(217, 83, 79, 0.1);" 
             @click="clearOldest"
           >
-            🗑️ 清理最早的 1000 条
+            🗑️ 清理最早的 1000 条 (保留最近{{historyList.length - 1000}}条)
           </button>
 
           <div style="display:flex; gap:10px;">
-            <button class="btnGhost glass-btn main-action-btn" style="margin:0; flex:1;" @click="clearHistory">清空全部</button>
-            <button class="btnPrimary glass-primary main-action-btn" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
+            <button class="btnDanger" style="margin:0; flex:1;" @click="clearHistory">清空全部</button>
+            <button class="btnPrimary" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
           </div>
         </div>
 
@@ -246,297 +232,762 @@ import * as echarts from 'echarts';
 export default {
   data() {
     return {
-      viewState: 'home', mode: 'train', selectedDivisor: 0, pool: [], idx: 0, current: null, input: '', hint: 'Ready?', hintNote: '', totalText: '0:00.0', progressText: '1/81', qText: '—', leftText: '跳过', totalStartTs: 0, qStartTs: 0, timer: null, trainWrong: 0, trainSkip: 0, curWrongTries: 0, trainLog: [], results: [], resultTitle: '', resultMeta: '', historyList: [], safeTop: 0, safeBottom: 0, isHistoryReview: false, toast: { show: false, title: '' },
-      showChart: false, chartInstance: null, chartTab: '', availableModes: [] 
+      viewState: 'home',   
+      mode: 'train',
+      selectedDivisor: 0,
+      pool: [],
+      idx: 0,
+      current: null,
+      input: '',
+      hint: '输入答案后点“确认”。',
+      hintNote: '',
+      totalText: '0:00.0',
+      progressText: '1/81',
+      qText: '—',
+      leftText: '跳过',
+      totalStartTs: 0,
+      qStartTs: 0,
+      timer: null,
+      trainWrong: 0,
+      trainSkip: 0,
+      curWrongTries: 0,
+      trainLog: [],
+      results: [],
+      resultTitle: '',
+      resultMeta: '',
+      historyList: [],
+      safeTop: 0,
+      safeBottom: 0,
+      isHistoryReview: false,
+      toast: { show: false, title: '' },
+      
+      // 图表相关
+      showChart: false,
+      chartInstance: null,
+      chartTab: '', 
+      availableModes: [] 
     }
   },
   mounted() {
     const history = localStorage.getItem('calc_history');
-    if(history) { try { this.historyList = JSON.parse(history); } catch(e){ console.error(e) } }
-    window.addEventListener('resize', () => { if(this.chartInstance) this.chartInstance.resize(); });
+    if(history) {
+      try {
+        this.historyList = JSON.parse(history);
+      } catch(e){ console.error(e) }
+    }
+    window.addEventListener('resize', () => {
+      if(this.chartInstance) this.chartInstance.resize();
+    });
   },
   methods: {
     now() { return Date.now(); },
-    showToast(title) { this.toast.title = title; this.toast.show = true; setTimeout(() => { this.toast.show = false; }, 1500); },
-    initChart() { this.showChart = true; const modeSet = new Set(this.historyList.map(item => item.modeName)); this.availableModes = Array.from(modeSet); if(this.historyList.length > 0 && !this.chartTab) { this.chartTab = this.historyList[0].modeName; } else if (this.availableModes.length > 0 && !this.chartTab) { this.chartTab = this.availableModes[0]; } this.$nextTick(() => { this.renderChart(this.chartTab); }); },
-    switchChartTab(modeName) { this.chartTab = modeName; this.renderChart(modeName); },
+    
+    showToast(title) {
+      this.toast.title = title;
+      this.toast.show = true;
+      setTimeout(() => { this.toast.show = false; }, 1500);
+    },
+
+    // --- 图表逻辑 ---
+    initChart() {
+      this.showChart = true;
+      const modeSet = new Set(this.historyList.map(item => item.modeName));
+      this.availableModes = Array.from(modeSet);
+
+      if(this.historyList.length > 0 && !this.chartTab) {
+        this.chartTab = this.historyList[0].modeName;
+      } else if (this.availableModes.length > 0 && !this.chartTab) {
+        this.chartTab = this.availableModes[0];
+      }
+
+      this.$nextTick(() => {
+        this.renderChart(this.chartTab);
+      });
+    },
+
+    switchChartTab(modeName) {
+      this.chartTab = modeName;
+      this.renderChart(modeName);
+    },
+
     renderChart(targetModeName) {
-      const chartDom = document.getElementById('accChart'); if(!chartDom) return; if(this.chartInstance) this.chartInstance.dispose(); this.chartInstance = echarts.init(chartDom);
-      const allData = JSON.parse(JSON.stringify(this.historyList)).reverse(); const filteredData = allData.filter(item => item.modeName === targetModeName);
-      const dateList = []; const accuracyList = []; const timeList = [];
-      filteredData.forEach(item => { let accuracy = 0; if(item.mode === 'train') { let wrong = 0; if(item.detail && item.detail.length > 0) { wrong = item.detail.filter(x => x.wrong > 0).length; } else { const match = item.summary.match(/错(\d+)/); if(match) wrong = parseInt(match[1]); } accuracy = ((81 - wrong) / 81) * 100; } else { if(item.detail && item.detail.length > 0) { const correctCount = item.detail.filter(x => x.ok).length; accuracy = (correctCount / item.detail.length) * 100; } else { const match = item.summary.match(/(\d+)%/); if(match) accuracy = parseInt(match[1]); } } let duration = 0; if(item.duration) { duration = parseFloat(item.duration.replace('s', '')); } dateList.push(item.timeStr); accuracyList.push(accuracy.toFixed(0)); timeList.push(duration.toFixed(1)); });
-      if(dateList.length === 0) { this.chartInstance.setOption({ title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } } }); return; }
+      const chartDom = document.getElementById('accChart');
+      if(!chartDom) return;
       
-      // 修复3：图表配色 - 大厂高对比度 (蓝 vs 橙红)
+      if(this.chartInstance) {
+        this.chartInstance.dispose(); 
+      }
+      this.chartInstance = echarts.init(chartDom);
+
+      const allData = JSON.parse(JSON.stringify(this.historyList)).reverse();
+      const filteredData = allData.filter(item => item.modeName === targetModeName);
+
+      const dateList = [];
+      const accuracyList = [];
+      const timeList = [];
+
+      filteredData.forEach(item => {
+          let accuracy = 0;
+          if(item.mode === 'train') {
+              let wrong = 0;
+              if(item.detail && item.detail.length > 0) {
+                  wrong = item.detail.filter(x => x.wrong > 0).length;
+              } else {
+                  const match = item.summary.match(/错(\d+)/);
+                  if(match) wrong = parseInt(match[1]);
+              }
+              accuracy = ((81 - wrong) / 81) * 100;
+          } else {
+              if(item.detail && item.detail.length > 0) {
+                  const correctCount = item.detail.filter(x => x.ok).length;
+                  accuracy = (correctCount / item.detail.length) * 100;
+              } else {
+                  const match = item.summary.match(/(\d+)%/);
+                  if(match) accuracy = parseInt(match[1]);
+              }
+          }
+          
+          let duration = 0;
+          if(item.duration) {
+              duration = parseFloat(item.duration.replace('s', ''));
+          }
+
+          dateList.push(item.timeStr);
+          accuracyList.push(accuracy.toFixed(0));
+          timeList.push(duration.toFixed(1));
+      });
+
+      if(dateList.length === 0) {
+        this.chartInstance.setOption({
+          title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } }
+        });
+        return;
+      }
+
       const option = {
-        grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, 
-        yAxis: [ 
-          { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff'} }, 
-          { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30'} } // 耗时用红色/橙色
-        ], 
-        series: [ 
-          { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 3 }, itemStyle: { color: '#007aff' }, data: accuracyList }, 
-          { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#ff3b30', width: 2, type: 'dashed' }, itemStyle: { color: '#ff3b30' }, data: timeList } 
+        title: { 
+          text: targetModeName, 
+          left: 'center', 
+          textStyle: { fontSize: 14, color: '#333' } 
+        },
+        legend: {
+          data: ['正确率', '耗时'],
+          top: 25,
+          textStyle: { fontSize: 10 }
+        },
+        grid: { top: 60, bottom: 20, left: 30, right: 30, containLabel: true },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+        xAxis: {
+          type: 'category',
+          data: dateList,
+          axisLabel: { 
+            color: '#666', 
+            fontSize: 10,
+            interval: 'auto', 
+            hideOverlap: true 
+          }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: '正确率',
+            min: 0, max: 100,
+            position: 'left',
+            axisLabel: { formatter: '{value}%', color: '#0d6b3f' },
+            splitLine: { show: true, lineStyle: { type: 'dashed', opacity: 0.3 } }
+          },
+          {
+            type: 'value',
+            name: '耗时(s)',
+            position: 'right',
+            axisLabel: { formatter: '{value}s', color: '#1890ff' },
+            splitLine: { show: false }
+          }
+        ],
+        series: [
+          {
+            name: '正确率',
+            type: 'line',
+            yAxisIndex: 0,
+            smooth: true,
+            lineStyle: { color: '#0d6b3f', width: 2 },
+            itemStyle: { color: '#0d6b3f' },
+            data: accuracyList,
+            areaStyle: { 
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(13,107,63,0.3)' },
+                { offset: 1, color: 'rgba(13,107,63,0.0)' }
+              ])
+            }
+          },
+          {
+            name: '耗时',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: true,
+            lineStyle: { color: '#1890ff', width: 2, type: 'dashed' },
+            itemStyle: { color: '#1890ff' },
+            data: timeList
+          }
         ]
       };
+
       this.chartInstance.setOption(option);
     },
-    closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
-    shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; },
-    buildPool(){ const arr = []; for(let d=11; d<=19; d++){ for(let q=1; q<=9; q++){ arr.push({ dividend: d*q, divisor: d, ans: q, symbol: '÷' }); } } return arr; },
-    msToMMSS(ms){ const totalSec = ms / 1000; const m = Math.floor(totalSec / 60); const s = (totalSec % 60).toFixed(1); return `${m}:${s < 10 ? '0' + s : s}`; },
-    formatTime(ts) { const date = new Date(ts); const m = date.getMonth() + 1; const d = date.getDate(); const h = date.getHours(); const min = date.getMinutes(); const pad = n => n < 10 ? '0' + n : n; return `${m}/${d} ${pad(h)}:${pad(min)}`; },
-    getModeName(mode, extra) { const map = { 'train': '基础训练', 'speed': '大九九竞速', 'first': '商首位(随机)', 'firstSpec': `商首位(除${extra})`, 'plus': '一位进位加', 'minus': '一位退位减', 'doublePlus': '双进位加', 'doubleMinus': '双退位减', 'triplePlus': '三进位加', 'tripleMinus': '三退位减', 'divSpecA': '反向放缩', 'divSpecB': '平移法' }; return map[mode] || '未知模式'; },
-    setMode(mode){ this.mode = mode; }, toSelectDivisor(){ this.viewState = 'selectDivisor'; }, selectDivisorAndStart(d){ this.mode = 'firstSpec'; this.selectedDivisor = d; this.startGame(); },
+
+    closeChart() {
+      this.showChart = false;
+      if(this.chartInstance) {
+        this.chartInstance.dispose();
+        this.chartInstance = null;
+      }
+    },
+
+    // --- 游戏逻辑部分 ---
+    shuffle(arr){
+      for(let i=arr.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    },
+    buildPool(){
+      const arr = [];
+      for(let d=11; d<=19; d++){
+        for(let q=1; q<=9; q++){
+          arr.push({ dividend: d*q, divisor: d, ans: q, symbol: '÷' });
+        }
+      }
+      return arr;
+    },
+    msToMMSS(ms){
+      const totalSec = ms / 1000;
+      const m = Math.floor(totalSec / 60);
+      const s = (totalSec % 60).toFixed(1);
+      return `${m}:${s < 10 ? '0' + s : s}`;
+    },
+    formatTime(ts) {
+      const date = new Date(ts);
+      const m = date.getMonth() + 1;
+      const d = date.getDate();
+      const h = date.getHours();
+      const min = date.getMinutes();
+      const pad = n => n < 10 ? '0' + n : n;
+      return `${m}/${d} ${pad(h)}:${pad(min)}`;
+    },
+    getModeName(mode, extra) {
+      const map = {
+        'train': '基础训练',
+        'speed': '大九九竞速',
+        'first': '商首位(随机)',
+        'firstSpec': `商首位(除${extra})`,
+        'plus': '一位进位加',
+        'minus': '一位退位减',
+        'doublePlus': '双进位加',
+        'doubleMinus': '双退位减',
+        'triplePlus': '三进位加',
+        'tripleMinus': '三退位减',
+        'divSpecA': '反向放缩',
+        'divSpecB': '平移法'
+      };
+      return map[mode] || '未知模式';
+    },
+    setMode(mode){ this.mode = mode; },
+    toSelectDivisor(){ this.viewState = 'selectDivisor'; },
+    selectDivisorAndStart(d){
+      this.mode = 'firstSpec';
+      this.selectedDivisor = d;
+      this.startGame();
+    },
     startGame(){
-      const mode = this.mode; let pool = []; let hintNote = '精确到整数';
-      if(mode === 'plus'){ hintNote = '一位数进位加：只填个位尾数'; for(let i=0; i<10; i++){ let a, b; do { a = Math.floor(Math.random()*9)+1; b = Math.floor(Math.random()*9)+1; } while(a + b < 10); pool.push({ dividend: a, divisor: b, ans: (a+b)%10, symbol: '+' }); } }
-      else if(mode === 'minus'){ hintNote = '一位数退位减：只填个位尾数'; for(let i=0; i<10; i++){ let a, b; do { a = Math.floor(Math.random()*9)+1; b = Math.floor(Math.random()*9)+1; } while(a >= b); pool.push({ dividend: a, divisor: b, ans: (10+a-b), symbol: '-' }); } }
-      else if(mode === 'doublePlus'){ hintNote = '双进位加：个位十位均需进位'; for(let i=0; i<10; i++){ let a, b, a1, a2, b1, b2; do { a = Math.floor(Math.random()*90)+10; b = Math.floor(Math.random()*90)+10; a1 = Math.floor(a/10); a2 = a%10; b1 = Math.floor(b/10); b2 = b%10; } while(a2 + b2 < 10 || a1 + b1 < 10); pool.push({ dividend: a, divisor: b, ans: a + b, symbol: '+' }); } }
-      else if(mode === 'doubleMinus'){ hintNote = '双退位减：个位退，十位不退'; for(let i=0; i<10; i++){ let a, b, a1, a2, b1, b2; do { a = Math.floor(Math.random()*90)+10; b = Math.floor(Math.random()*90)+10; a1 = Math.floor(a/10); a2 = a%10; b1 = Math.floor(b/10); b2 = b%10; } while(!(a2 < b2 && a1 - 1 >= b1)); pool.push({ dividend: a, divisor: b, ans: a - b, symbol: '-' }); } }
-      else if(mode === 'triplePlus'){ hintNote = '三进位加：个位十位百位均需进位'; for(let i=0; i<10; i++){ let a, b, a1, a2, a3, b1, b2, b3; do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10; b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10; } while(a3 + b3 < 10 || a2 + b2 < 10 || a1 + b1 < 10); pool.push({ dividend: a, divisor: b, ans: a + b, symbol: '+' }); } }
-      else if(mode === 'tripleMinus'){ hintNote = '三退位减：个十退，百不退'; for(let i=0; i<10; i++){ let a, b, a1, a2, a3, b1, b2, b3; do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10; b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10; } while(!(a3 < b3 && (a2 - 1) < b2 && (a1 - 1) >= b1)); pool.push({ dividend: a, divisor: b, ans: a - b, symbol: '-' }); } }
-      else if(mode === 'divSpecA'){ hintNote = '反向放缩：除数111-199 (误差3%内)'; for(let i=0; i<10; i++){ const divisor = Math.floor(Math.random() * (199 - 111 + 1)) + 111; const dividend = Math.floor(Math.random() * (99999 - 10000 + 1)) + 10000; const ans = dividend / divisor; pool.push({ dividend, divisor, ans, symbol: '÷' }); } }
-      else if(mode === 'divSpecB'){ hintNote = '平移法：商90-111 (误差3%内)'; let count = 0; while(count < 10){ const divisor = Math.floor(Math.random() * 900) + 100; const targetQ = Math.floor(Math.random() * (111 - 90 + 1)) + 90; const dividend = divisor * targetQ + Math.floor(Math.random() * divisor); if(dividend >= 10000 && dividend <= 99999){ const ans = dividend / divisor; pool.push({ dividend, divisor, ans, symbol: '÷' }); count++; } } }
-      else if(mode === 'first'){ hintNote = '目标：输入商的第一位数字'; for(let i=0; i<10; i++){ const divisor = 11 + Math.floor(Math.random() * 9); const dividend = 100 + Math.floor(Math.random() * 900); const firstDigit = parseInt(String(Math.floor(dividend / divisor))[0], 10); pool.push({ dividend, divisor, ans: firstDigit, symbol: '÷' }); } }
-      else if(mode === 'firstSpec'){ const d = this.selectedDivisor; hintNote = `除数${d}专项：只填商首位`; for(let i=0; i<10; i++){ const dividend = Math.floor(Math.random() * (999 - d + 1)) + d; const fullQuotient = Math.floor(dividend / d); const firstDigit = parseInt(String(fullQuotient)[0], 10); pool.push({ dividend, divisor: d, ans: firstDigit, symbol: '÷' }); } }
-      else { pool = this.shuffle(this.buildPool()); if(mode === 'speed') pool = pool.slice(0, 10); }
+      const mode = this.mode;
+      let pool = [];
+      let hintNote = '精确到整数';
+
+      if(mode === 'plus'){
+        hintNote = '一位数进位加：只填个位尾数';
+        for(let i=0; i<10; i++){
+          let a, b;
+          do { a = Math.floor(Math.random()*9)+1; b = Math.floor(Math.random()*9)+1; } while(a + b < 10);
+          pool.push({ dividend: a, divisor: b, ans: (a+b)%10, symbol: '+' });
+        }
+      } else if(mode === 'minus'){
+        hintNote = '一位数退位减：只填个位尾数';
+        for(let i=0; i<10; i++){
+          let a, b;
+          do { a = Math.floor(Math.random()*9)+1; b = Math.floor(Math.random()*9)+1; } while(a >= b);
+          pool.push({ dividend: a, divisor: b, ans: (10+a-b), symbol: '-' });
+        }
+      } else if(mode === 'doublePlus'){
+        hintNote = '双进位加：个位十位均需进位';
+        for(let i=0; i<10; i++){
+          let a, b, a1, a2, b1, b2;
+          do {
+            a = Math.floor(Math.random()*90)+10; b = Math.floor(Math.random()*90)+10;
+            a1 = Math.floor(a/10); a2 = a%10;
+            b1 = Math.floor(b/10); b2 = b%10;
+          } while(a2 + b2 < 10 || a1 + b1 < 10);
+          pool.push({ dividend: a, divisor: b, ans: a + b, symbol: '+' });
+        }
+      } else if(mode === 'doubleMinus'){
+        hintNote = '双退位减：个位退，十位不退';
+        for(let i=0; i<10; i++){
+          let a, b, a1, a2, b1, b2;
+          do {
+            a = Math.floor(Math.random()*90)+10; b = Math.floor(Math.random()*90)+10;
+            a1 = Math.floor(a/10); a2 = a%10;
+            b1 = Math.floor(b/10); b2 = b%10;
+          } while(!(a2 < b2 && a1 - 1 >= b1)); 
+          pool.push({ dividend: a, divisor: b, ans: a - b, symbol: '-' });
+        }
+      } else if(mode === 'triplePlus'){
+        hintNote = '三进位加：个位十位百位均需进位';
+        for(let i=0; i<10; i++){
+          let a, b, a1, a2, a3, b1, b2, b3;
+          do {
+            a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100;
+            a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10;
+            b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10;
+          } while(a3 + b3 < 10 || a2 + b2 < 10 || a1 + b1 < 10);
+          pool.push({ dividend: a, divisor: b, ans: a + b, symbol: '+' });
+        }
+      } else if(mode === 'tripleMinus'){
+        hintNote = '三退位减：个十退，百不退';
+        for(let i=0; i<10; i++){
+          let a, b, a1, a2, a3, b1, b2, b3;
+          do {
+            a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100;
+            a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10;
+            b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10;
+          } while(!(a3 < b3 && (a2 - 1) < b2 && (a1 - 1) >= b1)); 
+          pool.push({ dividend: a, divisor: b, ans: a - b, symbol: '-' });
+        }
+      } else if(mode === 'divSpecA'){
+        hintNote = '反向放缩：除数111-199 (误差3%内)';
+        for(let i=0; i<10; i++){
+          const divisor = Math.floor(Math.random() * (199 - 111 + 1)) + 111; 
+          const dividend = Math.floor(Math.random() * (99999 - 10000 + 1)) + 10000;
+          const ans = dividend / divisor;
+          pool.push({ dividend, divisor, ans, symbol: '÷' });
+        }
+      } else if(mode === 'divSpecB'){
+        hintNote = '平移法：商90-111 (误差3%内)';
+        let count = 0;
+        while(count < 10){
+          const divisor = Math.floor(Math.random() * 900) + 100; 
+          const targetQ = Math.floor(Math.random() * (111 - 90 + 1)) + 90;
+          const dividend = divisor * targetQ + Math.floor(Math.random() * divisor);
+          if(dividend >= 10000 && dividend <= 99999){
+             const ans = dividend / divisor;
+             pool.push({ dividend, divisor, ans, symbol: '÷' });
+             count++;
+          }
+        }
+      } else if(mode === 'first'){
+        hintNote = '目标：输入商的第一位数字';
+        for(let i=0; i<10; i++){
+          const divisor = 11 + Math.floor(Math.random() * 9); 
+          const dividend = 100 + Math.floor(Math.random() * 900); 
+          const firstDigit = parseInt(String(Math.floor(dividend / divisor))[0], 10);
+          pool.push({ dividend, divisor, ans: firstDigit, symbol: '÷' });
+        }
+      } else if(mode === 'firstSpec'){
+         const d = this.selectedDivisor;
+         hintNote = `除数${d}专项：只填商首位`;
+         for(let i=0; i<10; i++){
+            const dividend = Math.floor(Math.random() * (999 - d + 1)) + d;
+            const fullQuotient = Math.floor(dividend / d);
+            const firstDigit = parseInt(String(fullQuotient)[0], 10);
+            pool.push({ dividend, divisor: d, ans: firstDigit, symbol: '÷' });
+         }
+      } else {
+        pool = this.shuffle(this.buildPool());
+        if(mode === 'speed') pool = pool.slice(0, 10);
+      }
+
       if(this.timer) clearInterval(this.timer);
       const totalStartTs = this.now();
-      this.viewState = 'game'; this.pool = pool; this.idx = 0; this.input = ''; this.hint = '请输入答案'; this.hintNote = hintNote; this.leftText = (mode === 'train' ? '跳过' : '重开');
-      this.totalStartTs = totalStartTs; this.qStartTs = 0; this.trainWrong = 0; this.trainSkip = 0; this.curWrongTries = 0; this.trainLog = []; this.results = []; this.isHistoryReview = false;
-      this.$nextTick(() => { this._nextQuestion(); this.timer = setInterval(()=> this._tick(), 100); });
+      
+      this.viewState = 'game';
+      this.pool = pool;
+      this.idx = 0;
+      this.input = '';
+      this.hint = '请输入答案';
+      this.hintNote = hintNote;
+      this.leftText = (mode === 'train' ? '跳过' : '重开');
+      this.totalStartTs = totalStartTs;
+      this.qStartTs = 0;
+      this.trainWrong = 0;
+      this.trainSkip = 0;
+      this.curWrongTries = 0;
+      this.trainLog = [];
+      this.results = [];
+      this.isHistoryReview = false;
+
+      this.$nextTick(() => {
+        this._nextQuestion();
+        this.timer = setInterval(()=> this._tick(), 100); 
+      });
     },
-    _tick(){ const diff = this.now() - this.totalStartTs; this.totalText = this.msToMMSS(diff); },
-    _setQuestion(q, shownIdx){ this.current = q; this.qStartTs = this.now(); this.input = ''; this.curWrongTries = 0; this.qText = `${q.dividend}${q.symbol}${q.divisor}=`; this.progressText = `${shownIdx}/${this.pool.length}`; },
-    _nextQuestion(){ const { idx, pool } = this; if(idx >= pool.length){ this._finish(); return; } this._setQuestion(pool[idx], idx + 1); this.idx = idx + 1; },
-    pressDigit(d){ let input = this.input || ''; if(input.length >= 6) return; input += String(d); this.input = input; },
+    _tick(){
+      const diff = this.now() - this.totalStartTs;
+      this.totalText = this.msToMMSS(diff);
+    },
+    _setQuestion(q, shownIdx){
+      this.current = q;
+      this.qStartTs = this.now();
+      this.input = '';
+      this.curWrongTries = 0;
+      this.qText = `${q.dividend}${q.symbol}${q.divisor}=`;
+      this.progressText = `${shownIdx}/${this.pool.length}`;
+    },
+    _nextQuestion(){
+      const { idx, pool } = this;
+      if(idx >= pool.length){ this._finish(); return; }
+      this._setQuestion(pool[idx], idx + 1);
+      this.idx = idx + 1;
+    },
+    pressDigit(d){
+      let input = this.input || '';
+      if(input.length >= 6) return;
+      input += String(d);
+      this.input = input;
+    },
     clearInput(){ this.input = ''; },
     backspace(){ this.input = (this.input || '').slice(0, -1); },
-    leftAction(){ if(this.mode !== 'train'){ this.startGame(); return; } const cur = this.current; const used = (this.now() - this.qStartTs)/1000; const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: true }]); this.trainSkip = this.trainSkip + 1; this.trainLog = log; this._nextQuestion(); },
-    confirmAnswer(){
-      const { current: cur, input, mode } = this; if(!input) return; const n = parseInt(input, 10); const used = (this.now() - this.qStartTs)/1000;
-      let correct = false; let realAnsDisplay = cur.ans; 
-      if(mode === 'divSpecA' || mode === 'divSpecB'){ const diffRatio = Math.abs(n - cur.ans) / cur.ans; correct = diffRatio <= 0.03; realAnsDisplay = Math.round(cur.ans); } else { correct = (n === cur.ans); }
-      if(mode === 'train'){ if(correct){ const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); this.trainLog = log; this.showToast('正确'); this._nextQuestion(); }else{ this.trainWrong++; this.curWrongTries++; this.input = ''; this.hint = `错误！答案是：${realAnsDisplay}`; } return; }
-      const results = this.results.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, ok: correct, yourAns: input, realAns: realAnsDisplay, usedStr: used.toFixed(1) + 's' }]); this.results = results; this.showToast(correct ? '正确' : `错误(${realAnsDisplay})`); this._nextQuestion();
+    leftAction(){
+      if(this.mode !== 'train'){ this.startGame(); return; }
+      const cur = this.current;
+      const used = (this.now() - this.qStartTs)/1000;
+      const log = this.trainLog.concat([{
+        q: `${cur.dividend}${cur.symbol}${cur.divisor}`,
+        usedStr: used.toFixed(1) + 's',
+        wrong: this.curWrongTries,
+        skipped: true
+      }]);
+      this.trainSkip = this.trainSkip + 1;
+      this.trainLog = log;
+      this._nextQuestion();
     },
-    _saveRecord(meta, summary, detailLog){ const record = { ts: this.now(), timeStr: this.formatTime(this.now()), mode: this.mode, modeName: this.getModeName(this.mode, this.selectedDivisor), duration: meta.totalSec.toFixed(1) + 's', summary: summary, detail: detailLog }; let history = this.historyList; history.unshift(record); if(history.length > 5000) history = history.slice(0, 5000); this.historyList = history; localStorage.setItem('calc_history', JSON.stringify(history)); },
-    _finish(){ if(this.timer) clearInterval(this.timer); const { mode, totalStartTs, results, trainLog, selectedDivisor } = this; const totalSec = (this.now() - totalStartTs)/1000; let title = '训练完成！'; if(mode==='plus') title='一位数进位加完成！'; else if(mode==='minus') title='一位数退位减完成！'; else if(mode==='doublePlus') title='双进位加完成！'; else if(mode==='doubleMinus') title='双退位减完成！'; else if(mode==='triplePlus') title='三进位加完成！'; else if(mode==='tripleMinus') title='三退位减完成！'; else if(mode==='speed') title='竞速完成！'; else if(mode==='first') title='商首位完成！'; else if(mode==='divSpecA') title='反向放缩完成！'; else if(mode==='divSpecB') title='平移法完成！'; else if(mode==='firstSpec') title=`商首位(除${selectedDivisor})完成！`; let metaText = ''; let recordSummary = ''; let detailLog = []; if(mode === 'train'){ metaText = `用时：${totalSec.toFixed(1)}s｜错误：${this.trainWrong}｜跳过：${this.trainSkip}`; recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = trainLog; } else { const correctCount = results.filter(x=>x.ok).length; const totalCount = results.length; metaText = `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = results; } this.viewState = 'result'; this.resultTitle = title; this.resultMeta = metaText; this.isHistoryReview = false; this._saveRecord({ totalSec }, recordSummary, detailLog); },
-    goHome(){ if(this.timer) clearInterval(this.timer); this.viewState = 'home'; },
-    openHistory(){ this.viewState = 'history'; if(this.showChart) this.initChart(); },
-    viewHistoryDetail(index){ const record = this.historyList[index]; if(!record) return; let title = record.modeName + ' 回顾'; if(record.mode === 'train'){ this.mode = record.mode; this.trainLog = record.detail || []; this.results = []; this.viewState = 'result'; this.resultTitle = title; this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`; this.isHistoryReview = true; } else { this.mode = record.mode; this.results = record.detail || []; this.trainLog = []; this.viewState = 'result'; this.resultTitle = title; this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`; this.isHistoryReview = true; } },
-    backToHistory(){ this.viewState = 'history'; if(this.showChart) this.initChart(); },
-    closeHistory(){ this.viewState = 'home'; },
-    clearOldest() { if(confirm(`当前共有 ${this.historyList.length} 条记录。\n确定要清除【最早的 1000 条】数据吗？`)){ const keepCount = this.historyList.length - 1000; this.historyList = this.historyList.slice(0, keepCount); localStorage.setItem('calc_history', JSON.stringify(this.historyList)); this.showToast('清理成功'); if(this.showChart) this.initChart(); } },
-    clearHistory(){ if(confirm('【严重警告】\n确定要清空【所有】历史记录吗？\n此操作不可恢复！')){ localStorage.removeItem('calc_history'); this.historyList = []; this.showToast('所有记录已清空'); } }
+    confirmAnswer(){
+      const { current: cur, input, mode } = this;
+      if(!input) return;
+      const n = parseInt(input, 10);
+      const used = (this.now() - this.qStartTs)/1000;
+
+      let correct = false;
+      let realAnsDisplay = cur.ans; 
+
+      if(mode === 'divSpecA' || mode === 'divSpecB'){
+        const diffRatio = Math.abs(n - cur.ans) / cur.ans;
+        correct = diffRatio <= 0.03;
+        realAnsDisplay = Math.round(cur.ans); 
+      } else {
+        correct = (n === cur.ans);
+      }
+
+      if(mode === 'train'){
+        if(correct){
+          const log = this.trainLog.concat([{
+            q: `${cur.dividend}${cur.symbol}${cur.divisor}`,
+            usedStr: used.toFixed(1) + 's',
+            wrong: this.curWrongTries,
+            skipped: false
+          }]);
+          this.trainLog = log;
+          this.showToast('正确');
+          this._nextQuestion();
+        } else {
+          this.trainWrong++;
+          this.curWrongTries++;
+          this.input = '';
+          this.hint = `错误！答案是：${realAnsDisplay}`;
+        }
+        return;
+      }
+
+      const results = this.results.concat([{
+        q: `${cur.dividend}${cur.symbol}${cur.divisor}`,
+        ok: correct,
+        yourAns: input, 
+        realAns: realAnsDisplay, 
+        usedStr: used.toFixed(1) + 's'
+      }]);
+
+      this.results = results;
+      this.showToast(correct ? '正确' : `错误(${realAnsDisplay})`);
+      this._nextQuestion();
+    },
+    _saveRecord(meta, summary, detailLog){
+      const record = {
+        ts: this.now(),
+        timeStr: this.formatTime(this.now()),
+        mode: this.mode,
+        modeName: this.getModeName(this.mode, this.selectedDivisor),
+        duration: meta.totalSec.toFixed(1) + 's',
+        summary: summary,
+        detail: detailLog 
+      };
+      
+      let history = this.historyList;
+      history.unshift(record);
+      // 限制为5000条
+      if(history.length > 5000) history = history.slice(0, 5000);
+      this.historyList = history;
+      localStorage.setItem('calc_history', JSON.stringify(history));
+    },
+    _finish(){
+      if(this.timer) clearInterval(this.timer);
+      const { mode, totalStartTs, results, trainLog, selectedDivisor } = this;
+      const totalSec = (this.now() - totalStartTs)/1000;
+      
+      let title = '训练完成！';
+      if(mode==='plus') title='一位数进位加完成！';
+      else if(mode==='minus') title='一位数退位减完成！';
+      else if(mode==='doublePlus') title='双进位加完成！';
+      else if(mode==='doubleMinus') title='双退位减完成！';
+      else if(mode==='triplePlus') title='三进位加完成！';
+      else if(mode==='tripleMinus') title='三退位减完成！';
+      else if(mode==='speed') title='竞速完成！';
+      else if(mode==='first') title='商首位完成！';
+      else if(mode==='divSpecA') title='反向放缩完成！';
+      else if(mode==='divSpecB') title='平移法完成！';
+      else if(mode==='firstSpec') title=`商首位(除${selectedDivisor})完成！`;
+
+      let metaText = '';
+      let recordSummary = '';
+      let detailLog = [];
+
+      if(mode === 'train'){
+          metaText = `用时：${totalSec.toFixed(1)}s｜错误：${this.trainWrong}｜跳过：${this.trainSkip}`;
+          recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`;
+          detailLog = trainLog;
+      } else {
+          const correctCount = results.filter(x=>x.ok).length;
+          const totalCount = results.length;
+          metaText = `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`;
+          recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`;
+          detailLog = results;
+      }
+
+      this.viewState = 'result';
+      this.resultTitle = title;
+      this.resultMeta = metaText;
+      this.isHistoryReview = false;
+
+      this._saveRecord({ totalSec }, recordSummary, detailLog);
+    },
+    goHome(){
+      if(this.timer) clearInterval(this.timer);
+      this.viewState = 'home';
+    },
+    openHistory(){
+      this.viewState = 'history';
+    },
+    viewHistoryDetail(index){
+      const record = this.historyList[index];
+      if(!record) return;
+
+      let title = record.modeName + ' 回顾';
+      if(record.mode === 'train'){
+          this.mode = record.mode;
+          this.trainLog = record.detail || [];
+          this.results = [];
+          this.viewState = 'result';
+          this.resultTitle = title;
+          this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`;
+          this.isHistoryReview = true;
+      } else {
+          this.mode = record.mode;
+          this.results = record.detail || [];
+          this.trainLog = [];
+          this.viewState = 'result';
+          this.resultTitle = title;
+          this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`;
+          this.isHistoryReview = true;
+      }
+    },
+    backToHistory(){
+      this.viewState = 'history';
+    },
+    closeHistory(){
+      this.viewState = 'home';
+    },
+    clearOldest() {
+      if(confirm(`当前共有 ${this.historyList.length} 条记录。\n确定要清除【最早的 1000 条】数据吗？`)){
+        const keepCount = this.historyList.length - 1000;
+        this.historyList = this.historyList.slice(0, keepCount);
+        localStorage.setItem('calc_history', JSON.stringify(this.historyList));
+        this.showToast('清理成功');
+        if(this.showChart) this.initChart();
+      }
+    },
+    clearHistory(){
+      if(confirm('【严重警告】\n确定要清空【所有】历史记录吗？\n此操作不可恢复！')){
+        localStorage.removeItem('calc_history');
+        this.historyList = [];
+        this.showToast('所有记录已清空');
+      }
+    }
   }
 }
 </script>
 
 <style scoped>
-/* =========================================
-   1. 基础重置 & 液态流光背景
-   ========================================= */
 .page {
   min-height: 100vh;
-  /* 梦幻网格流体背景 */
-  background: 
-    radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 0%, hsla(260,100%,94%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 100%, hsla(300,100%,94%,1) 0, transparent 50%), 
-    radial-gradient(at 0% 100%, hsla(180,100%,94%,1) 0, transparent 50%);
-  background-color: #f2f2f7; 
-  color: #1c1c1e;
-  display: flex; flex-direction: column;
-  max-width: 480px; margin: 0 auto;
-  box-shadow: 0 0 40px rgba(0,0,0,0.08);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #93d5dc;
+  color: #0b2224;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px; 
+  margin: 0 auto;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   box-sizing: border-box;
-  position: relative; overflow: hidden;
 }
-
-/* 动态流体光斑 */
-.mesh-bg { position: absolute; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
-.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.7; animation: float 10s infinite alternate ease-in-out; }
-.orb-1 { width: 350px; height: 350px; background: #a2d2ff; top: -100px; left: -100px; }
-.orb-2 { width: 300px; height: 300px; background: #e2c2ff; bottom: -50px; right: -80px; animation-delay: -3s; }
-.orb-3 { width: 200px; height: 200px; background: #ffdfba; top: 40%; left: 30%; opacity:0.5; animation-delay: -6s; }
-@keyframes float { 0% { transform: translate(0, 0); } 100% { transform: translate(20px, 30px); } }
-
-.toast-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; z-index: 999; pointer-events: none; }
-.toast-content { background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); color: #fff; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-
-/* 容器布局 */
-.wrap { padding: 20px 16px 24px; box-sizing: border-box; position: relative; z-index: 1; }
+.toast-mask {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; justify-content: center; align-items: center; z-index: 999;
+  pointer-events: none;
+}
+.toast-content {
+  background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px;
+  border-radius: 5px; font-size: 14px;
+}
+.wrap { padding: 18px 14px 20px; box-sizing: border-box; }
 .homeWrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .full-height { flex: 1; display: flex; flex-direction: column; height: 100vh; }
 .full-flex { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; }
-
-/* 头部样式 */
-.header-area { margin-bottom: 20px; text-align: center; }
-.title { font-size: 34px; font-weight: 900; margin: 0 0 6px; color: #000; letter-spacing: -0.5px; }
-.subtitle { font-size: 15px; color: #8e8e93; font-weight: 500; }
-
-/* --- 核心磨砂玻璃卡片 --- */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.65); /* 通透 */
-  backdrop-filter: blur(50px) saturate(200%); /* 苹果级质感：高饱和模糊 */
-  -webkit-backdrop-filter: blur(50px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 
-    0 20px 40px -10px rgba(0,0,0,0.1),
-    inset 0 0 0 1px rgba(255,255,255,0.5);
+.title { text-align: center; font-size: 36px; font-weight: 900; margin: 5px 0 4px; }
+.subtitle { text-align: center; font-size: 13px; color: rgba(11,34,36,.78); margin-bottom: 12px; }
+.card { 
+  background: rgba(255,255,255,.22); 
+  border: 1px solid rgba(255,255,255,.25); 
+  border-radius: 14px; 
+  padding: 13px; 
+  box-shadow: 0 10px 20px rgba(0,0,0,.16); 
+  backdrop-filter: blur(12px); 
 }
-.card { border-radius: 28px; padding: 16px; }
-
-/* 标签文字 */
-.rowLabel { font-size: 13px; font-weight: 700; color: #007aff; margin: 16px 0 8px 6px; opacity: 0.9; letter-spacing: 0.5px; }
-
-/* 首页模式按键 (回归) */
-.modeRow { display: flex; gap: 8px; margin-bottom: 8px; }
-.modeItem { 
-  flex: 1; padding: 14px 4px; border-radius: 16px; 
-  background: rgba(255,255,255,0.5); 
-  border: 1px solid rgba(0,0,0,0.05); 
-  text-align: center; box-sizing: border-box; transition: all 0.1s; cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+.chart-container {
+  background: rgba(255,255,255,0.4);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 10px;
 }
-.modeItem:active { transform: scale(0.97); }
-.modeItem.active { 
-  background: #007aff; 
-  border-color: transparent; 
-  box-shadow: 0 8px 20px rgba(0,122,255,0.3);
-}
-/* 增加未选中状态的文字对比度 */
-.modeTitle { display: block; font-size: 16px; font-weight: 700; color: #1c1c1e; }
-.modeItem.active .modeTitle { color: #fff; }
-
-/* 按钮通用 */
-button { border: none; outline: none; cursor: pointer; font-family: inherit; }
-.btnPrimary { 
-  width: 100%; height: 50px; line-height: 50px; 
-  border-radius: 16px; 
-  background: linear-gradient(135deg, #007aff 0%, #0062cc 100%);
-  color: #fff; font-size: 20px; font-weight: 700; 
-  box-shadow: 0 10px 25px rgba(0,122,255,0.25);
-  transition: transform 0.1s;
-}
-.btnPrimary:active { transform: scale(0.98); opacity: 0.9; }
-
-.btnGhost { 
-  width: 100%; height: 48px; line-height: 48px; 
-  border-radius: 16px; 
-  background: rgba(255,255,255,0.5); 
-  border: 1px solid rgba(0,0,0,0.05); 
-  color: #007aff; font-size: 18px; font-weight: 600; 
-  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-  transition: background 0.2s;
-}
-.btnGhost:active { background: rgba(255,255,255,0.8); }
-
-/* 统一字体大小类 */
-.main-action-btn { font-size: 20px !important; height: 54px !important; line-height: 54px !important; }
-
-/* --- 游戏界面 (修复) --- */
-.gameRoot { min-height: 100vh; display: flex; flex-direction: column; }
-
-/* 顶部栏：Safe Area */
-.safe-top { 
-  padding-top: max(44px, env(safe-area-inset-top)); 
-  padding-bottom: 12px; height: auto; box-sizing: content-box; 
-  display: flex; align-items: center; gap: 12px; margin-bottom: 5px;
-}
-.safe-header { padding-top: max(44px, env(safe-area-inset-top)); margin-bottom: 20px; }
-
-.btnBack { 
-  width: 80px; height: 44px; line-height: 44px; border-radius: 14px; 
-  background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.05); 
-  font-weight: 700; font-size: 16px; margin: 0; color: #1c1c1e;
-  backdrop-filter: blur(10px);
-}
-.topStats { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; color: #333; }
-.glass-pill {
-  background: rgba(255,255,255,0.5); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(0,0,0,0.03);
-  backdrop-filter: blur(10px);
-}
-
-.gameMain { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.qCard { text-align: center; padding: 30px 20px; }
-.qText { font-size: 64px; font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px; }
-.qNote { margin-top: 8px; font-size: 16px; color: #8e8e93; font-weight: 500; }
-.ansBox { 
-  margin-top: 20px; padding: 15px; border-radius: 20px; 
-  background: rgba(255,255,255,0.5); 
-  font-size: 44px; font-weight: 800; min-height: 44px; color: #007aff;
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.03);
-}
-.hint { margin-top: 15px; color: #8e8e93; font-size: 15px; font-weight: 600; }
-
-.keypad { border-radius: 32px; padding: 16px; margin-top: 20px; }
-
-/* 修复1：功能键高度增加 (60px) */
-.fnRow { display: flex; gap: 10px; margin-bottom: 12px; }
-.kFn { 
-  flex: 1; height: 60px; line-height: 60px; border-radius: 16px; 
-  font-size: 20px; font-weight: 600; margin: 0; color: #1c1c1e;
-  border: 1px solid rgba(0,0,0,0.05);
-  backdrop-filter: blur(10px);
-}
-/* 修复2：功能键填色 */
-.style-skip { background: rgba(52, 199, 89, 0.2); color: #007d33; border-color: rgba(52,199,89,0.3); } /* 绿色 */
-.style-clear { background: rgba(255, 149, 0, 0.2); color: #b56b00; border-color: rgba(255,149,0,0.3); } /* 橙色 */
-.style-del { background: rgba(255, 59, 48, 0.2); color: #c92a2a; border-color: rgba(255,59,48,0.3); } /* 红色 */
-
-/* 修复3：数字键增高 (70px) */
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.glass-key {
-  width: 100%; height: 70px; line-height: 70px; border-radius: 16px; /* 统一圆角 */
-  background: rgba(255,255,255,0.85); 
-  border: 1px solid rgba(0,0,0,0.03); 
-  font-size: 32px; font-weight: 600; margin: 0; color: #000;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.04); 
-  transition: all 0.1s;
-}
-.glass-key:active { transform: translateY(4px); box-shadow: none; background: #fff; }
-
-/* 确认键 */
-.glass-key-confirm { 
-  background: #34c759; color: #fff; border:none; font-size: 26px; 
-  box-shadow: 0 4px 0 #248a3d; 
-  border-radius: 16px; /* 修复：与数字键一致 */
-}
-.glass-key-confirm:active { background: #28a745; box-shadow: none; transform: translateY(4px); }
-
-.k.wide { grid-column: 1 / 2; }
-.k.wide2 { grid-column: 2 / 4; }
-
-/* 列表与图表 */
-.chart-container { 
-  background: rgba(255,255,255,0.4); border-radius: 20px; padding: 15px; margin-bottom: 20px; 
-  border: 1px solid rgba(255,255,255,0.5);
-}
-.chart-tabs { 
-  display: flex; gap: 4px; overflow-x: auto; padding: 4px; margin-bottom: 12px;
-  background: rgba(118, 118, 128, 0.12); 
-  border-radius: 12px; scrollbar-width: none; 
+.chart-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 10px;
+  margin-bottom: 5px;
+  /* 隐藏滚动条但保留功能 */
+  scrollbar-width: none; 
 }
 .chart-tabs::-webkit-scrollbar { display: none; }
-.chart-tab-item { 
-  flex-shrink: 0; font-size: 13px; padding: 6px 14px; border-radius: 8px; 
-  color: #666; cursor: pointer; font-weight: 600; 
-  border: 1px solid transparent; 
+.chart-tab-item {
+  flex-shrink: 0;
+  font-size: 12px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 15px;
+  color: #333;
+  cursor: pointer;
+  border: 1px solid transparent;
 }
-.chart-tab-item.active { background: #fff; color: #000; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.chart-tab-item.active {
+  background: #0d6b3f;
+  color: #fff;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(13,107,63,0.3);
+}
 
-.resultScroll { width: 100%; flex: 1; overflow-y: auto; padding-right: 4px; }
+.rowLabel { font-size: 12px; font-weight: 900; color: #0d6b3f; margin: 9px 0 4px 4px; opacity: 0.8; }
+.modeRow { display: flex; gap: 6px; margin-bottom: 6px; }
+.modeItem { 
+  flex: 1; padding: 11px 4px; border-radius: 12px; 
+  background: rgba(255,255,255,0.18); 
+  border: 1px solid rgba(255,255,255,0.22); 
+  text-align: center; box-sizing: border-box; transition: all 0.2s; 
+  cursor: pointer;
+}
+.modeItem.active { border-color: #0d6b3f; background: rgba(13,107,63,0.15); }
+.modeTitle { display: block; font-size: 15px; font-weight: 900; }
+button { border: none; outline: none; cursor: pointer; }
+
+/* 基础按钮样式 */
+.btnPrimary { 
+  width: 100%; height: 48px; line-height: 48px; 
+  border-radius: 12px; background: #0d6b3f; color: #fff; 
+  font-size: 22px; font-weight: 900; 
+}
+.btnGhost { 
+  margin-top: 9px; width: 100%; height: 45px; line-height: 45px; 
+  border-radius: 12px; background: rgba(255,255,255,0.20); 
+  border: 1px solid rgba(255,255,255,0.25); color: #0b2224; 
+  font-size: 19px; font-weight: 900; 
+}
+
+/* 新增：历史记录按钮 (蓝色) */
+.btnHistory {
+  margin-top: 9px; width: 100%; height: 48px; line-height: 48px;
+  border-radius: 12px; background: #1890ff; color: #fff; 
+  font-size: 22px; font-weight: 900;
+}
+
+/* 新增：红色危险按钮 (清空全部) */
+.btnDanger {
+  width: 100%; height: 48px; line-height: 48px;
+  border-radius: 12px; background: #ff4d4f; color: #fff;
+  font-size: 22px; font-weight: 900;
+}
+
+.gameRoot { min-height: 100vh; display: flex; flex-direction: column; }
+.topbar { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.btnBack { 
+  width: 88px; height: 48px; line-height: 48px; border-radius: 11px; 
+  background: rgba(255,255,255,.18); border: 1px solid rgba(11,34,36,.35); 
+  font-weight: 900; font-size: 18px; margin: 0; 
+}
+.topStats { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 9px; font-weight: 900; font-size: 15px; }
+.gameMain { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.qCard { text-align: center; }
+.qText { font-size: 52px; font-weight: 900; margin-top: 3px; }
+.qNote { margin-top: 4px; font-size: 13px; color: rgba(11,34,36,.75); }
+.ansBox { 
+  margin-top: 10px; padding: 10px; border-radius: 11px; 
+  border: 1px solid rgba(11,34,36,.22); background: rgba(255,255,255,.12); 
+  font-size: 22px; font-weight: 900; min-height: 22px;
+}
+.keypad { border-radius: 15px; padding: 9px; margin-top: 20px; }
+.fnRow { display: flex; gap: 9px; margin-bottom: 9px; }
+.kFn { 
+  flex: 1; height: 53px; line-height: 53px; border-radius: 11px; 
+  background: rgba(255,255,255,.18); border: 1px solid rgba(11,34,36,.25); 
+  font-size: 20px; font-weight: 900; margin: 0; 
+}
+.kFn.danger { background: rgba(255,80,80,.18); }
+
+/* 功能键着色区分 */
+.kFn.skip { background: rgba(24, 144, 255, 0.25); color: #0050b3; border: 1px solid rgba(24, 144, 255, 0.3); }
+.kFn.clear { background: rgba(250, 140, 22, 0.25); color: #873800; border: 1px solid rgba(250, 140, 22, 0.3); }
+.kFn.danger { background: rgba(255, 77, 79, 0.25); color: #a8071a; border: 1px solid rgba(255, 77, 79, 0.3); }
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.k { 
+  width: 100%; height: 60px; line-height: 60px; border-radius: 11px; 
+  background: #93d5dc; border: 1px solid rgba(11,34,36,.25); 
+  font-size: 30px; font-weight: 900; margin: 0; 
+}
+.k.wide { grid-column: 1 / 2; }
+.k.wide2 { grid-column: 2 / 4; }
+.k.confirm { background: rgba(0,180,120,.22); font-size: 28px; }
+.resultScroll { width: 100%; flex: 1; overflow-y: auto; }
 .row { 
   display: flex; justify-content: space-between; align-items: center; 
-  padding: 18px 0; border-bottom: 1px solid rgba(0,0,0,0.05); 
-  font-weight: 600; white-space: nowrap; color: #1c1c1e;
+  padding: 12px 0; border-bottom: 1px solid rgba(11,34,36,.10); 
+  font-weight: 900; white-space: nowrap; 
 }
-.hover-row:active { background: rgba(0,0,0,0.03); border-radius: 12px; }
-.rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+.rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 5px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
