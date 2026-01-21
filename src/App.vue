@@ -380,7 +380,7 @@ export default {
 /* 标签文字 */
 .rowLabel { font-size: 13px; font-weight: 700; color: #007aff; margin: 16px 0 8px 6px; opacity: 0.9; letter-spacing: 0.5px; }
 
-/* 首页模式按键 (回归) */
+/* 首页模式按键 */
 .modeRow { display: flex; gap: 8px; margin-bottom: 8px; }
 .modeItem { 
   flex: 1; padding: 14px 4px; border-radius: 16px; 
@@ -395,7 +395,6 @@ export default {
   border-color: transparent; 
   box-shadow: 0 8px 20px rgba(0,122,255,0.3);
 }
-/* 增加未选中状态的文字对比度 */
 .modeTitle { display: block; font-size: 16px; font-weight: 700; color: #1c1c1e; }
 .modeItem.active .modeTitle { color: #fff; }
 
@@ -423,33 +422,32 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .btnGhost:active { background: rgba(255,255,255,0.8); }
 
 /* 修改点1 & 2：自定义颜色的按钮类 */
-/* 历史记录按钮 - 紫色系 */
+/* 历史记录按钮 - 蓝色系 */
 .btnHistory {
-  width: 100%; height: 48px; line-height: 48px; margin-top: 9px;
-  border-radius: 16px;
-  background: rgba(88, 86, 214, 0.1); 
-  color: #5856d6; font-size: 20px; font-weight: 700;
-  border: 1px solid rgba(88, 86, 214, 0.2);
+  margin-top: 9px; width: 100%; height: 48px; line-height: 48px;
+  border-radius: 16px; background: #1890ff; color: #fff; 
+  font-size: 22px; font-weight: 700;
+  border: 1px solid rgba(24, 144, 255, 0.2);
 }
-.btnHistory:active { background: rgba(88, 86, 214, 0.2); }
+.btnHistory:active { background: rgba(24, 144, 255, 0.8); }
 
 /* 危险操作按钮 (清空全部) - 红色系 */
 .btnDanger {
   width: 100%; height: 48px; line-height: 48px;
   border-radius: 16px;
-  background: rgba(255, 59, 48, 0.1);
-  color: #ff3b30; font-size: 20px; font-weight: 700;
-  border: 1px solid rgba(255, 59, 48, 0.2);
+  background: #ff4d4f;
+  color: #fff; font-size: 22px; font-weight: 700;
+  border: 1px solid rgba(255, 77, 79, 0.2);
 }
-.btnDanger:active { background: rgba(255, 59, 48, 0.2); }
+.btnDanger:active { background: rgba(255, 77, 79, 0.8); }
 
 /* 统一字体大小类 */
-.main-action-btn { font-size: 20px !important; height: 54px !important; line-height: 54px !important; }
+.main-action-btn { font-size: 22px !important; height: 50px !important; line-height: 50px !important; }
 
-/* --- 游戏界面 (修复) --- */
+/* --- 游戏界面 --- */
 .gameRoot { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* 顶部栏：Safe Area */
+/* 顶部栏 */
 .safe-top { 
   padding-top: max(44px, env(safe-area-inset-top)); 
   padding-bottom: 12px; height: auto; box-sizing: content-box; 
@@ -471,7 +469,11 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
 .gameMain { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .qCard { text-align: center; padding: 30px 20px; }
-.qText { font-size: 64px; font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px; }
+.qText { 
+  font-size: clamp(32px, 8vw, 64px); 
+  font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px; 
+  word-break: break-word; line-height: 1.1;
+}
 .qNote { margin-top: 8px; font-size: 16px; color: #8e8e93; font-weight: 500; }
 .ansBox { 
   margin-top: 20px; padding: 15px; border-radius: 20px; 
@@ -484,20 +486,20 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
 .keypad { border-radius: 32px; padding: 16px; margin-top: 20px; }
 
-/* 修复1：功能键高度增加 (60px) */
+/* 修正：功能键高度增加 (60px) */
 .fnRow { display: flex; gap: 10px; margin-bottom: 12px; }
 .kFn { 
   flex: 1; height: 60px; line-height: 60px; border-radius: 16px; 
-  font-size: 20px; font-weight: 600; margin: 0; color: #1c1c1e;
+  font-size: 20px; font-weight: 600; margin: 0; color: #fff;
   border: 1px solid rgba(0,0,0,0.05);
   backdrop-filter: blur(10px);
 }
-/* 修改点3：练习界面功能键着色 */
-.style-skip { background: rgba(52, 199, 89, 0.2); color: #007d33; border-color: rgba(52,199,89,0.3); } /* 绿色 */
-.style-clear { background: rgba(255, 149, 0, 0.2); color: #b56b00; border-color: rgba(255,149,0,0.3); } /* 橙色 */
-.style-del { background: rgba(255, 59, 48, 0.2); color: #c92a2a; border-color: rgba(255,59,48,0.3); } /* 红色 */
+/* 修改点3：练习界面功能键着色 (实色填充) */
+.style-skip { background: #007aff; border-color: #005ec4; } /* 蓝色 */
+.style-clear { background: #ff9500; border-color: #e08600; } /* 橙色 */
+.style-del { background: #ff3b30; border-color: #d63329; } /* 红色 */
 
-/* 修复3：数字键增高 (70px) */
+/* 修正：数字键增高 (70px) */
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .glass-key {
   width: 100%; height: 70px; line-height: 70px; border-radius: 16px; /* 统一圆角 */
