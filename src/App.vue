@@ -169,9 +169,7 @@
                {{ m }}
              </div>
            </div>
-           
            <div id="accChart" style="width: 100%; height: 220px;"></div>
-           
            <button class="btnGhost" style="height:32px; line-height:32px; font-size:14px; margin: 5px 0 0;" @click="closeChart">
              收起图表
            </button>
@@ -206,10 +204,23 @@
           </div>
         </div>
         
-        <div style="margin-top: 10px; display:flex; gap:10px;">
-          <button class="btnGhost" style="margin:0; flex:1;" @click="clearHistory">清空记录</button>
-          <button class="btnPrimary" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
+        <div style="margin-top: 10px; display:flex; flex-direction: column; gap:10px;">
+          
+          <button 
+            v-if="historyList.length > 1000" 
+            class="btnGhost" 
+            style="margin:0; height: 40px; font-size: 16px; color: #d9534f; border-color: #d9534f; background: rgba(217, 83, 79, 0.1);" 
+            @click="clearOldest"
+          >
+            🗑️ 清理最早的 1000 条 (保留最近{{historyList.length - 1000}}条)
+          </button>
+
+          <div style="display:flex; gap:10px;">
+            <button class="btnGhost" style="margin:0; flex:1;" @click="clearHistory">清空全部</button>
+            <button class="btnPrimary" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
+          </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -280,11 +291,9 @@ export default {
     // --- 图表逻辑 ---
     initChart() {
       this.showChart = true;
-      // 提取分类
       const modeSet = new Set(this.historyList.map(item => item.modeName));
       this.availableModes = Array.from(modeSet);
 
-      // 设置默认选中的 Tab
       if(this.historyList.length > 0 && !this.chartTab) {
         this.chartTab = this.historyList[0].modeName;
       } else if (this.availableModes.length > 0 && !this.chartTab) {
@@ -305,7 +314,6 @@ export default {
       const chartDom = document.getElementById('accChart');
       if(!chartDom) return;
       
-      // 销毁旧实例，防止内存泄漏或显示异常
       if(this.chartInstance) {
         this.chartInstance.dispose(); 
       }
@@ -723,7 +731,7 @@ export default {
       
       let history = this.historyList;
       history.unshift(record);
-      // 【修改点】：限制为5000条
+      // 限制为5000条
       if(history.length > 5000) history = history.slice(0, 5000);
       this.historyList = history;
       localStorage.setItem('calc_history', JSON.stringify(history));
@@ -770,9 +778,6 @@ export default {
       this._saveRecord({ totalSec }, recordSummary, detailLog);
     },
     
-    // -----------------------------------------------------------------
-    // 【核心修正点】：返回主页和历史页时的图表重绘逻辑
-    // -----------------------------------------------------------------
     goHome(){
       if(this.timer) clearInterval(this.timer);
       this.viewState = 'home';
@@ -780,7 +785,6 @@ export default {
 
     openHistory(){
       this.viewState = 'history';
-      // 如果之前图表是打开的，强制重绘
       if(this.showChart) {
           this.initChart();
       }
@@ -812,7 +816,6 @@ export default {
 
     backToHistory(){
       this.viewState = 'history';
-      // 如果之前图表是打开的，强制重绘
       if(this.showChart) {
           this.initChart();
       }
@@ -822,10 +825,25 @@ export default {
       this.viewState = 'home';
     },
 
+    // 【新增功能】清理最早的1000条
+    clearOldest() {
+      if(confirm(`当前共有 ${this.historyList.length} 条记录。\n确定要清除【最早的 1000 条】数据吗？`)){
+        // 数组头是最新，数组尾是最早。保留 length - 1000 个
+        const keepCount = this.historyList.length - 1000;
+        this.historyList = this.historyList.slice(0, keepCount);
+        localStorage.setItem('calc_history', JSON.stringify(this.historyList));
+        
+        this.showToast('清理成功');
+        // 如果图表开着，刷新一下
+        if(this.showChart) this.initChart();
+      }
+    },
+
     clearHistory(){
-      if(confirm('确定要清空所有历史记录吗？')){
+      if(confirm('【严重警告】\n确定要清空【所有】历史记录吗？\n此操作不可恢复！')){
         localStorage.removeItem('calc_history');
         this.historyList = [];
+        this.showToast('所有记录已清空');
       }
     }
   }
