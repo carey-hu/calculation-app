@@ -154,7 +154,7 @@
 
     <div v-if="viewState==='history'" class="wrap full-height">
       <div class="title">历史记录</div>
-      <div class="subtitle">仅保留最近100条训练数据</div>
+      <div class="subtitle">仅保留最近5000条训练数据</div>
       
       <div class="card full-flex">
         
@@ -253,8 +253,8 @@ export default {
       // 图表相关
       showChart: false,
       chartInstance: null,
-      chartTab: '', // 当前选中的图表分类（例如 '基础训练'）
-      availableModes: [] // 历史记录里出现过的所有分类
+      chartTab: '', 
+      availableModes: [] 
     }
   },
   mounted() {
@@ -277,16 +277,12 @@ export default {
       setTimeout(() => { this.toast.show = false; }, 1500);
     },
 
-    // --- 图表逻辑升级版 ---
-    
-    // 1. 初始化图表：先找出有哪些模式，默认选最新的
+    // --- 图表逻辑 ---
     initChart() {
       this.showChart = true;
-      // 提取所有不重复的模式名称
       const modeSet = new Set(this.historyList.map(item => item.modeName));
       this.availableModes = Array.from(modeSet);
 
-      // 默认选中列表第一条记录的模式（也就是用户刚刚玩过的那个）
       if(this.historyList.length > 0 && !this.chartTab) {
         this.chartTab = this.historyList[0].modeName;
       } else if (this.availableModes.length > 0 && !this.chartTab) {
@@ -298,24 +294,20 @@ export default {
       });
     },
 
-    // 2. 切换标签
     switchChartTab(modeName) {
       this.chartTab = modeName;
       this.renderChart(modeName);
     },
 
-    // 3. 渲染图表（只渲染特定 modeName 的数据）
     renderChart(targetModeName) {
       const chartDom = document.getElementById('accChart');
       if(!chartDom) return;
       
       if(this.chartInstance) {
-        this.chartInstance.dispose(); // 销毁旧的防止重叠
+        this.chartInstance.dispose(); 
       }
       this.chartInstance = echarts.init(chartDom);
 
-      // 核心：过滤数据！只看当前选中的模式
-      // 深度拷贝并反转，变成按时间正序
       const allData = JSON.parse(JSON.stringify(this.historyList)).reverse();
       const filteredData = allData.filter(item => item.modeName === targetModeName);
 
@@ -324,7 +316,6 @@ export default {
       const timeList = [];
 
       filteredData.forEach(item => {
-          // 算正确率
           let accuracy = 0;
           if(item.mode === 'train') {
               let wrong = 0;
@@ -345,23 +336,16 @@ export default {
               }
           }
           
-          // 算耗时
           let duration = 0;
           if(item.duration) {
               duration = parseFloat(item.duration.replace('s', ''));
           }
 
-          // 取时间（例如 10/24 14:30）
-          // 为了图表简洁，只取 "14:30" 或者 "10/24"
-          // 如果是同一天的，取时分；不同天取日期。这里简单点取时分
-          const timeLabel = item.timeStr.split(' ')[1];
-
-          dateList.push(timeLabel);
+          dateList.push(item.timeStr);
           accuracyList.push(accuracy.toFixed(0));
           timeList.push(duration.toFixed(1));
       });
 
-      // 如果没有数据（比如选了个空标签），显示空提示
       if(dateList.length === 0) {
         this.chartInstance.setOption({
           title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } }
@@ -385,7 +369,12 @@ export default {
         xAxis: {
           type: 'category',
           data: dateList,
-          axisLabel: { color: '#666', fontSize: 10 }
+          axisLabel: { 
+            color: '#666', 
+            fontSize: 10,
+            interval: 'auto', 
+            hideOverlap: true 
+          }
         },
         yAxis: [
           {
@@ -443,7 +432,7 @@ export default {
       }
     },
 
-    // --- 其他游戏逻辑保持不变 ---
+    // --- 游戏逻辑部分 ---
     shuffle(arr){
       for(let i=arr.length-1;i>0;i--){
         const j = Math.floor(Math.random()*(i+1));
@@ -480,7 +469,7 @@ export default {
         'train': '基础训练',
         'speed': '大九九竞速',
         'first': '商首位(随机)',
-        'firstSpec': `商首位(除${extra})`, // 重点：这里保证了不同除数是不同模块
+        'firstSpec': `商首位(除${extra})`,
         'plus': '一位进位加',
         'minus': '一位退位减',
         'doublePlus': '双进位加',
@@ -731,7 +720,8 @@ export default {
       
       let history = this.historyList;
       history.unshift(record);
-      if(history.length > 100) history = history.slice(0, 100);
+      // 修改点2：限制改为 5000 条
+      if(history.length > 5000) history = history.slice(0, 5000);
       this.historyList = history;
       localStorage.setItem('calc_history', JSON.stringify(history));
     },
