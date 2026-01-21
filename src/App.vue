@@ -497,7 +497,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   border-radius: 28px;
   overflow: hidden;
   clip-path: inset(0 0 0 0 round 28px);
-  margin-bottom: calc( env(safe-area-inset-bottom)+ 6px);
+  margin-bottom: calc( 6px + env(safe-area-inset-bottom));
 }
 
 
@@ -562,6 +562,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
+
 
 
 
