@@ -154,18 +154,32 @@
 
     <div v-if="viewState==='history'" class="wrap full-height">
       <div class="title">历史记录</div>
-      <div class="subtitle">仅保留最近50条训练数据</div>
+      <div class="subtitle">仅保留最近100条训练数据</div>
       
       <div class="card full-flex">
+        
         <div v-if="showChart" class="chart-container">
-           <div id="accChart" style="width: 100%; height: 240px;"></div>
-           <button class="btnGhost" style="height:36px; line-height:36px; font-size:14px; margin-bottom:10px;" @click="closeChart">
+           <div class="chart-tabs">
+             <div 
+               v-for="m in availableModes" 
+               :key="m"
+               :class="['chart-tab-item', chartTab === m ? 'active' : '']"
+               @click="switchChartTab(m)"
+             >
+               {{ m }}
+             </div>
+           </div>
+           
+           <div id="accChart" style="width: 100%; height: 220px;"></div>
+           
+           <button class="btnGhost" style="height:32px; line-height:32px; font-size:14px; margin: 5px 0 0;" @click="closeChart">
              收起图表
            </button>
         </div>
+        
         <div v-else>
-           <button class="btnGhost" style="height:40px; line-height:40px; font-size:16px; margin-bottom:10px; border-color:#0d6b3f; color:#0d6b3f; background:rgba(13,107,63,0.1);" @click="renderChart">
-             📈 查看[正确率 & 耗时]趋势
+           <button class="btnGhost" style="height:40px; line-height:40px; font-size:16px; margin-bottom:10px; border-color:#0d6b3f; color:#0d6b3f; background:rgba(13,107,63,0.1);" @click="initChart">
+             📊 按模块分析趋势
            </button>
         </div>
 
@@ -236,8 +250,11 @@ export default {
       isHistoryReview: false,
       toast: { show: false, title: '' },
       
+      // 图表相关
       showChart: false,
-      chartInstance: null
+      chartInstance: null,
+      chartTab: '', // 当前选中的图表分类（例如 '基础训练'）
+      availableModes: [] // 历史记录里出现过的所有分类
     }
   },
   mounted() {
@@ -260,130 +277,162 @@ export default {
       setTimeout(() => { this.toast.show = false; }, 1500);
     },
 
-    // --- 图表渲染核心逻辑 ---
-    renderChart() {
+    // --- 图表逻辑升级版 ---
+    
+    // 1. 初始化图表：先找出有哪些模式，默认选最新的
+    initChart() {
       this.showChart = true;
-      
+      // 提取所有不重复的模式名称
+      const modeSet = new Set(this.historyList.map(item => item.modeName));
+      this.availableModes = Array.from(modeSet);
+
+      // 默认选中列表第一条记录的模式（也就是用户刚刚玩过的那个）
+      if(this.historyList.length > 0 && !this.chartTab) {
+        this.chartTab = this.historyList[0].modeName;
+      } else if (this.availableModes.length > 0 && !this.chartTab) {
+        this.chartTab = this.availableModes[0];
+      }
+
       this.$nextTick(() => {
-        const chartDom = document.getElementById('accChart');
-        if(!chartDom) return;
-        
-        if(this.chartInstance) {
-          this.chartInstance.dispose();
-        }
-        
-        this.chartInstance = echarts.init(chartDom);
-        
-        const rawData = JSON.parse(JSON.stringify(this.historyList)).reverse();
-        
-        const dateList = [];
-        const accuracyList = []; // 正确率
-        const timeList = [];     // 耗时(秒)
-
-        rawData.forEach(item => {
-           // 1. 计算正确率
-           let accuracy = 0;
-           if(item.mode === 'train') {
-               let wrong = 0;
-               if(item.detail && item.detail.length > 0) {
-                   wrong = item.detail.filter(x => x.wrong > 0).length;
-               } else {
-                   const match = item.summary.match(/错(\d+)/);
-                   if(match) wrong = parseInt(match[1]);
-               }
-               accuracy = ((81 - wrong) / 81) * 100;
-           } else {
-               if(item.detail && item.detail.length > 0) {
-                   const correctCount = item.detail.filter(x => x.ok).length;
-                   accuracy = (correctCount / item.detail.length) * 100;
-               } else {
-                   const match = item.summary.match(/(\d+)%/);
-                   if(match) accuracy = parseInt(match[1]);
-               }
-           }
-           
-           // 2. 提取耗时 (item.duration 格式为 "45.2s")
-           let duration = 0;
-           if(item.duration) {
-               duration = parseFloat(item.duration.replace('s', ''));
-           }
-
-           // 数据推入 (只展示最近20条)
-           dateList.push(item.timeStr.split(' ')[1]); 
-           accuracyList.push(accuracy.toFixed(0));
-           timeList.push(duration.toFixed(1));
-        });
-
-        const option = {
-          title: { 
-            text: '正确率 & 耗时趋势', 
-            left: 'center', 
-            textStyle: { fontSize: 14, color: '#333' } 
-          },
-          // 增加图例，点击可切换显示/隐藏
-          legend: {
-            data: ['正确率', '耗时'],
-            top: 25,
-            textStyle: { fontSize: 10 }
-          },
-          grid: { top: 60, bottom: 20, left: 30, right: 30, containLabel: true },
-          tooltip: { 
-            trigger: 'axis',
-            axisPointer: { type: 'cross' } // 十字准星，方便对比
-          },
-          xAxis: {
-            type: 'category',
-            data: dateList,
-            axisLabel: { color: '#666', fontSize: 10 }
-          },
-          // 双 Y 轴配置
-          yAxis: [
-            {
-              type: 'value',
-              name: '正确率',
-              min: 0, max: 100,
-              position: 'left',
-              axisLabel: { formatter: '{value}%', color: '#0d6b3f' },
-              splitLine: { show: true, lineStyle: { type: 'dashed' } }
-            },
-            {
-              type: 'value',
-              name: '耗时(s)',
-              position: 'right',
-              axisLabel: { formatter: '{value}s', color: '#1890ff' },
-              splitLine: { show: false } // 右侧不显示分割线，防止乱
-            }
-          ],
-          series: [
-            {
-              name: '正确率',
-              type: 'line',
-              yAxisIndex: 0, // 对应左轴
-              smooth: true,
-              lineStyle: { color: '#0d6b3f', width: 2 },
-              itemStyle: { color: '#0d6b3f' },
-              data: accuracyList,
-              areaStyle: { // 淡淡的绿色阴影
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: 'rgba(13,107,63,0.3)' },
-                  { offset: 1, color: 'rgba(13,107,63,0.0)' }
-                ])
-              }
-            },
-            {
-              name: '耗时',
-              type: 'line',
-              yAxisIndex: 1, // 对应右轴
-              smooth: true,
-              lineStyle: { color: '#1890ff', width: 2, type: 'dashed' }, // 虚线区分
-              itemStyle: { color: '#1890ff' },
-              data: timeList
-            }
-          ]
-        };
-
-        this.chartInstance.setOption(option);
+        this.renderChart(this.chartTab);
       });
+    },
+
+    // 2. 切换标签
+    switchChartTab(modeName) {
+      this.chartTab = modeName;
+      this.renderChart(modeName);
+    },
+
+    // 3. 渲染图表（只渲染特定 modeName 的数据）
+    renderChart(targetModeName) {
+      const chartDom = document.getElementById('accChart');
+      if(!chartDom) return;
+      
+      if(this.chartInstance) {
+        this.chartInstance.dispose(); // 销毁旧的防止重叠
+      }
+      this.chartInstance = echarts.init(chartDom);
+
+      // 核心：过滤数据！只看当前选中的模式
+      // 深度拷贝并反转，变成按时间正序
+      const allData = JSON.parse(JSON.stringify(this.historyList)).reverse();
+      const filteredData = allData.filter(item => item.modeName === targetModeName);
+
+      const dateList = [];
+      const accuracyList = [];
+      const timeList = [];
+
+      filteredData.forEach(item => {
+          // 算正确率
+          let accuracy = 0;
+          if(item.mode === 'train') {
+              let wrong = 0;
+              if(item.detail && item.detail.length > 0) {
+                  wrong = item.detail.filter(x => x.wrong > 0).length;
+              } else {
+                  const match = item.summary.match(/错(\d+)/);
+                  if(match) wrong = parseInt(match[1]);
+              }
+              accuracy = ((81 - wrong) / 81) * 100;
+          } else {
+              if(item.detail && item.detail.length > 0) {
+                  const correctCount = item.detail.filter(x => x.ok).length;
+                  accuracy = (correctCount / item.detail.length) * 100;
+              } else {
+                  const match = item.summary.match(/(\d+)%/);
+                  if(match) accuracy = parseInt(match[1]);
+              }
+          }
+          
+          // 算耗时
+          let duration = 0;
+          if(item.duration) {
+              duration = parseFloat(item.duration.replace('s', ''));
+          }
+
+          // 取时间（例如 10/24 14:30）
+          // 为了图表简洁，只取 "14:30" 或者 "10/24"
+          // 如果是同一天的，取时分；不同天取日期。这里简单点取时分
+          const timeLabel = item.timeStr.split(' ')[1];
+
+          dateList.push(timeLabel);
+          accuracyList.push(accuracy.toFixed(0));
+          timeList.push(duration.toFixed(1));
+      });
+
+      // 如果没有数据（比如选了个空标签），显示空提示
+      if(dateList.length === 0) {
+        this.chartInstance.setOption({
+          title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } }
+        });
+        return;
+      }
+
+      const option = {
+        title: { 
+          text: targetModeName, 
+          left: 'center', 
+          textStyle: { fontSize: 14, color: '#333' } 
+        },
+        legend: {
+          data: ['正确率', '耗时'],
+          top: 25,
+          textStyle: { fontSize: 10 }
+        },
+        grid: { top: 60, bottom: 20, left: 30, right: 30, containLabel: true },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+        xAxis: {
+          type: 'category',
+          data: dateList,
+          axisLabel: { color: '#666', fontSize: 10 }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: '正确率',
+            min: 0, max: 100,
+            position: 'left',
+            axisLabel: { formatter: '{value}%', color: '#0d6b3f' },
+            splitLine: { show: true, lineStyle: { type: 'dashed', opacity: 0.3 } }
+          },
+          {
+            type: 'value',
+            name: '耗时(s)',
+            position: 'right',
+            axisLabel: { formatter: '{value}s', color: '#1890ff' },
+            splitLine: { show: false }
+          }
+        ],
+        series: [
+          {
+            name: '正确率',
+            type: 'line',
+            yAxisIndex: 0,
+            smooth: true,
+            lineStyle: { color: '#0d6b3f', width: 2 },
+            itemStyle: { color: '#0d6b3f' },
+            data: accuracyList,
+            areaStyle: { 
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(13,107,63,0.3)' },
+                { offset: 1, color: 'rgba(13,107,63,0.0)' }
+              ])
+            }
+          },
+          {
+            name: '耗时',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: true,
+            lineStyle: { color: '#1890ff', width: 2, type: 'dashed' },
+            itemStyle: { color: '#1890ff' },
+            data: timeList
+          }
+        ]
+      };
+
+      this.chartInstance.setOption(option);
     },
 
     closeChart() {
@@ -394,7 +443,7 @@ export default {
       }
     },
 
-    // --- 游戏逻辑部分保持不变 ---
+    // --- 其他游戏逻辑保持不变 ---
     shuffle(arr){
       for(let i=arr.length-1;i>0;i--){
         const j = Math.floor(Math.random()*(i+1));
@@ -431,7 +480,7 @@ export default {
         'train': '基础训练',
         'speed': '大九九竞速',
         'first': '商首位(随机)',
-        'firstSpec': `商首位(除${extra})`,
+        'firstSpec': `商首位(除${extra})`, // 重点：这里保证了不同除数是不同模块
         'plus': '一位进位加',
         'minus': '一位退位减',
         'doublePlus': '双进位加',
@@ -682,7 +731,6 @@ export default {
       
       let history = this.historyList;
       history.unshift(record);
-      // 增加记录保存数量，方便画图
       if(history.length > 100) history = history.slice(0, 100);
       this.historyList = history;
       localStorage.setItem('calc_history', JSON.stringify(history));
@@ -816,6 +864,33 @@ export default {
   padding: 10px;
   margin-bottom: 10px;
 }
+.chart-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 10px;
+  margin-bottom: 5px;
+  /* 隐藏滚动条但保留功能 */
+  scrollbar-width: none; 
+}
+.chart-tabs::-webkit-scrollbar { display: none; }
+.chart-tab-item {
+  flex-shrink: 0;
+  font-size: 12px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 15px;
+  color: #333;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.chart-tab-item.active {
+  background: #0d6b3f;
+  color: #fff;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(13,107,63,0.3);
+}
+
 .rowLabel { font-size: 12px; font-weight: 900; color: #0d6b3f; margin: 9px 0 4px 4px; opacity: 0.8; }
 .modeRow { display: flex; gap: 6px; margin-bottom: 6px; }
 .modeItem { 
