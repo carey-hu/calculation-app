@@ -95,7 +95,7 @@
       </div>
     </div>
 
-    <div v-if="viewState==='game'" class="wrap gameRoot" :style="{ paddingBottom: safeBottom + 'px' }">
+    <div v-if="viewState==='game'" class="wrap gameRoot">
       <div class="topbar safe-top">
         <button class="btnBack glass-btn" @click="goHome">返回</button>
         <div class="topStats">
@@ -560,6 +560,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
+
 
 
 
