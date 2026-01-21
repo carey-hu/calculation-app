@@ -1,19 +1,20 @@
 <template>
   <div class="page">
-    <div class="aurora-bg">
+    <div class="liquid-bg">
       <div class="blob blob-1"></div>
       <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
     </div>
-    
+
     <div v-if="toast.show" class="toast-mask">
       <div class="toast-content">{{ toast.title }}</div>
     </div>
 
     <div v-if="viewState==='home'" class="wrap homeWrap">
       <div class="title">计算助手</div>
-      <div class="subtitle">专项练习：进位加、退位减、大九九除法</div>
+      <div class="subtitle">Daily Mental Math Training</div>
 
-      <div class="card glass-panel">
+      <div class="card glass">
         <div class="rowLabel">大九九/除法</div>
         <div class="modeRow">
           <div :class="['modeItem', mode==='train'?'active':'']" @click="setMode('train')">
@@ -28,7 +29,7 @@
         </div>
 
         <div class="rowLabel">商首位专项 (指定除数 2-19)</div>
-        <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
+        <button class="btnGhost" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
           进入除数选择模式
         </button>
 
@@ -72,52 +73,50 @@
           </div>
         </div>
 
-        <button class="btnPrimary glass-primary" @click="startGame" style="margin-top: 15px;">开始练习</button>
-        <button class="btnGhost glass-btn" @click="openHistory">历史记录</button>
+        <button class="btnPrimary" @click="startGame" style="margin-top: 15px;">开始练习</button>
+        <button class="btnGhost" @click="openHistory">历史记录</button>
       </div>
     </div>
 
     <div v-if="viewState==='selectDivisor'" class="wrap homeWrap">
       <div class="title">选择除数</div>
       <div class="subtitle">点击下方数字开始练习商首位</div>
-      <div class="card glass-panel">
+      <div class="card glass">
         <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">
           <button v-for="item in [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]" :key="item" 
-                  class="k glass-key" style="font-size:20px; height:50px; line-height:50px;" 
+                  class="k" style="font-size:20px; height:50px; line-height:50px; background:rgba(255,255,255,0.5);" 
                   @click="selectDivisorAndStart(item)">{{item}}</button>
         </div>
-        <button class="btnGhost glass-btn" style="margin-top: 20px;" @click="goHome">返回主页</button>
+        <button class="btnGhost" style="margin-top: 20px;" @click="goHome">返回主页</button>
       </div>
     </div>
 
     <div v-if="viewState==='game'" class="wrap gameRoot" :style="{ paddingBottom: safeBottom + 'px' }">
-      <div class="topbar safe-topbar">
-        <button class="btnBack glass-btn" @click="goHome">返回</button>
+      <div class="topbar safe-top">
+        <button class="btnBack" @click="goHome">返回</button>
         <div class="topStats">
-          <div class="stat glass-pill">{{progressText}}</div>
-          <div class="stat glass-pill">⏱ {{totalText}}</div>
+          <div class="stat">{{progressText}}</div>
+          <div class="stat">⏱ {{totalText}}</div>
         </div>
       </div>
-      
       <div class="gameMain">
-        <div class="card qCard glass-panel">
+        <div class="card qCard glass">
           <div class="qText">{{qText}}</div>
           <div class="qNote">{{hintNote}}</div>
-          <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
+          <div class="ansBox">答案：{{input ? input : '—'}}</div>
           <div class="hint">{{hint}}</div>
         </div>
       </div>
-      
-      <div class="keypad card glass-panel">
+      <div class="keypad card glass">
         <div class="fnRow">
-          <button class="kFn glass-key" @click="leftAction">{{leftText}}</button>
-          <button class="kFn glass-key" @click="clearInput">清空</button>
-          <button class="kFn danger glass-key-danger" @click="backspace">退格</button>
+          <button class="kFn" @click="leftAction">{{leftText}}</button>
+          <button class="kFn" @click="clearInput">清空</button>
+          <button class="kFn danger" @click="backspace">退格</button>
         </div>
         <div class="grid">
-          <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k glass-key" @click="pressDigit(item)">{{item}}</button>
-          <button class="k wide glass-key" @click="pressDigit(0)">0</button>
-          <button class="k confirm wide2 glass-key-confirm" @click="confirmAnswer">确认</button>
+          <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k" @click="pressDigit(item)">{{item}}</button>
+          <button class="k wide" @click="pressDigit(0)">0</button>
+          <button class="k confirm wide2" @click="confirmAnswer">确认</button>
         </div>
       </div>
     </div>
@@ -125,7 +124,7 @@
     <div v-if="viewState==='result'" class="wrap full-height">
       <div class="title">{{resultTitle}}</div>
       <div class="subtitle">{{resultMeta}}</div>
-      <div class="card full-flex glass-panel">
+      <div class="card full-flex glass">
         <div class="resultScroll">
           <template v-if="mode==='train'">
             <div v-for="(item, index) in trainLog" :key="index" class="row">
@@ -140,20 +139,20 @@
             <div v-for="(item, index) in results" :key="index" class="row">
               <span class="rowLeft">{{index+1}}. {{item.q}} = {{item.yourAns}}</span>
               <span class="rowRight">
-                 <span style="margin-right:4px; font-size:12px; opacity:0.6;">{{item.usedStr}}</span>
+                 <span style="margin-right:4px; font-size:12px; color:#666;">{{item.usedStr}}</span>
                  <span>{{item.ok ? '✅' : '❌'}}</span>
-                 <span v-if="!item.ok" style="color:#ff3b30; font-weight:bold; margin-left:2px;">({{item.realAns}})</span>
+                 <span v-if="!item.ok" style="color:#ff3b30; font-size:12px; margin-left:2px;">({{item.realAns}})</span>
               </span>
             </div>
           </template>
         </div>
         <div style="margin-top: 10px;">
           <div v-if="isHistoryReview">
-            <button class="btnPrimary glass-primary" @click="backToHistory">返回列表</button>
+            <button class="btnPrimary" @click="backToHistory">返回列表</button>
           </div>
           <div v-else>
-            <button class="btnPrimary glass-primary" @click="goHome">返回主页</button>
-            <button class="btnGhost glass-btn" @click="startGame">再来一局</button>
+            <button class="btnPrimary" @click="goHome">返回主页</button>
+            <button class="btnGhost" @click="startGame">再来一局</button>
           </div>
         </div>
       </div>
@@ -163,53 +162,70 @@
       <div class="title">历史记录</div>
       <div class="subtitle">仅保留最近5000条训练数据</div>
       
-      <div class="card full-flex glass-panel">
+      <div class="card full-flex glass">
         
-        <div v-if="showChart" class="chart-container glass-inner">
+        <div v-if="showChart" class="chart-container">
            <div class="chart-tabs">
-             <div v-for="m in availableModes" :key="m" :class="['chart-tab-item', chartTab === m ? 'active' : '']" @click="switchChartTab(m)">{{ m }}</div>
+             <div 
+               v-for="m in availableModes" 
+               :key="m"
+               :class="['chart-tab-item', chartTab === m ? 'active' : '']"
+               @click="switchChartTab(m)"
+             >
+               {{ m }}
+             </div>
            </div>
-           <div id="accChart" style="width: 100%; height: 200px;"></div>
-           <button class="btnGhost glass-btn small" @click="closeChart">收起图表</button>
+           <div id="accChart" style="width: 100%; height: 220px;"></div>
+           <button class="btnGhost" style="height:32px; line-height:32px; font-size:14px; margin: 5px 0 0;" @click="closeChart">
+             收起图表
+           </button>
         </div>
+        
         <div v-else>
-           <button class="btnGhost glass-btn" style="height:40px; font-size:16px; margin-bottom:10px; color:#007AFF;" @click="initChart">
+           <button class="btnGhost" style="height:40px; line-height:40px; font-size:16px; margin-bottom:10px; color:#007aff;" @click="initChart">
              📊 按模块分析趋势
            </button>
         </div>
 
-        <div style="display:flex; justify-content:space-between; margin-bottom:5px; padding:0 5px; font-weight:bold; opacity:0.7;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px; padding:0 5px; font-weight:700; color:#555;">
            <span>时间 / 模式</span>
            <span>成绩 / 耗时</span>
         </div>
         
         <div class="resultScroll">
-          <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; opacity:0.5;">
+          <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; color:rgba(0,0,0,0.4);">
             暂无记录，快去练习吧！
           </div>
           <div v-else>
             <div v-for="(item, index) in historyList" :key="item.ts" class="row" @click="viewHistoryDetail(index)" style="cursor:pointer;">
               <div class="rowLeft" style="display:flex; flex-direction:column;">
-                <span style="font-size:12px; opacity:0.7;">{{item.timeStr}}</span>
-                <span>{{item.modeName}}</span>
+                <span style="font-size:12px; color:#666;">{{item.timeStr}}</span>
+                <span style="color:#000; font-weight:600;">{{item.modeName}}</span>
               </div>
               <div class="rowRight" style="display:flex; flex-direction:column; align-items:flex-end;">
-                <span style="font-size:16px; color:#007AFF; font-weight:bold;">{{item.summary}}</span>
-                <span style="font-size:12px; opacity:0.7;">{{item.duration}} > </span>
+                <span style="font-size:16px; color:#007aff; font-weight:bold;">{{item.summary}}</span>
+                <span style="font-size:12px; color:#666;">{{item.duration}} > </span>
               </div>
             </div>
           </div>
         </div>
         
         <div style="margin-top: 10px; display:flex; flex-direction: column; gap:10px;">
-          <button v-if="historyList.length > 1000" class="btnGhost glass-btn" style="color: #ff3b30;" @click="clearOldest">
-            清理最早1000条
+          <button 
+            v-if="historyList.length > 1000" 
+            class="btnGhost" 
+            style="margin:0; height: 40px; font-size: 16px; color: #ff3b30; border-color: #ff3b30; background: rgba(255, 59, 48, 0.1);" 
+            @click="clearOldest"
+          >
+            🗑️ 清理最早的 1000 条
           </button>
+
           <div style="display:flex; gap:10px;">
-            <button class="btnGhost glass-btn" style="margin:0; flex:1;" @click="clearHistory">清空</button>
-            <button class="btnPrimary glass-primary" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
+            <button class="btnGhost" style="margin:0; flex:1;" @click="clearHistory">清空全部</button>
+            <button class="btnPrimary" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
           </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -242,7 +258,7 @@ export default {
       filteredData.forEach(item => { let accuracy = 0; if(item.mode === 'train') { let wrong = 0; if(item.detail && item.detail.length > 0) { wrong = item.detail.filter(x => x.wrong > 0).length; } else { const match = item.summary.match(/错(\d+)/); if(match) wrong = parseInt(match[1]); } accuracy = ((81 - wrong) / 81) * 100; } else { if(item.detail && item.detail.length > 0) { const correctCount = item.detail.filter(x => x.ok).length; accuracy = (correctCount / item.detail.length) * 100; } else { const match = item.summary.match(/(\d+)%/); if(match) accuracy = parseInt(match[1]); } } let duration = 0; if(item.duration) { duration = parseFloat(item.duration.replace('s', '')); } dateList.push(item.timeStr); accuracyList.push(accuracy.toFixed(0)); timeList.push(duration.toFixed(1)); });
       if(dateList.length === 0) { this.chartInstance.setOption({ title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } } }); return; }
       const option = {
-        grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, yAxis: [ { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.2 } }, axisLabel: {color: '#007AFF'} }, { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#5856D6'} } ], series: [ { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007AFF', width: 2 }, itemStyle: { color: '#007AFF' }, data: accuracyList }, { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#5856D6', width: 2, type: 'dashed' }, itemStyle: { color: '#5856D6' }, data: timeList } ]
+        grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, yAxis: [ { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.2 } }, axisLabel: {color: '#007aff'} }, { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#5856d6'} } ], series: [ { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 2 }, itemStyle: { color: '#007aff' }, data: accuracyList }, { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#5856d6', width: 2, type: 'dashed' }, itemStyle: { color: '#5856d6' }, data: timeList } ]
       };
       this.chartInstance.setOption(option);
     },
@@ -293,172 +309,158 @@ export default {
     viewHistoryDetail(index){ const record = this.historyList[index]; if(!record) return; let title = record.modeName + ' 回顾'; if(record.mode === 'train'){ this.mode = record.mode; this.trainLog = record.detail || []; this.results = []; this.viewState = 'result'; this.resultTitle = title; this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`; this.isHistoryReview = true; } else { this.mode = record.mode; this.results = record.detail || []; this.trainLog = []; this.viewState = 'result'; this.resultTitle = title; this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`; this.isHistoryReview = true; } },
     backToHistory(){ this.viewState = 'history'; if(this.showChart) this.initChart(); },
     closeHistory(){ this.viewState = 'home'; },
-    clearOldest() { if(confirm('确定要清除【最早的 1000 条】数据吗？')){ const keepCount = this.historyList.length - 1000; this.historyList = this.historyList.slice(0, keepCount); localStorage.setItem('calc_history', JSON.stringify(this.historyList)); this.showToast('清理成功'); if(this.showChart) this.initChart(); } },
-    clearHistory(){ if(confirm('确定要清空【所有】历史记录吗？')){ localStorage.removeItem('calc_history'); this.historyList = []; this.showToast('已清空'); } }
+    clearOldest() { if(confirm(`当前共有 ${this.historyList.length} 条记录。\n确定要清除【最早的 1000 条】数据吗？`)){ const keepCount = this.historyList.length - 1000; this.historyList = this.historyList.slice(0, keepCount); localStorage.setItem('calc_history', JSON.stringify(this.historyList)); this.showToast('清理成功'); if(this.showChart) this.initChart(); } },
+    clearHistory(){ if(confirm('【严重警告】\n确定要清空【所有】历史记录吗？\n此操作不可恢复！')){ localStorage.removeItem('calc_history'); this.historyList = []; this.showToast('所有记录已清空'); } }
   }
 }
 </script>
 
 <style scoped>
-/* 全局样式 - 增加对比度 */
+/* =========================================
+   1. 基础重置 & 液态流光背景
+   ========================================= */
 .page {
   min-height: 100vh;
-  /* 极光背景调淡，保证黑色文字清晰 */
-  background: radial-gradient(at 0% 0%, #f0f4ff 0, transparent 50%), radial-gradient(at 50% 100%, #e0e8ff 0, transparent 50%);
-  background-color: #f5f7fa; 
-  color: #111; /* 文字改为纯黑 */
-  display: flex; flex-direction: column; max-width: 480px; margin: 0 auto;
+  background-color: #f0f2f5;
+  color: #1d1d1f; /* 高对比度深灰 */
+  display: flex; flex-direction: column;
+  max-width: 480px; margin: 0 auto;
   box-shadow: 0 0 20px rgba(0,0,0,0.1);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   box-sizing: border-box;
-  position: relative;
-  overflow: hidden;
+  position: relative; overflow: hidden; /* 裁剪溢出的背景球 */
 }
 
-/* 动态背景 - 降低透明度，不抢眼 */
-.aurora-bg { position: absolute; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
-.blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.4; animation: float 10s infinite alternate ease-in-out; }
+/* 动态背景球 */
+.liquid-bg { position: absolute; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+.blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.6; animation: float 10s infinite alternate; }
 .blob-1 { top: -10%; left: -20%; width: 300px; height: 300px; background: #a2d2ff; }
 .blob-2 { bottom: 10%; right: -20%; width: 250px; height: 250px; background: #ffc8dd; animation-delay: -5s; }
+.blob-3 { top: 40%; left: 40%; width: 150px; height: 150px; background: #b8f2e6; opacity:0.4; }
 @keyframes float { 0% { transform: translate(0, 0); } 100% { transform: translate(30px, 40px); } }
 
-/* Toast */
 .toast-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; z-index: 999; pointer-events: none; }
-.toast-content { background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 15px; }
+.toast-content { background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; }
 
-/* 布局容器 */
+/* 布局容器 (z-index 1 确保在背景之上) */
 .wrap { padding: 18px 14px 20px; box-sizing: border-box; position: relative; z-index: 1; }
 .homeWrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .full-height { flex: 1; display: flex; flex-direction: column; height: 100vh; }
 .full-flex { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; }
 
-/* 字体优化 - 高对比度 */
+/* 字体：黑色高对比 */
 .title { text-align: center; font-size: 36px; font-weight: 900; margin: 5px 0 4px; color: #000; }
-.subtitle { text-align: center; font-size: 13px; color: #555; margin-bottom: 12px; font-weight: 500; }
+.subtitle { text-align: center; font-size: 13px; color: #555; margin-bottom: 12px; }
 
-/* --- 核心玻璃卡片样式 --- */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.75); /* 更不透明的白，提升对比 */
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
+/* =========================================
+   2. 玻璃拟态 (Glassmorphism)
+   ========================================= */
+/* 核心玻璃卡片 */
+.glass {
+  background: rgba(255, 255, 255, 0.7); /* 高白度保证文字清晰 */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08); /* 柔和投影 */
-  border-radius: 20px;
-  padding: 15px; 
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
 }
 
-/* 分组标签 */
-.rowLabel { font-size: 12px; font-weight: 900; color: #007AFF; margin: 9px 0 4px 4px; opacity: 1; }
+.card { border-radius: 14px; padding: 13px; } /* 保持原内边距 */
 
-/* 模式选择 */
+.rowLabel { font-size: 12px; font-weight: 900; color: #007aff; margin: 9px 0 4px 4px; opacity: 1; }
+
 .modeRow { display: flex; gap: 6px; margin-bottom: 6px; }
 .modeItem { 
-  flex: 1; padding: 12px 4px; border-radius: 12px; 
-  background: rgba(255,255,255,0.5); /* 半透明白 */
-  border: 1px solid rgba(0,0,0,0.05); 
+  flex: 1; padding: 11px 4px; border-radius: 12px; 
+  background: rgba(255,255,255,0.5); /* 玻璃按钮底色 */
+  border: 1px solid rgba(255,255,255,0.6); 
   text-align: center; box-sizing: border-box; transition: all 0.2s; cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
 }
 .modeItem.active { 
-  border-color: #007AFF; 
-  background: rgba(0, 122, 255, 0.1); 
-  color: #007AFF;
-  box-shadow: inset 0 0 0 1px #007AFF;
+  border-color: #007aff; 
+  background: rgba(0,122,255,0.1); 
+  color: #007aff; 
 }
-.modeTitle { display: block; font-size: 15px; font-weight: 900; color: #111; }
-.modeItem.active .modeTitle { color: #007AFF; }
+.modeTitle { display: block; font-size: 15px; font-weight: 900; color: #333; }
+.modeItem.active .modeTitle { color: #007aff; }
 
-/* 按钮 - 玻璃化 + 高对比 */
 button { border: none; outline: none; cursor: pointer; }
-.glass-btn {
+.btnPrimary { 
+  width: 100%; height: 48px; line-height: 48px; 
+  border-radius: 12px; 
+  background: #007aff; /* 大厂蓝 */
+  color: #fff; font-size: 22px; font-weight: 900; 
+  box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+}
+.btnGhost { 
+  margin-top: 9px; width: 100%; height: 45px; line-height: 45px; 
   border-radius: 12px; 
   background: rgba(255,255,255,0.6); 
   border: 1px solid rgba(0,0,0,0.1); 
-  color: #111; font-weight: 900;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  color: #333; font-size: 19px; font-weight: 900; 
 }
-.glass-btn:active { background: rgba(0,0,0,0.05); }
 
-.glass-primary {
-  width: 100%; height: 48px; line-height: 48px; 
-  border-radius: 12px; 
-  background: linear-gradient(135deg, #007AFF 0%, #0056b3 100%); /* 纯蓝渐变 */
-  color: #fff; font-size: 22px; font-weight: 900; 
-  box-shadow: 0 4px 10px rgba(0,122,255,0.3);
-}
-.glass-primary:active { opacity: 0.9; transform: translateY(1px); }
-
-/* --- 游戏界面 (顶部触控优化) --- */
+/* =========================================
+   3. 游戏界面 (重点修复)
+   ========================================= */
 .gameRoot { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* 【关键修复】顶部栏：加大高度，增加padding避开刘海 */
-.safe-topbar {
-  margin-top: 0;
-  padding-top: max(20px, env(safe-area-inset-top)); /* 适配刘海屏 */
-  padding-bottom: 10px;
-  height: auto; 
-  min-height: 60px; /* 保证点击区域足够大 */
-  display: flex; align-items: center; gap: 10px; margin-bottom: 5px;
+/* 修复点：增加 padding-top 避开刘海 */
+.topbar { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.safe-top { 
+  padding-top: max(20px, env(safe-area-inset-top)); /* 关键修复：下移 */
+  height: auto;
+  box-sizing: content-box; 
 }
+
 .btnBack { 
-  width: 88px; height: 44px; line-height: 44px; border-radius: 12px; 
-  background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.1); 
-  font-weight: 900; font-size: 16px; margin: 0; color: #111;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  width: 88px; height: 48px; line-height: 48px; border-radius: 11px; 
+  background: rgba(255,255,255,.6); border: 1px solid rgba(0,0,0,.1); 
+  font-weight: 900; font-size: 18px; margin: 0; color: #333;
 }
-.topStats { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-weight: 900; font-size: 16px; color: #111; }
-.glass-pill {
-  padding: 6px 12px; background: rgba(255,255,255,0.6); border-radius: 16px;
-  border: 1px solid rgba(0,0,0,0.05);
-}
+.topStats { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 9px; font-weight: 900; font-size: 15px; color: #333; }
 
 .gameMain { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.qCard { text-align: center; margin-bottom: 20px; }
-.qText { font-size: 56px; font-weight: 900; margin-top: 3px; color: #000; letter-spacing: 2px; }
-.qNote { margin-top: 4px; font-size: 14px; color: #555; }
+.qCard { text-align: center; }
+.qText { font-size: 52px; font-weight: 900; margin-top: 3px; color: #000; }
+.qNote { margin-top: 4px; font-size: 13px; color: #666; }
 .ansBox { 
-  margin-top: 15px; padding: 15px; border-radius: 16px; 
-  border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.5); 
-  font-size: 40px; font-weight: 900; min-height: 40px; color: #007AFF;
+  margin-top: 10px; padding: 10px; border-radius: 11px; 
+  border: 1px solid rgba(0,0,0,.1); background: rgba(255,255,255,.5); 
+  font-size: 22px; font-weight: 900; min-height: 22px; color: #007aff;
 }
-.glass-input { box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); }
-.hint { margin-top: 10px; color: #666; font-size: 14px; }
 
-/* 键盘 - 保持原有Card布局，仅加玻璃特效 */
-.keypad { border-radius: 20px; padding: 15px; margin-top: 20px; }
-.fnRow { display: flex; gap: 10px; margin-bottom: 10px; }
+.keypad { border-radius: 15px; padding: 9px; margin-top: 20px; }
+.fnRow { display: flex; gap: 9px; margin-bottom: 9px; }
 .kFn { 
-  flex: 1; height: 55px; line-height: 55px; border-radius: 12px; 
-  background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.1); 
+  flex: 1; height: 53px; line-height: 53px; border-radius: 11px; 
+  background: rgba(255,255,255,.6); border: 1px solid rgba(0,0,0,.1); 
   font-size: 20px; font-weight: 900; margin: 0; color: #333;
 }
-.kFn.danger { background: rgba(255, 59, 48, 0.15); color: #ff3b30; border-color: rgba(255,59,48,0.2); }
+.kFn.danger { background: rgba(255,59,48,.15); color: #ff3b30; }
 
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-/* 玻璃数字键：更白、更立体 */
-.glass-key {
-  width: 100%; height: 65px; line-height: 65px; border-radius: 14px; 
-  background: rgba(255,255,255,0.85); /* 接近不透明 */
-  border: 1px solid rgba(0,0,0,0.05); 
-  font-size: 32px; font-weight: 900; margin: 0; color: #000;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.05); /* 实体按键感 */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.k { 
+  width: 100%; height: 60px; line-height: 60px; border-radius: 11px; 
+  background: rgba(255,255,255,0.8); /* 键盘更白一点 */
+  border: 1px solid rgba(0,0,0,.05); 
+  font-size: 30px; font-weight: 900; margin: 0; color: #000;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.05);
 }
-.glass-key:active { transform: translateY(4px); box-shadow: none; background: #fff; }
-.glass-key-confirm { background: rgba(52, 199, 89, 0.2); color: #28a745; font-size: 28px; box-shadow: 0 4px 0 rgba(52,199,89,0.1); }
-.glass-key-confirm:active { background: rgba(52,199,89,0.3); box-shadow: none; }
-
-.wide { grid-column: 1 / 2; }
-.wide2 { grid-column: 2 / 4; }
-
-/* 列表与图表 */
-.glass-inner { background: rgba(255,255,255,0.4); border-radius: 16px; padding: 10px; margin-bottom: 15px; border:1px solid rgba(0,0,0,0.05); }
-.chart-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 5px; scrollbar-width: none; }
-.chart-tabs::-webkit-scrollbar { display: none; }
-.chart-tab-item { flex-shrink: 0; font-size: 13px; padding: 6px 12px; background: rgba(255,255,255,0.6); border-radius: 15px; color: #555; cursor: pointer; font-weight: bold; }
-.chart-tab-item.active { background: #007AFF; color: #fff; }
+.k.wide { grid-column: 1 / 2; }
+.k.wide2 { grid-column: 2 / 4; }
+.k.confirm { background: rgba(52,199,89,.2); color: #248a3d; border-color:transparent; font-size: 28px; }
 
 .resultScroll { width: 100%; flex: 1; overflow-y: auto; }
-.row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-weight: 900; white-space: nowrap; color: #222; }
+.row { 
+  display: flex; justify-content: space-between; align-items: center; 
+  padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.05); 
+  font-weight: 900; white-space: nowrap; color: #333;
+}
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 5px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
+
+/* 图表 Tab */
+.chart-tab-item { background: rgba(255,255,255,0.5); color: #666; border: 1px solid transparent; }
+.chart-tab-item.active { background: #007aff; color: #fff; }
 </style>
