@@ -1,9 +1,7 @@
 <template>
   <div class="page">
     <div v-if="toast.show" class="toast-mask">
-      <div class="toast-content">
-        {{ toast.title }}
-      </div>
+      <div class="toast-content">{{ toast.title }}</div>
     </div>
 
     <div v-if="viewState==='home'" class="wrap homeWrap">
@@ -77,7 +75,6 @@
     <div v-if="viewState==='selectDivisor'" class="wrap homeWrap">
       <div class="title">选择除数</div>
       <div class="subtitle">点击下方数字开始练习商首位</div>
-      
       <div class="card">
         <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">
           <button v-for="item in [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]" :key="item" 
@@ -160,6 +157,18 @@
       <div class="subtitle">仅保留最近50条训练数据</div>
       
       <div class="card full-flex">
+        <div v-if="showChart" class="chart-container">
+           <div id="accChart" style="width: 100%; height: 240px;"></div>
+           <button class="btnGhost" style="height:36px; line-height:36px; font-size:14px; margin-bottom:10px;" @click="closeChart">
+             收起图表
+           </button>
+        </div>
+        <div v-else>
+           <button class="btnGhost" style="height:40px; line-height:40px; font-size:16px; margin-bottom:10px; border-color:#0d6b3f; color:#0d6b3f; background:rgba(13,107,63,0.1);" @click="renderChart">
+             📈 查看[正确率 & 耗时]趋势
+           </button>
+        </div>
+
         <div style="display:flex; justify-content:space-between; margin-bottom:5px; padding:0 5px;">
            <span style="font-weight:900; opacity:0.6;">时间 / 模式</span>
            <span style="font-weight:900; opacity:0.6;">成绩 / 耗时</span>
@@ -193,6 +202,8 @@
 </template>
 
 <script>
+import * as echarts from 'echarts';
+
 export default {
   data() {
     return {
@@ -223,30 +234,167 @@ export default {
       safeTop: 0,
       safeBottom: 0,
       isHistoryReview: false,
-      toast: { show: false, title: '' }
+      toast: { show: false, title: '' },
+      
+      showChart: false,
+      chartInstance: null
     }
   },
   mounted() {
-    // 读取历史记录
     const history = localStorage.getItem('calc_history');
     if(history) {
       try {
         this.historyList = JSON.parse(history);
       } catch(e){ console.error(e) }
     }
+    window.addEventListener('resize', () => {
+      if(this.chartInstance) this.chartInstance.resize();
+    });
   },
   methods: {
     now() { return Date.now(); },
     
-    // 简易 Toast 实现
     showToast(title) {
       this.toast.title = title;
       this.toast.show = true;
-      setTimeout(() => {
-        this.toast.show = false;
-      }, 1500);
+      setTimeout(() => { this.toast.show = false; }, 1500);
     },
 
+    // --- 图表渲染核心逻辑 ---
+    renderChart() {
+      this.showChart = true;
+      
+      this.$nextTick(() => {
+        const chartDom = document.getElementById('accChart');
+        if(!chartDom) return;
+        
+        if(this.chartInstance) {
+          this.chartInstance.dispose();
+        }
+        
+        this.chartInstance = echarts.init(chartDom);
+        
+        const rawData = JSON.parse(JSON.stringify(this.historyList)).reverse();
+        
+        const dateList = [];
+        const accuracyList = []; // 正确率
+        const timeList = [];     // 耗时(秒)
+
+        rawData.forEach(item => {
+           // 1. 计算正确率
+           let accuracy = 0;
+           if(item.mode === 'train') {
+               let wrong = 0;
+               if(item.detail && item.detail.length > 0) {
+                   wrong = item.detail.filter(x => x.wrong > 0).length;
+               } else {
+                   const match = item.summary.match(/错(\d+)/);
+                   if(match) wrong = parseInt(match[1]);
+               }
+               accuracy = ((81 - wrong) / 81) * 100;
+           } else {
+               if(item.detail && item.detail.length > 0) {
+                   const correctCount = item.detail.filter(x => x.ok).length;
+                   accuracy = (correctCount / item.detail.length) * 100;
+               } else {
+                   const match = item.summary.match(/(\d+)%/);
+                   if(match) accuracy = parseInt(match[1]);
+               }
+           }
+           
+           // 2. 提取耗时 (item.duration 格式为 "45.2s")
+           let duration = 0;
+           if(item.duration) {
+               duration = parseFloat(item.duration.replace('s', ''));
+           }
+
+           // 数据推入 (只展示最近20条)
+           dateList.push(item.timeStr.split(' ')[1]); 
+           accuracyList.push(accuracy.toFixed(0));
+           timeList.push(duration.toFixed(1));
+        });
+
+        const option = {
+          title: { 
+            text: '正确率 & 耗时趋势', 
+            left: 'center', 
+            textStyle: { fontSize: 14, color: '#333' } 
+          },
+          // 增加图例，点击可切换显示/隐藏
+          legend: {
+            data: ['正确率', '耗时'],
+            top: 25,
+            textStyle: { fontSize: 10 }
+          },
+          grid: { top: 60, bottom: 20, left: 30, right: 30, containLabel: true },
+          tooltip: { 
+            trigger: 'axis',
+            axisPointer: { type: 'cross' } // 十字准星，方便对比
+          },
+          xAxis: {
+            type: 'category',
+            data: dateList,
+            axisLabel: { color: '#666', fontSize: 10 }
+          },
+          // 双 Y 轴配置
+          yAxis: [
+            {
+              type: 'value',
+              name: '正确率',
+              min: 0, max: 100,
+              position: 'left',
+              axisLabel: { formatter: '{value}%', color: '#0d6b3f' },
+              splitLine: { show: true, lineStyle: { type: 'dashed' } }
+            },
+            {
+              type: 'value',
+              name: '耗时(s)',
+              position: 'right',
+              axisLabel: { formatter: '{value}s', color: '#1890ff' },
+              splitLine: { show: false } // 右侧不显示分割线，防止乱
+            }
+          ],
+          series: [
+            {
+              name: '正确率',
+              type: 'line',
+              yAxisIndex: 0, // 对应左轴
+              smooth: true,
+              lineStyle: { color: '#0d6b3f', width: 2 },
+              itemStyle: { color: '#0d6b3f' },
+              data: accuracyList,
+              areaStyle: { // 淡淡的绿色阴影
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: 'rgba(13,107,63,0.3)' },
+                  { offset: 1, color: 'rgba(13,107,63,0.0)' }
+                ])
+              }
+            },
+            {
+              name: '耗时',
+              type: 'line',
+              yAxisIndex: 1, // 对应右轴
+              smooth: true,
+              lineStyle: { color: '#1890ff', width: 2, type: 'dashed' }, // 虚线区分
+              itemStyle: { color: '#1890ff' },
+              data: timeList
+            }
+          ]
+        };
+
+        this.chartInstance.setOption(option);
+      });
+    },
+
+    closeChart() {
+      this.showChart = false;
+      if(this.chartInstance) {
+        this.chartInstance.dispose();
+        this.chartInstance = null;
+      }
+    },
+
+    // --- 游戏逻辑部分保持不变 ---
     shuffle(arr){
       for(let i=arr.length-1;i>0;i--){
         const j = Math.floor(Math.random()*(i+1));
@@ -254,7 +402,6 @@ export default {
       }
       return arr;
     },
-
     buildPool(){
       const arr = [];
       for(let d=11; d<=19; d++){
@@ -264,14 +411,12 @@ export default {
       }
       return arr;
     },
-
     msToMMSS(ms){
       const totalSec = ms / 1000;
       const m = Math.floor(totalSec / 60);
       const s = (totalSec % 60).toFixed(1);
       return `${m}:${s < 10 ? '0' + s : s}`;
     },
-
     formatTime(ts) {
       const date = new Date(ts);
       const m = date.getMonth() + 1;
@@ -281,7 +426,6 @@ export default {
       const pad = n => n < 10 ? '0' + n : n;
       return `${m}/${d} ${pad(h)}:${pad(min)}`;
     },
-
     getModeName(mode, extra) {
       const map = {
         'train': '基础训练',
@@ -299,27 +443,18 @@ export default {
       };
       return map[mode] || '未知模式';
     },
-
-    setMode(mode){
-      this.mode = mode;
-    },
-
-    toSelectDivisor(){
-      this.viewState = 'selectDivisor';
-    },
-
+    setMode(mode){ this.mode = mode; },
+    toSelectDivisor(){ this.viewState = 'selectDivisor'; },
     selectDivisorAndStart(d){
       this.mode = 'firstSpec';
       this.selectedDivisor = d;
       this.startGame();
     },
-
     startGame(){
       const mode = this.mode;
       let pool = [];
       let hintNote = '精确到整数';
 
-      // 题目生成逻辑保持不变
       if(mode === 'plus'){
         hintNote = '一位数进位加：只填个位尾数';
         for(let i=0; i<10; i++){
@@ -440,18 +575,15 @@ export default {
       this.results = [];
       this.isHistoryReview = false;
 
-      // 下一帧执行，确保DOM更新
       this.$nextTick(() => {
         this._nextQuestion();
         this.timer = setInterval(()=> this._tick(), 100); 
       });
     },
-
     _tick(){
       const diff = this.now() - this.totalStartTs;
       this.totalText = this.msToMMSS(diff);
     },
-
     _setQuestion(q, shownIdx){
       this.current = q;
       this.qStartTs = this.now();
@@ -460,24 +592,20 @@ export default {
       this.qText = `${q.dividend}${q.symbol}${q.divisor}=`;
       this.progressText = `${shownIdx}/${this.pool.length}`;
     },
-
     _nextQuestion(){
       const { idx, pool } = this;
       if(idx >= pool.length){ this._finish(); return; }
       this._setQuestion(pool[idx], idx + 1);
       this.idx = idx + 1;
     },
-
     pressDigit(d){
       let input = this.input || '';
       if(input.length >= 6) return;
       input += String(d);
       this.input = input;
     },
-
     clearInput(){ this.input = ''; },
     backspace(){ this.input = (this.input || '').slice(0, -1); },
-
     leftAction(){
       if(this.mode !== 'train'){ this.startGame(); return; }
       const cur = this.current;
@@ -492,7 +620,6 @@ export default {
       this.trainLog = log;
       this._nextQuestion();
     },
-
     confirmAnswer(){
       const { current: cur, input, mode } = this;
       if(!input) return;
@@ -542,7 +669,6 @@ export default {
       this.showToast(correct ? '正确' : `错误(${realAnsDisplay})`);
       this._nextQuestion();
     },
-
     _saveRecord(meta, summary, detailLog){
       const record = {
         ts: this.now(),
@@ -556,12 +682,11 @@ export default {
       
       let history = this.historyList;
       history.unshift(record);
-      if(history.length > 50) history = history.slice(0, 50);
+      // 增加记录保存数量，方便画图
+      if(history.length > 100) history = history.slice(0, 100);
       this.historyList = history;
-      // Web端存储
       localStorage.setItem('calc_history', JSON.stringify(history));
     },
-
     _finish(){
       if(this.timer) clearInterval(this.timer);
       const { mode, totalStartTs, results, trainLog, selectedDivisor } = this;
@@ -603,22 +728,18 @@ export default {
 
       this._saveRecord({ totalSec }, recordSummary, detailLog);
     },
-
     goHome(){
       if(this.timer) clearInterval(this.timer);
       this.viewState = 'home';
     },
-
     openHistory(){
       this.viewState = 'history';
     },
-
     viewHistoryDetail(index){
       const record = this.historyList[index];
       if(!record) return;
 
       let title = record.modeName + ' 回顾';
-      
       if(record.mode === 'train'){
           this.mode = record.mode;
           this.trainLog = record.detail || [];
@@ -637,15 +758,12 @@ export default {
           this.isHistoryReview = true;
       }
     },
-
     backToHistory(){
       this.viewState = 'history';
     },
-
     closeHistory(){
       this.viewState = 'home';
     },
-
     clearHistory(){
       if(confirm('确定要清空所有历史记录吗？')){
         localStorage.removeItem('calc_history');
@@ -657,21 +775,18 @@ export default {
 </script>
 
 <style scoped>
-/* 全局样式模拟手机 */
 .page {
   min-height: 100vh;
   background: #93d5dc;
   color: #0b2224;
   display: flex;
   flex-direction: column;
-  max-width: 480px; /* 限制最大宽度，在电脑上居中显示 */
+  max-width: 480px; 
   margin: 0 auto;
   box-shadow: 0 0 20px rgba(0,0,0,0.1);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   box-sizing: border-box;
 }
-
-/* 简易 Toast */
 .toast-mask {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   display: flex; justify-content: center; align-items: center; z-index: 999;
@@ -681,14 +796,10 @@ export default {
   background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px;
   border-radius: 5px; font-size: 14px;
 }
-
-/* 布局类 */
 .wrap { padding: 18px 14px 20px; box-sizing: border-box; }
 .homeWrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .full-height { flex: 1; display: flex; flex-direction: column; height: 100vh; }
 .full-flex { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; }
-
-/* 字体和卡片 */
 .title { text-align: center; font-size: 36px; font-weight: 900; margin: 5px 0 4px; }
 .subtitle { text-align: center; font-size: 13px; color: rgba(11,34,36,.78); margin-bottom: 12px; }
 .card { 
@@ -699,11 +810,13 @@ export default {
   box-shadow: 0 10px 20px rgba(0,0,0,.16); 
   backdrop-filter: blur(12px); 
 }
-
-/* 分组标签 */
+.chart-container {
+  background: rgba(255,255,255,0.4);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
 .rowLabel { font-size: 12px; font-weight: 900; color: #0d6b3f; margin: 9px 0 4px 4px; opacity: 0.8; }
-
-/* 模式选择 */
 .modeRow { display: flex; gap: 6px; margin-bottom: 6px; }
 .modeItem { 
   flex: 1; padding: 11px 4px; border-radius: 12px; 
@@ -714,8 +827,6 @@ export default {
 }
 .modeItem.active { border-color: #0d6b3f; background: rgba(13,107,63,0.15); }
 .modeTitle { display: block; font-size: 15px; font-weight: 900; }
-
-/* 按钮 */
 button { border: none; outline: none; cursor: pointer; }
 .btnPrimary { 
   width: 100%; height: 48px; line-height: 48px; 
@@ -728,8 +839,6 @@ button { border: none; outline: none; cursor: pointer; }
   border: 1px solid rgba(255,255,255,0.25); color: #0b2224; 
   font-size: 19px; font-weight: 900; 
 }
-
-/* 游戏界面 */
 .gameRoot { min-height: 100vh; display: flex; flex-direction: column; }
 .topbar { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
 .btnBack { 
@@ -764,8 +873,6 @@ button { border: none; outline: none; cursor: pointer; }
 .k.wide { grid-column: 1 / 2; }
 .k.wide2 { grid-column: 2 / 4; }
 .k.confirm { background: rgba(0,180,120,.22); font-size: 28px; }
-
-/* 结果列表 */
 .resultScroll { width: 100%; flex: 1; overflow-y: auto; }
 .row { 
   display: flex; justify-content: space-between; align-items: center; 
