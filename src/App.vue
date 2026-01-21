@@ -13,11 +13,11 @@
     <div v-if="viewState==='home'" class="wrap homeWrap">
       <div class="header-area">
         <div class="title">计算助手</div>
-        <div class="subtitle">Daily Mental Math Training</div>
+        <div class="subtitle">专项练习：进位加、退位减、大九九除法</div>
       </div>
 
-      <div class="card glass-store">
-        <div class="rowLabel">基础训练</div>
+      <div class="card glass-panel">
+        <div class="rowLabel">大九九/除法</div>
         <div class="modeRow">
           <div :class="['modeItem', mode==='train'?'active':'']" @click="setMode('train')">
             <span class="modeTitle">训练</span>
@@ -26,16 +26,16 @@
             <span class="modeTitle">竞速</span>
           </div>
           <div :class="['modeItem', mode==='first'?'active':'']" @click="setMode('first')">
-            <span class="modeTitle">首位</span>
+            <span class="modeTitle">首位(随机)</span>
           </div>
         </div>
 
-        <div class="rowLabel">商首位专项</div>
-        <button class="btnGhost glass-btn" style="height: 50px; font-size: 17px; font-weight: 700; color: #007aff;" @click="toSelectDivisor">
-          进入除数选择模式 (2-19)
+        <div class="rowLabel">商首位专项 (指定除数 2-19)</div>
+        <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
+          进入除数选择模式
         </button>
 
-        <div class="rowLabel">一位数专项</div>
+        <div class="rowLabel">一位数专项 (仅填尾数)</div>
         <div class="modeRow">
           <div :class="['modeItem', mode==='plus'?'active':'']" @click="setMode('plus')">
             <span class="modeTitle">进位加</span>
@@ -45,25 +45,27 @@
           </div>
         </div>
 
-        <div class="rowLabel">多位数专项</div>
+        <div class="rowLabel">两位数专项 (完整答案)</div>
         <div class="modeRow">
           <div :class="['modeItem', mode==='doublePlus'?'active':'']" @click="setMode('doublePlus')">
-            <span class="modeTitle">双进位</span>
+            <span class="modeTitle">双进位加</span>
           </div>
           <div :class="['modeItem', mode==='doubleMinus'?'active':'']" @click="setMode('doubleMinus')">
-            <span class="modeTitle">双退位</span>
-          </div>
-        </div>
-        <div class="modeRow">
-          <div :class="['modeItem', mode==='triplePlus'?'active':'']" @click="setMode('triplePlus')">
-            <span class="modeTitle">三进位</span>
-          </div>
-          <div :class="['modeItem', mode==='tripleMinus'?'active':'']" @click="setMode('tripleMinus')">
-            <span class="modeTitle">三退位</span>
+            <span class="modeTitle">双退位减</span>
           </div>
         </div>
 
-        <div class="rowLabel">估算技巧</div>
+        <div class="rowLabel">三位数专项 (完整答案)</div>
+        <div class="modeRow">
+          <div :class="['modeItem', mode==='triplePlus'?'active':'']" @click="setMode('triplePlus')">
+            <span class="modeTitle">三进位加</span>
+          </div>
+          <div :class="['modeItem', mode==='tripleMinus'?'active':'']" @click="setMode('tripleMinus')">
+            <span class="modeTitle">三退位减</span>
+          </div>
+        </div>
+
+        <div class="rowLabel">五除三专项 (允许3%误差)</div>
         <div class="modeRow">
           <div :class="['modeItem', mode==='divSpecA'?'active':'']" @click="setMode('divSpecA')">
             <span class="modeTitle">反向放缩</span>
@@ -73,33 +75,29 @@
           </div>
         </div>
 
-        <div class="action-area">
-          <button class="btnPrimary glass-primary uniform-font" @click="startGame">开始练习</button>
-          <button class="btnGhost glass-btn uniform-font" @click="openHistory">历史记录</button>
-        </div>
+        <button class="btnPrimary glass-primary main-action-btn" @click="startGame">开始练习</button>
+        <button class="btnGhost glass-btn main-action-btn" @click="openHistory">历史记录</button>
       </div>
     </div>
 
     <div v-if="viewState==='selectDivisor'" class="wrap homeWrap">
       <div class="header-area">
         <div class="title">选择除数</div>
-        <div class="subtitle">专项练习商首位</div>
+        <div class="subtitle">点击下方数字开始练习商首位</div>
       </div>
-      <div class="card glass-store">
-        <div class="grid-num">
+      <div class="card glass-panel">
+        <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">
           <button v-for="item in [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]" :key="item" 
-                  class="k glass-key" 
+                  class="k glass-key" style="font-size:20px; height:50px; line-height:50px;" 
                   @click="selectDivisorAndStart(item)">{{item}}</button>
         </div>
-        <button class="btnGhost glass-btn uniform-font" style="margin-top: 24px;" @click="goHome">返回主页</button>
+        <button class="btnGhost glass-btn main-action-btn" style="margin-top: 20px;" @click="goHome">返回主页</button>
       </div>
     </div>
 
     <div v-if="viewState==='game'" class="wrap gameRoot" :style="{ paddingBottom: safeBottom + 'px' }">
       <div class="topbar safe-top">
-        <button class="btnBack glass-icon-btn" @click="goHome">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
+        <button class="btnBack glass-btn" @click="goHome">返回</button>
         <div class="topStats">
           <div class="stat glass-pill">{{progressText}}</div>
           <div class="stat glass-pill timer">⏱ {{totalText}}</div>
@@ -107,22 +105,21 @@
       </div>
       
       <div class="gameMain">
-        <div class="card qCard glass-store">
+        <div class="card qCard glass-panel">
           <div class="qText">{{qText}}</div>
           <div class="qNote">{{hintNote}}</div>
-          <div class="ansBox glass-input">{{input ? input : ''}}</div>
+          <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
           <div class="hint">{{hint}}</div>
         </div>
       </div>
       
-      <div class="keypad card glass-store">
-        <div class="fnGrid">
+      <div class="keypad card glass-panel">
+        <div class="fnRow">
           <button class="kFn glass-key style-skip" @click="leftAction">{{leftText}}</button>
           <button class="kFn glass-key style-clear" @click="clearInput">清空</button>
-          <button class="kFn glass-key style-del" @click="backspace">⌫</button>
+          <button class="kFn danger glass-key style-del" @click="backspace">退格</button>
         </div>
-        
-        <div class="numGrid">
+        <div class="grid">
           <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k glass-key" @click="pressDigit(item)">{{item}}</button>
           <button class="k wide glass-key" @click="pressDigit(0)">0</button>
           <button class="k confirm wide2 glass-key-confirm" @click="confirmAnswer">确认</button>
@@ -131,11 +128,12 @@
     </div>
 
     <div v-if="viewState==='result'" class="wrap full-height">
-      <div class="safe-header">
+      <div class="header-area safe-header">
         <div class="title">{{resultTitle}}</div>
         <div class="subtitle">{{resultMeta}}</div>
       </div>
-      <div class="card full-flex glass-store">
+      
+      <div class="card full-flex glass-panel">
         <div class="resultScroll">
           <template v-if="mode==='train'">
             <div v-for="(item, index) in trainLog" :key="index" class="row">
@@ -152,39 +150,50 @@
               <span class="rowRight">
                  <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
                  <span>{{item.ok ? '✅' : '❌'}}</span>
-                 <span v-if="!item.ok" style="color:#ff3b30; font-weight:800; margin-left:2px;">({{item.realAns}})</span>
+                 <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
               </span>
             </div>
           </template>
         </div>
         <div style="margin-top: 15px;">
           <div v-if="isHistoryReview">
-            <button class="btnPrimary glass-primary uniform-font" @click="backToHistory">返回列表</button>
+            <button class="btnPrimary glass-primary main-action-btn" @click="backToHistory">返回列表</button>
           </div>
           <div v-else>
-            <button class="btnPrimary glass-primary uniform-font" @click="goHome">返回主页</button>
-            <button class="btnGhost glass-btn uniform-font" @click="startGame" style="margin-top:12px;">再来一局</button>
+            <button class="btnPrimary glass-primary main-action-btn" @click="goHome">返回主页</button>
+            <button class="btnGhost glass-btn main-action-btn" @click="startGame" style="margin-top:10px;">再来一局</button>
           </div>
         </div>
       </div>
     </div>
 
     <div v-if="viewState==='history'" class="wrap full-height">
-      <div class="safe-header">
+      <div class="header-area safe-header">
         <div class="title">历史记录</div>
         <div class="subtitle">仅保留最近5000条训练数据</div>
       </div>
       
-      <div class="card full-flex glass-store">
+      <div class="card full-flex glass-panel">
+        
         <div v-if="showChart" class="chart-container glass-inner">
            <div class="chart-tabs">
-             <div v-for="m in availableModes" :key="m" :class="['chart-tab-item', chartTab === m ? 'active' : '']" @click="switchChartTab(m)">{{ m }}</div>
+             <div 
+               v-for="m in availableModes" 
+               :key="m"
+               :class="['chart-tab-item', chartTab === m ? 'active' : '']"
+               @click="switchChartTab(m)"
+             >
+               {{ m }}
+             </div>
            </div>
            <div id="accChart" style="width: 100%; height: 220px;"></div>
-           <button class="btnGhost small" style="margin-top:5px;" @click="closeChart">收起图表</button>
+           <button class="btnGhost small" style="margin-top:5px; font-size:13px;" @click="closeChart">收起图表</button>
         </div>
+        
         <div v-else>
-           <button class="btnGhost glass-btn" style="height:44px; margin-bottom:15px; color:#007aff;" @click="initChart">📊 分析趋势</button>
+           <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#007aff;" @click="initChart">
+             📊 按模块分析趋势
+           </button>
         </div>
 
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:0 8px; font-weight:700; color:#8e8e93; font-size:13px;">
@@ -193,28 +202,39 @@
         </div>
         
         <div class="resultScroll">
-          <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; color:rgba(0,0,0,0.4);">暂无记录</div>
+          <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; color:rgba(0,0,0,0.4);">
+            暂无记录，快去练习吧！
+          </div>
           <div v-else>
-            <div v-for="(item, index) in historyList" :key="item.ts" class="row hover-row" @click="viewHistoryDetail(index)">
+            <div v-for="(item, index) in historyList" :key="item.ts" class="row hover-row" @click="viewHistoryDetail(index)" style="cursor:pointer;">
               <div class="rowLeft" style="display:flex; flex-direction:column;">
-                <span style="font-size:13px; color:#8e8e93;">{{item.timeStr}}</span>
-                <span style="font-weight:700; color:#1d1d1f;">{{item.modeName}}</span>
+                <span style="font-size:12px; color:#8e8e93;">{{item.timeStr}}</span>
+                <span style="font-weight:700; color:#1d1d1f; font-size:15px;">{{item.modeName}}</span>
               </div>
               <div class="rowRight" style="display:flex; flex-direction:column; align-items:flex-end;">
-                <span style="font-size:17px; color:#007aff; font-weight:800;">{{item.summary}}</span>
-                <span style="font-size:13px; color:#8e8e93;">{{item.duration}} > </span>
+                <span style="font-size:16px; color:#007aff; font-weight:800;">{{item.summary}}</span>
+                <span style="font-size:12px; color:#8e8e93;">{{item.duration}} > </span>
               </div>
             </div>
           </div>
         </div>
         
         <div style="margin-top: 15px; display:flex; flex-direction: column; gap:10px;">
-          <button v-if="historyList.length > 1000" class="btnGhost glass-btn" style="color: #ff3b30;" @click="clearOldest">清理最早1000条</button>
+          <button 
+            v-if="historyList.length > 1000" 
+            class="btnGhost glass-btn" 
+            style="margin:0; height: 44px; font-size: 16px; color: #ff3b30; background: rgba(255,59,48,0.08); border-color: rgba(255,59,48,0.2);" 
+            @click="clearOldest"
+          >
+            🗑️ 清理最早的 1000 条
+          </button>
+
           <div style="display:flex; gap:10px;">
-            <button class="btnGhost glass-btn uniform-font" style="flex:1;" @click="clearHistory">清空</button>
-            <button class="btnPrimary glass-primary uniform-font" style="flex:1;" @click="closeHistory">返回</button>
+            <button class="btnGhost glass-btn main-action-btn" style="margin:0; flex:1;" @click="clearHistory">清空全部</button>
+            <button class="btnPrimary glass-primary main-action-btn" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
           </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -246,8 +266,18 @@ export default {
       const dateList = []; const accuracyList = []; const timeList = [];
       filteredData.forEach(item => { let accuracy = 0; if(item.mode === 'train') { let wrong = 0; if(item.detail && item.detail.length > 0) { wrong = item.detail.filter(x => x.wrong > 0).length; } else { const match = item.summary.match(/错(\d+)/); if(match) wrong = parseInt(match[1]); } accuracy = ((81 - wrong) / 81) * 100; } else { if(item.detail && item.detail.length > 0) { const correctCount = item.detail.filter(x => x.ok).length; accuracy = (correctCount / item.detail.length) * 100; } else { const match = item.summary.match(/(\d+)%/); if(match) accuracy = parseInt(match[1]); } } let duration = 0; if(item.duration) { duration = parseFloat(item.duration.replace('s', '')); } dateList.push(item.timeStr); accuracyList.push(accuracy.toFixed(0)); timeList.push(duration.toFixed(1)); });
       if(dateList.length === 0) { this.chartInstance.setOption({ title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } } }); return; }
+      
+      // 修复3：图表配色 - 大厂高对比度 (蓝 vs 橙红)
       const option = {
-        grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, yAxis: [ { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff'} }, { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#5856d6'} } ], series: [ { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 2 }, itemStyle: { color: '#007aff' }, data: accuracyList }, { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#5856d6', width: 2, type: 'dashed' }, itemStyle: { color: '#5856d6' }, data: timeList } ]
+        grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, 
+        yAxis: [ 
+          { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff'} }, 
+          { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30'} } // 耗时用红色/橙色
+        ], 
+        series: [ 
+          { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 3 }, itemStyle: { color: '#007aff' }, data: accuracyList }, 
+          { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#ff3b30', width: 2, type: 'dashed' }, itemStyle: { color: '#ff3b30' }, data: timeList } 
+        ]
       };
       this.chartInstance.setOption(option);
     },
@@ -310,175 +340,187 @@ export default {
    ========================================= */
 .page {
   min-height: 100vh;
-  background: radial-gradient(at 0% 0%, #f2f6ff 0, transparent 50%), radial-gradient(at 50% 100%, #eef2ff 0, transparent 50%);
-  background-color: #f5f7fa; 
-  color: #1d1d1f;
+  /* 梦幻网格流体背景 */
+  background: 
+    radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(260,100%,94%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 100%, hsla(300,100%,94%,1) 0, transparent 50%), 
+    radial-gradient(at 0% 100%, hsla(180,100%,94%,1) 0, transparent 50%);
+  background-color: #f2f2f7; 
+  color: #1c1c1e;
   display: flex; flex-direction: column;
   max-width: 480px; margin: 0 auto;
-  box-shadow: 0 0 20px rgba(0,0,0,0.1);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  box-shadow: 0 0 40px rgba(0,0,0,0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   box-sizing: border-box;
   position: relative; overflow: hidden;
 }
 
-/* 动态背景球 */
+/* 动态流体光斑 */
 .mesh-bg { position: absolute; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
-.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6; animation: float 10s infinite alternate; }
+.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.7; animation: float 10s infinite alternate ease-in-out; }
 .orb-1 { width: 350px; height: 350px; background: #a2d2ff; top: -100px; left: -100px; }
 .orb-2 { width: 300px; height: 300px; background: #e2c2ff; bottom: -50px; right: -80px; animation-delay: -3s; }
 .orb-3 { width: 200px; height: 200px; background: #ffdfba; top: 40%; left: 30%; opacity:0.5; animation-delay: -6s; }
 @keyframes float { 0% { transform: translate(0, 0); } 100% { transform: translate(20px, 30px); } }
 
 .toast-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; z-index: 999; pointer-events: none; }
-.toast-content { background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; }
+.toast-content { background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); color: #fff; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
 
-/* 布局 */
-.wrap { padding: 18px 14px 20px; box-sizing: border-box; position: relative; z-index: 1; }
+/* 容器布局 */
+.wrap { padding: 20px 16px 24px; box-sizing: border-box; position: relative; z-index: 1; }
 .homeWrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .full-height { flex: 1; display: flex; flex-direction: column; height: 100vh; }
 .full-flex { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; }
 
-/* 字体 */
-.title { text-align: center; font-size: 36px; font-weight: 900; margin: 5px 0 4px; color: #000; letter-spacing: -0.5px; }
-.subtitle { text-align: center; font-size: 13px; color: #666; margin-bottom: 12px; font-weight: 500; }
+/* 头部样式 */
+.header-area { margin-bottom: 20px; text-align: center; }
+.title { font-size: 34px; font-weight: 900; margin: 0 0 6px; color: #000; letter-spacing: -0.5px; }
+.subtitle { font-size: 15px; color: #8e8e93; font-weight: 500; }
 
-/* --- 磨砂玻璃 --- */
-.glass-store {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.05);
+/* --- 核心磨砂玻璃卡片 --- */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.65); /* 通透 */
+  backdrop-filter: blur(50px) saturate(200%); /* 苹果级质感：高饱和模糊 */
+  -webkit-backdrop-filter: blur(50px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    0 20px 40px -10px rgba(0,0,0,0.1),
+    inset 0 0 0 1px rgba(255,255,255,0.5);
 }
-.card { border-radius: 20px; padding: 13px; }
+.card { border-radius: 28px; padding: 16px; }
 
 /* 标签文字 */
-.rowLabel { font-size: 13px; font-weight: 700; color: #007aff; margin: 12px 0 6px 4px; opacity: 1; letter-spacing: 0.3px; }
+.rowLabel { font-size: 13px; font-weight: 700; color: #007aff; margin: 16px 0 8px 6px; opacity: 0.9; letter-spacing: 0.5px; }
 
-/* 首页模式按键 (回归按键模式 + 高对比度) */
-.modeRow { display: flex; gap: 6px; margin-bottom: 6px; }
+/* 首页模式按键 (回归) */
+.modeRow { display: flex; gap: 8px; margin-bottom: 8px; }
 .modeItem { 
-  flex: 1; padding: 12px 4px; border-radius: 12px; 
-  background: rgba(255,255,255,0.6); /* 更白的底色 */
-  border: 1px solid rgba(0,0,0,0.08); /* 加深边框 */
-  text-align: center; box-sizing: border-box; transition: all 0.2s; cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+  flex: 1; padding: 14px 4px; border-radius: 16px; 
+  background: rgba(255,255,255,0.5); 
+  border: 1px solid rgba(0,0,0,0.05); 
+  text-align: center; box-sizing: border-box; transition: all 0.1s; cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
 }
+.modeItem:active { transform: scale(0.97); }
 .modeItem.active { 
-  border-color: #007aff; 
-  background: rgba(0, 122, 255, 0.1); 
-  color: #007aff;
-  box-shadow: inset 0 0 0 1px #007aff;
+  background: #007aff; 
+  border-color: transparent; 
+  box-shadow: 0 8px 20px rgba(0,122,255,0.3);
 }
-/* 模式文字：加深颜色 */
-.modeTitle { display: block; font-size: 15px; font-weight: 700; color: #333; }
-.modeItem.active .modeTitle { color: #007aff; }
+/* 增加未选中状态的文字对比度 */
+.modeTitle { display: block; font-size: 16px; font-weight: 700; color: #1c1c1e; }
+.modeItem.active .modeTitle { color: #fff; }
 
 /* 按钮通用 */
 button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .btnPrimary { 
-  width: 100%; height: 48px; line-height: 48px; 
-  border-radius: 12px; 
-  background: #007aff; 
+  width: 100%; height: 50px; line-height: 50px; 
+  border-radius: 16px; 
+  background: linear-gradient(135deg, #007aff 0%, #0062cc 100%);
   color: #fff; font-size: 20px; font-weight: 700; 
-  box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+  box-shadow: 0 10px 25px rgba(0,122,255,0.25);
+  transition: transform 0.1s;
 }
 .btnPrimary:active { transform: scale(0.98); opacity: 0.9; }
 
 .btnGhost { 
-  margin-top: 9px; width: 100%; height: 45px; line-height: 45px; 
-  border-radius: 12px; 
-  background: rgba(255,255,255,0.6); 
-  border: 1px solid rgba(0,0,0,0.1); 
-  color: #007aff; font-size: 18px; font-weight: 600; /* 加深颜色 */
-  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  width: 100%; height: 48px; line-height: 48px; 
+  border-radius: 16px; 
+  background: rgba(255,255,255,0.5); 
+  border: 1px solid rgba(0,0,0,0.05); 
+  color: #007aff; font-size: 18px; font-weight: 600; 
+  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  transition: background 0.2s;
 }
 .btnGhost:active { background: rgba(255,255,255,0.8); }
 
 /* 统一字体大小类 */
-.uniform-font { font-size: 20px !important; }
+.main-action-btn { font-size: 20px !important; height: 54px !important; line-height: 54px !important; }
 
-/* --- 游戏界面 --- */
+/* --- 游戏界面 (修复) --- */
 .gameRoot { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* 顶部栏：增加 safe-area padding */
-.topbar { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+/* 顶部栏：Safe Area */
 .safe-top { 
   padding-top: max(44px, env(safe-area-inset-top)); 
-  padding-bottom: 10px; height: auto; box-sizing: content-box; 
-  display: flex; align-items: center; gap: 10px; margin-bottom: 5px;
+  padding-bottom: 12px; height: auto; box-sizing: content-box; 
+  display: flex; align-items: center; gap: 12px; margin-bottom: 5px;
 }
 .safe-header { padding-top: max(44px, env(safe-area-inset-top)); margin-bottom: 20px; }
 
 .btnBack { 
-  width: 88px; height: 48px; line-height: 48px; border-radius: 11px; 
-  background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.1); 
-  font-weight: 700; font-size: 18px; margin: 0; color: #1d1d1f;
+  width: 80px; height: 44px; line-height: 44px; border-radius: 14px; 
+  background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.05); 
+  font-weight: 700; font-size: 16px; margin: 0; color: #1c1c1e;
+  backdrop-filter: blur(10px);
 }
-.glass-icon-btn { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-
-.topStats { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; color: #333; }
-.glass-pill { background: rgba(255,255,255,0.5); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.05); }
+.topStats { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; color: #333; }
+.glass-pill {
+  background: rgba(255,255,255,0.5); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(0,0,0,0.03);
+  backdrop-filter: blur(10px);
+}
 
 .gameMain { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.qCard { text-align: center; }
-.qText { font-size: 52px; font-weight: 900; margin-top: 3px; color: #000; letter-spacing: 1px; }
-.qNote { margin-top: 4px; font-size: 13px; color: #666; font-weight: 600; }
+.qCard { text-align: center; padding: 30px 20px; }
+.qText { font-size: 64px; font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px; }
+.qNote { margin-top: 8px; font-size: 16px; color: #8e8e93; font-weight: 500; }
 .ansBox { 
-  margin-top: 10px; padding: 10px; border-radius: 11px; 
-  border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.6); 
-  font-size: 22px; font-weight: 900; min-height: 22px; color: #007aff;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+  margin-top: 20px; padding: 15px; border-radius: 20px; 
+  background: rgba(255,255,255,0.5); 
+  font-size: 44px; font-weight: 800; min-height: 44px; color: #007aff;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.03);
 }
-.hint { margin-top: 10px; color: #666; font-size: 14px; font-weight: 600; }
+.hint { margin-top: 15px; color: #8e8e93; font-size: 15px; font-weight: 600; }
 
-.keypad { border-radius: 15px; padding: 9px; margin-top: 20px; }
+.keypad { border-radius: 32px; padding: 16px; margin-top: 20px; }
 
-/* 修复功能键布局 - Grid */
-.fnGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 9px; }
+/* 修复1：功能键高度增加 (60px) */
+.fnRow { display: flex; gap: 10px; margin-bottom: 12px; }
 .kFn { 
-  width: 100%; height: 53px; line-height: 53px; border-radius: 11px; 
-  border: 1px solid rgba(0,0,0,0.05); 
-  font-size: 18px; font-weight: 700; margin: 0; color: #fff; /* 文字改白 */
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  flex: 1; height: 60px; line-height: 60px; border-radius: 16px; 
+  font-size: 20px; font-weight: 600; margin: 0; color: #1c1c1e;
+  border: 1px solid rgba(0,0,0,0.05);
+  backdrop-filter: blur(10px);
 }
-/* 功能键填色 */
-.style-skip { background: #30d158; border-color: #248a3d; } /* 绿色 */
-.style-clear { background: #ff9f0a; border-color: #c77a04; } /* 橙色 */
-.style-del { background: #ff453a; border-color: #c0392b; } /* 红色 */
+/* 修复2：功能键填色 */
+.style-skip { background: rgba(52, 199, 89, 0.2); color: #007d33; border-color: rgba(52,199,89,0.3); } /* 绿色 */
+.style-clear { background: rgba(255, 149, 0, 0.2); color: #b56b00; border-color: rgba(255,149,0,0.3); } /* 橙色 */
+.style-del { background: rgba(255, 59, 48, 0.2); color: #c92a2a; border-color: rgba(255,59,48,0.3); } /* 红色 */
 
-.numGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.k { 
-  width: 100%; height: 60px; line-height: 60px; border-radius: 11px; 
-  background: rgba(255,255,255,0.95); 
-  border: 1px solid rgba(0,0,0,0.05); 
-  font-size: 30px; font-weight: 900; margin: 0; color: #000;
-  box-shadow: 0 3px 0 rgba(0,0,0,0.05);
+/* 修复3：数字键增高 (70px) */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.glass-key {
+  width: 100%; height: 70px; line-height: 70px; border-radius: 16px; /* 统一圆角 */
+  background: rgba(255,255,255,0.85); 
+  border: 1px solid rgba(0,0,0,0.03); 
+  font-size: 32px; font-weight: 600; margin: 0; color: #000;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.04); 
+  transition: all 0.1s;
 }
-.k:active { transform: translateY(3px); box-shadow: none; background: #f2f2f7; }
+.glass-key:active { transform: translateY(4px); box-shadow: none; background: #fff; }
 
-/* 修正确认键圆角 */
+/* 确认键 */
 .glass-key-confirm { 
-  background: #007aff; color: #fff; border:none; 
-  border-radius: 11px; /* 与数字键一致 */
-  font-size: 24px; box-shadow: 0 3px 0 #0056b3; 
+  background: #34c759; color: #fff; border:none; font-size: 26px; 
+  box-shadow: 0 4px 0 #248a3d; 
+  border-radius: 16px; /* 修复：与数字键一致 */
 }
-.glass-key-confirm:active { background: #0056b3; transform: translateY(3px); box-shadow: none; }
+.glass-key-confirm:active { background: #28a745; box-shadow: none; transform: translateY(4px); }
 
-.wide { grid-column: 1 / 2; }
-.wide2 { grid-column: 2 / 4; }
+.k.wide { grid-column: 1 / 2; }
+.k.wide2 { grid-column: 2 / 4; }
 
 /* 列表与图表 */
-.glass-inner { 
-  background: rgba(255,255,255,0.5); 
-  border-radius: 16px; padding: 10px; margin-bottom: 10px; 
-  border: 1px solid rgba(0,0,0,0.05);
+.chart-container { 
+  background: rgba(255,255,255,0.4); border-radius: 20px; padding: 15px; margin-bottom: 20px; 
+  border: 1px solid rgba(255,255,255,0.5);
 }
 .chart-tabs { 
-  display: flex; gap: 4px; overflow-x: auto; padding: 4px; margin-bottom: 10px;
+  display: flex; gap: 4px; overflow-x: auto; padding: 4px; margin-bottom: 12px;
   background: rgba(118, 118, 128, 0.12); 
-  border-radius: 10px; scrollbar-width: none; 
+  border-radius: 12px; scrollbar-width: none; 
 }
 .chart-tabs::-webkit-scrollbar { display: none; }
 .chart-tab-item { 
@@ -488,12 +530,13 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 }
 .chart-tab-item.active { background: #fff; color: #000; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-.resultScroll { width: 100%; flex: 1; overflow-y: auto; }
+.resultScroll { width: 100%; flex: 1; overflow-y: auto; padding-right: 4px; }
 .row { 
   display: flex; justify-content: space-between; align-items: center; 
-  padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); 
-  font-weight: 700; white-space: nowrap; color: #1c1c1e;
+  padding: 18px 0; border-bottom: 1px solid rgba(0,0,0,0.05); 
+  font-weight: 600; white-space: nowrap; color: #1c1c1e;
 }
-.rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 5px; }
+.hover-row:active { background: rgba(0,0,0,0.03); border-radius: 12px; }
+.rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
