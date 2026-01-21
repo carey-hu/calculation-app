@@ -456,10 +456,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   min-height: 100vh; 
   display: flex; 
   flex-direction: column;
-
-  /* iOS 新旧版本 + 安卓都能工作 */
-  padding-bottom: 10px;
-  padding-bottom: calc(0px + env(safe-area-inset-bottom));
+  padding-bottom: 0;
 }
 /* 顶部栏 */
 .safe-top { 
@@ -500,7 +497,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   border-radius: 28px;
   overflow: hidden;
   clip-path: inset(0 0 0 0 round 28px);
-  margin-bottom: calc(20px + env(safe-area-inset-bottom));
+  margin-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
 
@@ -565,6 +562,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
+
 
 
 
