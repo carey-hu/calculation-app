@@ -280,9 +280,11 @@ export default {
     // --- 图表逻辑 ---
     initChart() {
       this.showChart = true;
+      // 提取分类
       const modeSet = new Set(this.historyList.map(item => item.modeName));
       this.availableModes = Array.from(modeSet);
 
+      // 设置默认选中的 Tab
       if(this.historyList.length > 0 && !this.chartTab) {
         this.chartTab = this.historyList[0].modeName;
       } else if (this.availableModes.length > 0 && !this.chartTab) {
@@ -303,6 +305,7 @@ export default {
       const chartDom = document.getElementById('accChart');
       if(!chartDom) return;
       
+      // 销毁旧实例，防止内存泄漏或显示异常
       if(this.chartInstance) {
         this.chartInstance.dispose(); 
       }
@@ -720,7 +723,7 @@ export default {
       
       let history = this.historyList;
       history.unshift(record);
-      // 修改点2：限制改为 5000 条
+      // 【修改点】：限制为5000条
       if(history.length > 5000) history = history.slice(0, 5000);
       this.historyList = history;
       localStorage.setItem('calc_history', JSON.stringify(history));
@@ -766,13 +769,23 @@ export default {
 
       this._saveRecord({ totalSec }, recordSummary, detailLog);
     },
+    
+    // -----------------------------------------------------------------
+    // 【核心修正点】：返回主页和历史页时的图表重绘逻辑
+    // -----------------------------------------------------------------
     goHome(){
       if(this.timer) clearInterval(this.timer);
       this.viewState = 'home';
     },
+
     openHistory(){
       this.viewState = 'history';
+      // 如果之前图表是打开的，强制重绘
+      if(this.showChart) {
+          this.initChart();
+      }
     },
+
     viewHistoryDetail(index){
       const record = this.historyList[index];
       if(!record) return;
@@ -796,12 +809,19 @@ export default {
           this.isHistoryReview = true;
       }
     },
+
     backToHistory(){
       this.viewState = 'history';
+      // 如果之前图表是打开的，强制重绘
+      if(this.showChart) {
+          this.initChart();
+      }
     },
+
     closeHistory(){
       this.viewState = 'home';
     },
+
     clearHistory(){
       if(confirm('确定要清空所有历史记录吗？')){
         localStorage.removeItem('calc_history');
