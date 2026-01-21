@@ -115,9 +115,9 @@
       
       <div class="keypad card glass-panel">
         <div class="fnRow">
-          <button class="kFn glass-key style-skip" @click="leftAction">{{leftText}}</button>
-          <button class="kFn glass-key style-clear" @click="clearInput">清空</button>
-          <button class="kFn glass-key style-del" @click="backspace">退格</button>
+          <button class="kFn style-skip" @click="leftAction">{{leftText}}</button>
+          <button class="kFn style-clear" @click="clearInput">清空</button>
+          <button class="kFn style-del" @click="backspace">退格</button>
         </div>
         <div class="grid">
           <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k glass-key" @click="pressDigit(item)">{{item}}</button>
@@ -472,16 +472,8 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
 .gameMain { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .qCard { text-align: center; padding: 30px 20px; }
-/* 修正2：长算式自动修正 */
 .qText { 
-  /* 基础 52px，当宽度不足时自动缩小，最小 30px */
-  font-size: clamp(30px, 12vw, 52px); 
-  font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px;
-  /* 允许在任意位置换行，防止溢出 */
-  word-break: break-all; 
-  line-height: 1.1; 
-  /* 增加内边距防止贴边 */
-  padding: 0 10px; 
+  font-size: 64px; font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px;
 }
 .qNote { margin-top: 8px; font-size: 16px; color: #8e8e93; font-weight: 500; }
 .ansBox { 
@@ -497,19 +489,19 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
 .fnRow { display: flex; gap: 9px; margin-bottom: 9px; }
 .kFn { 
-  flex: 1; height: 53px; line-height: 53px; border-radius: 11px; 
-  font-size: 20px; font-weight: 900; margin: 0; color: #fff; /* 修正1：文字改为白色 */
+  flex: 1; height: 65px; line-height: 65px; border-radius: 11px; 
+  font-size: 20px; font-weight: 900; margin: 0; color: #fff; /* 修正：文字改白 */
   border: 1px solid rgba(0,0,0,0.05);
   backdrop-filter: blur(10px);
 }
-/* 修正1：功能键填充颜色 (实色) */
-.style-skip { background: #34c759; border-color: #248a3d; } /* 绿 */
-.style-clear { background: #ff9500; border-color: #e08600; } /* 橙 */
-.style-del { background: #ff3b30; border-color: #d63329; } /* 红 */
+/* 修改点3：练习界面功能键着色 (实色填充) */
+.style-skip { background: #34c759; border-color: #248a3d; } 
+.style-clear { background: #ff9500; border-color: #e08600; } 
+.style-del { background: #ff3b30; border-color: #d63329; } 
 
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 .k { 
-  width: 100%; height: 60px; line-height: 60px; border-radius: 11px; 
+  width: 100%; height: 70px; line-height: 70px; border-radius: 11px; 
   background: rgba(255,255,255,0.85); 
   border: 1px solid rgba(0,0,0,0.03); 
   font-size: 30px; font-weight: 900; margin: 0; color: #000;
