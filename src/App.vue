@@ -75,7 +75,7 @@
           </div>
         </div>
 
-        <button class="btnPrimary glass-primary main-action-btn" @click="startGame">开始练习</button>
+        <button class="btnPrimary glass-primary main-action-btn homeStartBtn" @click="startGame">开始练习</button>
         <button class="btnHistory glass-btn main-action-btn" @click="openHistory">历史记录</button>
       </div>
     </div>
@@ -330,6 +330,10 @@ export default {
 </script>
 
 <style scoped>
+.homeStartBtn{
+  margin-top: 14px;  /* 你想更大就 18/20 */
+}
+
 .page {
   min-height: 100vh;
   background: 
@@ -548,3 +552,4 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
+
