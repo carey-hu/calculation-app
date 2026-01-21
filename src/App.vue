@@ -115,9 +115,9 @@
       
       <div class="keypad card glass-panel">
         <div class="fnRow">
-          <button class="kFn glass-key style-skip" @click="leftAction">{{leftText}}</button>
-          <button class="kFn glass-key style-clear" @click="clearInput">清空</button>
-          <button class="kFn glass-key style-del" @click="backspace">退格</button>
+          <button class="kFn style-skip" @click="leftAction">{{leftText}}</button>
+          <button class="kFn style-clear" @click="clearInput">清空</button>
+          <button class="kFn style-del" @click="backspace">退格</button>
         </div>
         <div class="grid">
           <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k glass-key" @click="pressDigit(item)">{{item}}</button>
@@ -474,8 +474,6 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .qCard { text-align: center; padding: 30px 20px; }
 .qText { 
   font-size: 64px; font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px;
-  word-break: break-all; line-height: 1;
-  font-size: clamp(32px, 8vw, 64px); 
 }
 .qNote { margin-top: 8px; font-size: 16px; color: #8e8e93; font-weight: 500; }
 .ansBox { 
@@ -487,13 +485,12 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 }
 .hint { margin-top: 15px; color: #8e8e93; font-size: 15px; font-weight: 600; }
 
-.keypad { border-radius: 32px; padding: 16px; margin-top: 20px; }
+.keypad { border-radius: 15px; padding: 9px; margin-top: 20px; }
 
-/* 修正：功能键高度增加 (68px) */
-.fnRow { display: flex; gap: 10px; margin-bottom: 12px; }
+.fnRow { display: flex; gap: 9px; margin-bottom: 9px; }
 .kFn { 
-  flex: 1; height: 68px; line-height: 68px; border-radius: 16px; 
-  font-size: 20px; font-weight: 600; margin: 0; color: #fff;
+  flex: 1; height: 65px; line-height: 65px; border-radius: 11px; 
+  font-size: 20px; font-weight: 900; margin: 0; color: #fff; /* 修正：文字改白 */
   border: 1px solid rgba(0,0,0,0.05);
   backdrop-filter: blur(10px);
 }
@@ -502,27 +499,23 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .style-clear { background: #ff9500; border-color: #e08600; } 
 .style-del { background: #ff3b30; border-color: #d63329; } 
 
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-/* 修正：数字键高度增加 (80px) */
-.glass-key {
-  width: 100%; height: 80px; line-height: 80px; border-radius: 16px; /* 统一圆角 */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.k { 
+  width: 100%; height: 70px; line-height: 70px; border-radius: 11px; 
   background: rgba(255,255,255,0.85); 
   border: 1px solid rgba(0,0,0,0.03); 
-  font-size: 32px; font-weight: 600; margin: 0; color: #000;
-  /* 去掉阴影 */
-  box-shadow: none; 
+  font-size: 30px; font-weight: 900; margin: 0; color: #000;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.04); 
   transition: all 0.1s;
 }
-.glass-key:active { transform: scale(0.95); background: #fff; }
+.k:active { transform: translateY(4px); box-shadow: none; background: #fff; }
 
-/* 确认键 */
 .glass-key-confirm { 
   background: #34c759; color: #fff; border:none; font-size: 28px; 
-  /* 去掉阴影 */
-  box-shadow: none; 
-  border-radius: 16px; /* 修复：与数字键一致 */
+  box-shadow: 0 4px 0 #248a3d; 
+  border-radius: 11px; /* 保持与数字键一致 */
 }
-.glass-key-confirm:active { background: #28a745; transform: scale(0.95); }
+.glass-key-confirm:active { background: #28a745; box-shadow: none; transform: translateY(4px); }
 
 .k.wide { grid-column: 1 / 2; }
 .k.wide2 { grid-column: 2 / 4; }
