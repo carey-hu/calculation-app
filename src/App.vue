@@ -459,8 +459,8 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
   /* iOS 新旧版本 + 安卓都能工作 */
   padding-bottom: 10px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
-  padding-bottom: calc(10px + constant(safe-area-inset-bottom));
+  padding-bottom: calc(0px + env(safe-area-inset-bottom));
+  padding-bottom: calc(0px + constant(safe-area-inset-bottom));
 }
 /* 顶部栏 */
 .safe-top { 
@@ -497,7 +497,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 }
 .hint { margin-top: 15px; color: #8e8e93; font-size: 15px; font-weight: 600; }
 
-.keypad { border-radius: 15px; padding: 9px; margin-top: 20px; }
+.keypad { border-radius: 26px; padding: 9px; margin-top: 20px; }
 
 .fnRow { display: flex; gap: 9px; margin-bottom: 9px; }
 .kFn { 
@@ -560,6 +560,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
+
 
 
 
