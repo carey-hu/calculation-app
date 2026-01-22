@@ -68,6 +68,18 @@
           </div>
         </div>
         <div class="modeRow">
+          <div :class="['modeItem', mode==='tripleAnyPlus'?'active':'']" @click="setMode('tripleAnyPlus')">
+            <span class="modeTitle">任意加</span>
+          </div>
+          <div :class="['modeItem', mode==='tripleAnyMinus'?'active':'']" @click="setMode('tripleAnyMinus')">
+            <span class="modeTitle">任意减</span>
+          </div>
+          <div :class="['modeItem', mode==='tripleMix'?'active':'']" @click="setMode('tripleMix')">
+            <span class="modeTitle">加减混合</span>
+          </div>
+        </div>
+
+        <div class="modeRow">
           <div :class="['modeItem', mode==='tripleMult'?'active':'']" @click="setMode('tripleMult')">
             <span class="modeTitle">三乘一</span>
           </div>
@@ -117,7 +129,7 @@
       
       <div class="gameMain">
         <div class="card qCard glass-panel">
-          <div :class="['qText', mode==='fourSum' ? 'qText-small' : '']">{{qText}}</div>
+          <div :class="['qText', (mode==='fourSum' || mode==='tripleMix') ? 'qText-small' : '']">{{qText}}</div>
           
           <div class="qNote">{{hintNote}}</div>
           <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
@@ -298,6 +310,7 @@ export default {
         'train': '基础训练', 'speed': '大九九竞速', 'first': '商首位(随机)', 'firstSpec': `商首位(除${extra})`, 
         'plus': '一位进位加', 'minus': '一位退位减', 'doublePlus': '双进位加', 'doubleMinus': '双退位减', 
         'fourSum': '四数相加', 'triplePlus': '三进位加', 'tripleMinus': '三退位减', 
+        'tripleAnyPlus': '任意三数加', 'tripleAnyMinus': '任意三数减', 'tripleMix': '三数加减混合',
         'tripleMult': '三乘一', 'tripleDiv': '三除一',
         'divSpecA': '反向放缩', 'divSpecB': '平移法' 
       }; 
@@ -316,6 +329,13 @@ export default {
       else if(mode === 'triplePlus'){ hintNote = '三进位加：个位十位百位均需进位'; for(let i=0; i<10; i++){ let a, b, a1, a2, a3, b1, b2, b3; do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10; b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10; } while(a3 + b3 < 10 || a2 + b2 < 10 || a1 + b1 < 10); pool.push({ dividend: a, divisor: b, ans: a + b, symbol: '+' }); } }
       else if(mode === 'tripleMinus'){ hintNote = '三退位减：个十退，百不退'; for(let i=0; i<10; i++){ let a, b, a1, a2, a3, b1, b2, b3; do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10; b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10; } while(!(a3 < b3 && (a2 - 1) < b2 && (a1 - 1) >= b1)); pool.push({ dividend: a, divisor: b, ans: a - b, symbol: '-' }); } }
       
+      // 新增模式：任意三数加
+      else if(mode === 'tripleAnyPlus'){ hintNote = '任意三位数加法'; for(let i=0; i<10; i++){ const a = Math.floor(Math.random()*900)+100; const b = Math.floor(Math.random()*900)+100; pool.push({ dividend: a, divisor: b, ans: a+b, symbol: '+' }); } }
+      // 新增模式：任意三数减 (结果为正)
+      else if(mode === 'tripleAnyMinus'){ hintNote = '任意三位数减法'; for(let i=0; i<10; i++){ let a = Math.floor(Math.random()*900)+100; let b = Math.floor(Math.random()*900)+100; if(a < b) [a,b] = [b,a]; pool.push({ dividend: a, divisor: b, ans: a-b, symbol: '-' }); } }
+      // 新增模式：三数加减混合 (结果为正)
+      else if(mode === 'tripleMix'){ hintNote = '三数加减混合 (结果为正)'; for(let i=0; i<10; i++){ let a, b, c, op1, op2, ans; do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; c = Math.floor(Math.random()*900)+100; op1 = Math.random()>0.5 ? '+' : '-'; op2 = Math.random()>0.5 ? '+' : '-'; let step1 = (op1 === '+') ? (a + b) : (a - b); ans = (op2 === '+') ? (step1 + c) : (step1 - c); } while(ans < 0); pool.push({ dividend: `${a}${op1}${b}`, divisor: c, ans: ans, symbol: op2 }); } }
+
       // 新增模式：三乘一
       else if(mode === 'tripleMult'){ hintNote = '三乘一：计算准确积'; for(let i=0; i<10; i++){ const a = Math.floor(Math.random()*900)+100; const b = Math.floor(Math.random()*8)+2; pool.push({ dividend: a, divisor: b, ans: a*b, symbol: '×' }); } }
       // 新增模式：三除一
@@ -372,6 +392,7 @@ export default {
     _finish(){ if(this.timer) clearInterval(this.timer); const { mode, totalStartTs, results, trainLog, selectedDivisor } = this; const totalSec = (this.now() - totalStartTs)/1000; let title = '训练完成！'; if(mode==='plus') title='一位数进位加完成！'; else if(mode==='minus') title='一位数退位减完成！'; else if(mode==='doublePlus') title='双进位加完成！'; else if(mode==='doubleMinus') title='双退位减完成！'; else if(mode==='triplePlus') title='三进位加完成！'; else if(mode==='tripleMinus') title='三退位减完成！'; else if(mode==='speed') title='竞速完成！'; else if(mode==='first') title='商首位完成！'; else if(mode==='divSpecA') title='反向放缩完成！'; else if(mode==='divSpecB') title='平移法完成！'; else if(mode==='firstSpec') title=`商首位(除${selectedDivisor})完成！`;
     // 新增标题
     else if(mode==='fourSum') title='四数相加完成！'; else if(mode==='tripleMult') title='三乘一完成！'; else if(mode==='tripleDiv') title='三除一完成！';
+    else if(mode==='tripleAnyPlus') title='任意三数加完成！'; else if(mode==='tripleAnyMinus') title='任意三数减完成！'; else if(mode==='tripleMix') title='三数加减混合完成！';
     
     let metaText = ''; let recordSummary = ''; let detailLog = []; if(mode === 'train'){ metaText = `用时：${totalSec.toFixed(1)}s｜错误：${this.trainWrong}｜跳过：${this.trainSkip}`; recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = trainLog; } else { const correctCount = results.filter(x=>x.ok).length; const totalCount = results.length; metaText = `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = results; } this.viewState = 'result'; this.resultTitle = title; this.resultMeta = metaText; this.isHistoryReview = false; this._saveRecord({ totalSec }, recordSummary, detailLog); },
     goHome(){ if(this.timer) clearInterval(this.timer); this.viewState = 'home'; },
@@ -627,5 +648,3 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   overflow: visible;
 }
 </style>
-
-
