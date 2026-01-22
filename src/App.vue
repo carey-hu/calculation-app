@@ -620,11 +620,12 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 
 /* 修改点：针对四数相加模式的缩小字体样式 */
 .qText-small {
-  font-size: 60px !important; /* 强制缩小字体 */
+  font-size: 52px !important; /* 强制缩小字体 */
   letter-spacing: -1px !important; /* 收紧间距 */
   white-space: nowrap; /* 不换行 */
   margin-top: 10px;
   overflow: visible;
 }
 </style>
+
 
