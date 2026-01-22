@@ -411,7 +411,9 @@ export default {
   margin-top: 14px;  /* 你想更大就 18/20 */
 }
 
+/* 修改点：page 高度改为固定 100vh，且禁止 body 滚动，只允许内部元素滚动 */
 .page {
+  height: 100vh;
   min-height: 100vh;
   background: 
     radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%), 
@@ -441,12 +443,28 @@ export default {
 
 /* 容器布局 */
 .wrap { padding: 20px 16px 24px; box-sizing: border-box; position: relative; z-index: 1; }
-.homeWrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+/* 修改点：核心滚动逻辑，允许内容溢出滚动，并处理顶部刘海遮挡 */
+.homeWrap { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  /* justify-content: center;  <-- 删除居中对齐，防止顶部内容被裁切 */
+  justify-content: flex-start; /* 改为顶部对齐 */
+  overflow-y: auto;           /* 开启垂直滚动 */
+  -webkit-overflow-scrolling: touch; /* iOS丝滑滚动 */
+  padding-top: max(60px, env(safe-area-inset-top)); /* 增加顶部 padding，避开灵动岛 */
+  padding-bottom: 40px;      /* 底部留出空间 */
+  scrollbar-width: none;      /* Firefox 隐藏滚动条 */
+}
+/* 隐藏滚动条，保持界面简洁 */
+.homeWrap::-webkit-scrollbar { display: none; }
+
 .full-height { flex: 1; display: flex; flex-direction: column; height: 100vh; }
 .full-flex { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; }
 
 /* 头部样式 */
-.header-area { margin-bottom: 20px; text-align: center; }
+.header-area { margin-bottom: 20px; text-align: center; flex-shrink: 0; }
 .title { font-size: 34px; font-weight: 900; margin: 0 0 6px; color: #000; letter-spacing: -0.5px; }
 .subtitle { font-size: 15px; color: #8e8e93; font-weight: 500; }
 
