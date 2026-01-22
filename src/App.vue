@@ -53,6 +53,9 @@
           <div :class="['modeItem', mode==='doubleMinus'?'active':'']" @click="setMode('doubleMinus')">
             <span class="modeTitle">双退位减</span>
           </div>
+          <div :class="['modeItem', mode==='fourSum'?'active':'']" @click="setMode('fourSum')">
+            <span class="modeTitle">四数相加</span>
+          </div>
         </div>
 
         <div class="rowLabel">三位数专项 (完整答案)</div>
@@ -62,6 +65,14 @@
           </div>
           <div :class="['modeItem', mode==='tripleMinus'?'active':'']" @click="setMode('tripleMinus')">
             <span class="modeTitle">三退位减</span>
+          </div>
+        </div>
+        <div class="modeRow">
+          <div :class="['modeItem', mode==='tripleMult'?'active':'']" @click="setMode('tripleMult')">
+            <span class="modeTitle">三乘一</span>
+          </div>
+          <div :class="['modeItem', mode==='tripleDiv'?'active':'']" @click="setMode('tripleDiv')">
+            <span class="modeTitle">三除一</span>
           </div>
         </div>
 
@@ -281,7 +292,16 @@ export default {
     buildPool(){ const arr = []; for(let d=11; d<=19; d++){ for(let q=1; q<=9; q++){ arr.push({ dividend: d*q, divisor: d, ans: q, symbol: '÷' }); } } return arr; },
     msToMMSS(ms){ const totalSec = ms / 1000; const m = Math.floor(totalSec / 60); const s = (totalSec % 60).toFixed(1); return `${m}:${s < 10 ? '0' + s : s}`; },
     formatTime(ts) { const date = new Date(ts); const m = date.getMonth() + 1; const d = date.getDate(); const h = date.getHours(); const min = date.getMinutes(); const pad = n => n < 10 ? '0' + n : n; return `${m}/${d} ${pad(h)}:${pad(min)}`; },
-    getModeName(mode, extra) { const map = { 'train': '基础训练', 'speed': '大九九竞速', 'first': '商首位(随机)', 'firstSpec': `商首位(除${extra})`, 'plus': '一位进位加', 'minus': '一位退位减', 'doublePlus': '双进位加', 'doubleMinus': '双退位减', 'triplePlus': '三进位加', 'tripleMinus': '三退位减', 'divSpecA': '反向放缩', 'divSpecB': '平移法' }; return map[mode] || '未知模式'; },
+    getModeName(mode, extra) { 
+      const map = { 
+        'train': '基础训练', 'speed': '大九九竞速', 'first': '商首位(随机)', 'firstSpec': `商首位(除${extra})`, 
+        'plus': '一位进位加', 'minus': '一位退位减', 'doublePlus': '双进位加', 'doubleMinus': '双退位减', 
+        'fourSum': '四数相加', 'triplePlus': '三进位加', 'tripleMinus': '三退位减', 
+        'tripleMult': '三乘一', 'tripleDiv': '三除一',
+        'divSpecA': '反向放缩', 'divSpecB': '平移法' 
+      }; 
+      return map[mode] || '未知模式'; 
+    },
     setMode(mode){ this.mode = mode; }, toSelectDivisor(){ this.viewState = 'selectDivisor'; }, selectDivisorAndStart(d){ this.mode = 'firstSpec'; this.selectedDivisor = d; this.startGame(); },
     startGame(){
       const mode = this.mode; let pool = []; let hintNote = '精确到整数';
@@ -289,8 +309,17 @@ export default {
       else if(mode === 'minus'){ hintNote = '一位数退位减：只填个位尾数'; for(let i=0; i<10; i++){ let a, b; do { a = Math.floor(Math.random()*9)+1; b = Math.floor(Math.random()*9)+1; } while(a >= b); pool.push({ dividend: a, divisor: b, ans: (10+a-b), symbol: '-' }); } }
       else if(mode === 'doublePlus'){ hintNote = '双进位加：个位十位均需进位'; for(let i=0; i<10; i++){ let a, b, a1, a2, b1, b2; do { a = Math.floor(Math.random()*90)+10; b = Math.floor(Math.random()*90)+10; a1 = Math.floor(a/10); a2 = a%10; b1 = Math.floor(b/10); b2 = b%10; } while(a2 + b2 < 10 || a1 + b1 < 10); pool.push({ dividend: a, divisor: b, ans: a + b, symbol: '+' }); } }
       else if(mode === 'doubleMinus'){ hintNote = '双退位减：个位退，十位不退'; for(let i=0; i<10; i++){ let a, b, a1, a2, b1, b2; do { a = Math.floor(Math.random()*90)+10; b = Math.floor(Math.random()*90)+10; a1 = Math.floor(a/10); a2 = a%10; b1 = Math.floor(b/10); b2 = b%10; } while(!(a2 < b2 && a1 - 1 >= b1)); pool.push({ dividend: a, divisor: b, ans: a - b, symbol: '-' }); } }
+      // 新增模式：四数相加
+      else if(mode === 'fourSum'){ hintNote = '四数相加：计算准确和'; for(let i=0; i<10; i++){ const a = Math.floor(Math.random()*90)+10; const b = Math.floor(Math.random()*90)+10; const c = Math.floor(Math.random()*90)+10; const d = Math.floor(Math.random()*90)+10; pool.push({ dividend: `${a}+${b}+${c}`, divisor: d, ans: a+b+c+d, symbol: '+' }); } }
+      
       else if(mode === 'triplePlus'){ hintNote = '三进位加：个位十位百位均需进位'; for(let i=0; i<10; i++){ let a, b, a1, a2, a3, b1, b2, b3; do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10; b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10; } while(a3 + b3 < 10 || a2 + b2 < 10 || a1 + b1 < 10); pool.push({ dividend: a, divisor: b, ans: a + b, symbol: '+' }); } }
       else if(mode === 'tripleMinus'){ hintNote = '三退位减：个十退，百不退'; for(let i=0; i<10; i++){ let a, b, a1, a2, a3, b1, b2, b3; do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10; b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10; } while(!(a3 < b3 && (a2 - 1) < b2 && (a1 - 1) >= b1)); pool.push({ dividend: a, divisor: b, ans: a - b, symbol: '-' }); } }
+      
+      // 新增模式：三乘一
+      else if(mode === 'tripleMult'){ hintNote = '三乘一：计算准确积'; for(let i=0; i<10; i++){ const a = Math.floor(Math.random()*900)+100; const b = Math.floor(Math.random()*8)+2; pool.push({ dividend: a, divisor: b, ans: a*b, symbol: '×' }); } }
+      // 新增模式：三除一
+      else if(mode === 'tripleDiv'){ hintNote = '三除一：若为小数，填相邻整数均对'; for(let i=0; i<10; i++){ const a = Math.floor(Math.random()*900)+100; const b = Math.floor(Math.random()*8)+2; const ans = a/b; pool.push({ dividend: a, divisor: b, ans: ans, symbol: '÷' }); } }
+
       else if(mode === 'divSpecA'){ hintNote = '反向放缩：除数111-199 (误差3%内)'; for(let i=0; i<10; i++){ const divisor = Math.floor(Math.random() * (199 - 111 + 1)) + 111; const dividend = Math.floor(Math.random() * (99999 - 10000 + 1)) + 10000; const ans = dividend / divisor; pool.push({ dividend, divisor, ans, symbol: '÷' }); } }
       else if(mode === 'divSpecB'){ hintNote = '平移法：商90-111 (误差3%内)'; let count = 0; while(count < 10){ const divisor = Math.floor(Math.random() * 900) + 100; const targetQ = Math.floor(Math.random() * (111 - 90 + 1)) + 90; const dividend = divisor * targetQ + Math.floor(Math.random() * divisor); if(dividend >= 10000 && dividend <= 99999){ const ans = dividend / divisor; pool.push({ dividend, divisor, ans, symbol: '÷' }); count++; } } }
       else if(mode === 'first'){ hintNote = '目标：输入商的第一位数字'; for(let i=0; i<10; i++){ const divisor = 11 + Math.floor(Math.random() * 9); const dividend = 100 + Math.floor(Math.random() * 900); const firstDigit = parseInt(String(Math.floor(dividend / divisor))[0], 10); pool.push({ dividend, divisor, ans: firstDigit, symbol: '÷' }); } }
@@ -312,12 +341,30 @@ export default {
     confirmAnswer(){
       const { current: cur, input, mode } = this; if(!input) return; const n = parseInt(input, 10); const used = (this.now() - this.qStartTs)/1000;
       let correct = false; let realAnsDisplay = cur.ans; 
-      if(mode === 'divSpecA' || mode === 'divSpecB'){ const diffRatio = Math.abs(n - cur.ans) / cur.ans; correct = diffRatio <= 0.03; realAnsDisplay = Math.round(cur.ans); } else { correct = (n === cur.ans); }
+      if(mode === 'divSpecA' || mode === 'divSpecB'){ const diffRatio = Math.abs(n - cur.ans) / cur.ans; correct = diffRatio <= 0.03; realAnsDisplay = Math.round(cur.ans); } 
+      // 新增判题逻辑：三除一
+      else if(mode === 'tripleDiv') {
+         if(Number.isInteger(cur.ans)) {
+           correct = (n === cur.ans);
+         } else {
+           // 如果是小数，判断是否是相邻整数
+           const f = Math.floor(cur.ans);
+           const c = Math.ceil(cur.ans);
+           correct = (n === f || n === c);
+           realAnsDisplay = `${f}或${c} (${cur.ans.toFixed(2)})`;
+         }
+      }
+      else { correct = (n === cur.ans); }
+
       if(mode === 'train'){ if(correct){ const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); this.trainLog = log; this.showToast('正确'); this._nextQuestion(); }else{ this.trainWrong++; this.curWrongTries++; this.input = ''; this.hint = `错误！答案是：${realAnsDisplay}`; } return; }
       const results = this.results.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, ok: correct, yourAns: input, realAns: realAnsDisplay, usedStr: used.toFixed(1) + 's' }]); this.results = results; this.showToast(correct ? '正确' : `错误(${realAnsDisplay})`); this._nextQuestion();
     },
     _saveRecord(meta, summary, detailLog){ const record = { ts: this.now(), timeStr: this.formatTime(this.now()), mode: this.mode, modeName: this.getModeName(this.mode, this.selectedDivisor), duration: meta.totalSec.toFixed(1) + 's', summary: summary, detail: detailLog }; let history = this.historyList; history.unshift(record); if(history.length > 5000) history = history.slice(0, 5000); this.historyList = history; localStorage.setItem('calc_history', JSON.stringify(history)); },
-    _finish(){ if(this.timer) clearInterval(this.timer); const { mode, totalStartTs, results, trainLog, selectedDivisor } = this; const totalSec = (this.now() - totalStartTs)/1000; let title = '训练完成！'; if(mode==='plus') title='一位数进位加完成！'; else if(mode==='minus') title='一位数退位减完成！'; else if(mode==='doublePlus') title='双进位加完成！'; else if(mode==='doubleMinus') title='双退位减完成！'; else if(mode==='triplePlus') title='三进位加完成！'; else if(mode==='tripleMinus') title='三退位减完成！'; else if(mode==='speed') title='竞速完成！'; else if(mode==='first') title='商首位完成！'; else if(mode==='divSpecA') title='反向放缩完成！'; else if(mode==='divSpecB') title='平移法完成！'; else if(mode==='firstSpec') title=`商首位(除${selectedDivisor})完成！`; let metaText = ''; let recordSummary = ''; let detailLog = []; if(mode === 'train'){ metaText = `用时：${totalSec.toFixed(1)}s｜错误：${this.trainWrong}｜跳过：${this.trainSkip}`; recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = trainLog; } else { const correctCount = results.filter(x=>x.ok).length; const totalCount = results.length; metaText = `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = results; } this.viewState = 'result'; this.resultTitle = title; this.resultMeta = metaText; this.isHistoryReview = false; this._saveRecord({ totalSec }, recordSummary, detailLog); },
+    _finish(){ if(this.timer) clearInterval(this.timer); const { mode, totalStartTs, results, trainLog, selectedDivisor } = this; const totalSec = (this.now() - totalStartTs)/1000; let title = '训练完成！'; if(mode==='plus') title='一位数进位加完成！'; else if(mode==='minus') title='一位数退位减完成！'; else if(mode==='doublePlus') title='双进位加完成！'; else if(mode==='doubleMinus') title='双退位减完成！'; else if(mode==='triplePlus') title='三进位加完成！'; else if(mode==='tripleMinus') title='三退位减完成！'; else if(mode==='speed') title='竞速完成！'; else if(mode==='first') title='商首位完成！'; else if(mode==='divSpecA') title='反向放缩完成！'; else if(mode==='divSpecB') title='平移法完成！'; else if(mode==='firstSpec') title=`商首位(除${selectedDivisor})完成！`;
+    // 新增标题
+    else if(mode==='fourSum') title='四数相加完成！'; else if(mode==='tripleMult') title='三乘一完成！'; else if(mode==='tripleDiv') title='三除一完成！';
+    
+    let metaText = ''; let recordSummary = ''; let detailLog = []; if(mode === 'train'){ metaText = `用时：${totalSec.toFixed(1)}s｜错误：${this.trainWrong}｜跳过：${this.trainSkip}`; recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = trainLog; } else { const correctCount = results.filter(x=>x.ok).length; const totalCount = results.length; metaText = `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = results; } this.viewState = 'result'; this.resultTitle = title; this.resultMeta = metaText; this.isHistoryReview = false; this._saveRecord({ totalSec }, recordSummary, detailLog); },
     goHome(){ if(this.timer) clearInterval(this.timer); this.viewState = 'home'; },
     openHistory(){ this.viewState = 'history'; if(this.showChart) this.$nextTick(() => this.renderChart(this.chartTab)); },
     viewHistoryDetail(index){ const record = this.historyList[index]; if(!record) return; let title = record.modeName + ' 回顾'; if(record.mode === 'train'){ this.mode = record.mode; this.trainLog = record.detail || []; this.results = []; this.viewState = 'result'; this.resultTitle = title; this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`; this.isHistoryReview = true; } else { this.mode = record.mode; this.results = record.detail || []; this.trainLog = []; this.viewState = 'result'; this.resultTitle = title; this.resultMeta = `时间：${record.timeStr} | ${record.summary} | 用时：${record.duration}`; this.isHistoryReview = true; } },
@@ -562,19 +609,3 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
