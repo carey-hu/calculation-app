@@ -117,7 +117,8 @@
       
       <div class="gameMain">
         <div class="card qCard glass-panel">
-          <div :class="['qText', mode==='fourSum' ? 'qText-small' : '']"> {{qText}}</div>
+          <div :class="['qText', mode==='fourSum' ? 'qText-small' : '']">{{qText}}</div>
+          
           <div class="qNote">{{hintNote}}</div>
           <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
           <div class="hint">{{hint}}</div>
@@ -332,7 +333,15 @@ export default {
       this.$nextTick(() => { this._nextQuestion(); this.timer = setInterval(()=> this._tick(), 100); });
     },
     _tick(){ const diff = this.now() - this.totalStartTs; this.totalText = this.msToMMSS(diff); },
-    _setQuestion(q, shownIdx){ this.current = q; this.qStartTs = this.now(); this.input = ''; this.curWrongTries = 0; const suffix = (this.mode === 'fourSum') ? '' : '=';this.qText = `${q.dividend}${q.symbol}${q.divisor}${suffix}`; this.progressText = `${shownIdx}/${this.pool.length}`; },
+    _setQuestion(q, shownIdx){ 
+      this.current = q; 
+      this.qStartTs = this.now(); 
+      this.input = ''; 
+      this.curWrongTries = 0; 
+      // 修改点：移除末尾的等号
+      this.qText = `${q.dividend}${q.symbol}${q.divisor}`; 
+      this.progressText = `${shownIdx}/${this.pool.length}`; 
+    },
     _nextQuestion(){ const { idx, pool } = this; if(idx >= pool.length){ this._finish(); return; } this._setQuestion(pool[idx], idx + 1); this.idx = idx + 1; },
     pressDigit(d){ let input = this.input || ''; if(input.length >= 6) return; input += String(d); this.input = input; },
     clearInput(){ this.input = ''; },
@@ -377,12 +386,6 @@ export default {
 </script>
 
 <style scoped>
-.qText-small {
-  font-size: 60px !important; /* 原为64px，缩小一半以容纳更多数字 */
-  letter-spacing: -1px !important; /* 收紧字符间距 */
-  white-space: nowrap; /* 强制不换行 */
-  margin-top: 10px; /* 微调垂直位置 */
-}
 .homeStartBtn{
   margin-top: 14px;  /* 你想更大就 18/20 */
 }
@@ -614,5 +617,13 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .hover-row:active { background: rgba(0,0,0,0.03); border-radius: 12px; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
-</style>
 
+/* 修改点：针对四数相加模式的缩小字体样式 */
+.qText-small {
+  font-size: 32px !important; /* 强制缩小字体 */
+  letter-spacing: -1px !important; /* 收紧间距 */
+  white-space: nowrap; /* 不换行 */
+  margin-top: 10px;
+  overflow: visible;
+}
+</style>
