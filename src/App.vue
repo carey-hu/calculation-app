@@ -103,7 +103,7 @@
 
       <div class="cubic-ui safe-top">
         <div class="glass-panel" style="padding: 8px 12px; display: flex; gap: 8px; align-items: center; border-radius: 24px; max-width: 95%;">
-          <button class="btnBack glass-btn small-btn" @click="quitCubicMode">退出</button>
+          <button class="btnBack glass-btn small-btn" @click="quitCubicMode">🔙</button>
           <div class="divider"></div>
           
           <div style="display:flex; gap:8px;">
@@ -846,3 +846,4 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 </style>
+
