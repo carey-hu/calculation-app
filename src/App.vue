@@ -314,7 +314,7 @@ export default {
       
       // 3D 模式状态
       isDeleteMode: false,
-      // 修改后的颜色配置：蓝、橙、黑(深灰)、白
+      // 修改：颜色配置（黑、白、蓝、橙）
       colors: ['#007aff', '#ff9500', '#333333', '#ffffff'], 
       selectedColor: '#007aff'
     }
@@ -400,19 +400,19 @@ export default {
     closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
 
     // =================================================================
-    // 3D 模块逻辑 (已修复点击无效、悬空问题、性能问题，新增四色和清空)
+    // 3D 模块逻辑 (使用正交相机修复变形，增强边线)
     // =================================================================
     startCubicMode() { this.viewState = 'cubic'; this.$nextTick(() => { this.initThree(); }); },
     quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; },
     switchColor(c) { 
       this.selectedColor = c; 
-      this.isDeleteMode = false; // 选颜色时自动退出删除模式
+      this.isDeleteMode = false; 
     },
-    // 新增：设置摄像机视图
+    // 设置正交视图
     setCameraView(type) {
       if (!this.threeApp.camera || !this.threeApp.controls) return;
       const { camera, controls } = this.threeApp;
-      const dist = 14; // 标准距离
+      const dist = 20; // 只要足够远即可，正交投影下距离不影响大小
       
       switch(type) {
         case 'front': camera.position.set(0, 0, dist); break;
@@ -420,11 +420,11 @@ export default {
         case 'left': camera.position.set(-dist, 0, 0); break;
         case 'right': camera.position.set(dist, 0, 0); break;
         case 'top': camera.position.set(0, dist, 0); break;
-        case 'iso': camera.position.set(8, 8, 8); break;
+        case 'iso': camera.position.set(12, 12, 12); break;
       }
       
       camera.lookAt(0, 0, 0);
-      controls.target.set(0, 0, 0); // 重置观察点
+      controls.target.set(0, 0, 0); 
       controls.update();
     },
     initThree() {
@@ -438,9 +438,17 @@ export default {
       scene.background = new THREE.Color('#f2f2f7'); 
       scene.fog = new THREE.Fog('#f2f2f7', 20, 50);
 
-      // 2. 相机
-      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000); 
-      camera.position.set(8, 8, 8); 
+      // 2. 核心修改：使用正交相机 (OrthographicCamera) 消除透视变形
+      const aspect = width / height;
+      const d = 18; // 视野范围 (决定物体显示多大)
+      const camera = new THREE.OrthographicCamera(
+        -d * aspect, d * aspect, // left, right
+        d, -d,                   // top, bottom
+        1, 1000                  // near, far
+      );
+      
+      // 初始设为轴测角度
+      camera.position.set(12, 12, 12); 
       camera.lookAt(0, 0, 0);
 
       // 3. 渲染器
@@ -460,14 +468,13 @@ export default {
       const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xdddddd); 
       scene.add(gridHelper);
 
-      // === 核心修复 1: 物理地面 (用于点击检测) ===
-      // 必须 visible: true 才能被射线检测！如果想隐藏，用 opacity: 0
+      // 物理地面 (隐形但可点击)
       const planeGeometry = new THREE.PlaneGeometry(20, 20); 
       planeGeometry.rotateX(-Math.PI / 2);
       const planeMaterial = new THREE.MeshBasicMaterial({ 
-        visible: true,      // 必须为 true
-        transparent: true,  // 开启透明
-        opacity: 0          // 透明度0
+        visible: true,      
+        transparent: true,  
+        opacity: 0          
       }); 
       const plane = new THREE.Mesh(planeGeometry, planeMaterial); 
       plane.name = 'ground'; 
@@ -478,15 +485,13 @@ export default {
       controls.enableDamping = true; 
       controls.dampingFactor = 0.05;
 
-      // 7. 交互 (防止拖拽误触点击)
+      // 7. 交互
       const raycaster = new THREE.Raycaster(); 
       const pointer = new THREE.Vector2();
       let downTime = 0;
 
-      // 监听按下时间
       renderer.domElement.addEventListener('pointerdown', () => { downTime = Date.now(); });
       
-      // 监听抬起，判断是否为短促点击
       renderer.domElement.addEventListener('pointerup', (event) => {
         if (Date.now() - downTime < 200) {
           const rect = renderer.domElement.getBoundingClientRect(); 
@@ -496,14 +501,12 @@ export default {
         }
       });
 
-      // 直接赋值给 this，不经过 data() 响应式，防止 Vue 代理导致的性能问题
       this.threeApp.scene = scene;
       this.threeApp.camera = camera;
       this.threeApp.renderer = renderer;
       this.threeApp.controls = controls;
-      this.threeApp.objects = [plane]; // 初始化交互对象列表，包含地面
+      this.threeApp.objects = [plane]; 
       
-      // 移除初始方块放置
       this.animate3D();
     },
     animate3D() { 
@@ -515,7 +518,6 @@ export default {
     },
     handle3DClick(raycaster, pointer, scene, camera, plane) {
       raycaster.setFromCamera(pointer, camera); 
-      // 这里的 objects 必须包含 visible: true 的物体
       const intersects = raycaster.intersectObjects(this.threeApp.objects, false);
 
       if (intersects.length > 0) {
@@ -530,7 +532,6 @@ export default {
              intersect.object.material.dispose();
           }
         } else {
-          // === 核心修复 2: 计算新位置，防止悬空 ===
           const voxelPos = new THREE.Vector3().copy(intersect.point).addScaledVector(intersect.face.normal, 0.5);
           voxelPos.divideScalar(1).floor().multiplyScalar(1).addScalar(0.5);
           
@@ -541,13 +542,18 @@ export default {
     },
     addCubeAt(scene, position) {
       const geometry = new THREE.BoxGeometry(1, 1, 1); 
-      const material = new THREE.MeshLambertMaterial({ color: this.selectedColor }); 
+      
+      // 核心修改：添加 polygonOffset 使得面稍微后退，让边线更清晰（解决z-fighting）
+      const material = new THREE.MeshLambertMaterial({ 
+        color: this.selectedColor,
+        polygonOffset: true,
+        polygonOffsetFactor: 1, 
+        polygonOffsetUnits: 1
+      }); 
+      
       const cube = new THREE.Mesh(geometry, material); 
       cube.position.copy(position);
       
-      // === 核心修改 3: 边线颜色逻辑 ===
-      // 黑色方块(深灰)用白色线，其他用黑色线
-      // 注意：this.selectedColor 是字符串 '#333333'
       const isDarkBlock = (this.selectedColor === '#333333');
       const edgeColor = isDarkBlock ? 0xffffff : 0x000000;
       
@@ -560,7 +566,6 @@ export default {
     },
     clearCubes() { 
       const { scene, objects } = this.threeApp; 
-      // 倒序删除，保留 ground
       for (let i = objects.length - 1; i >= 0; i--) { 
         const obj = objects[i]; 
         if (obj.name !== 'ground') { 
@@ -570,7 +575,6 @@ export default {
           objects.splice(i, 1); 
         } 
       } 
-      // 不再重新放置初始方块，保持清空状态
     },
     cleanup3D() { 
       if (this.threeApp.animationId) { cancelAnimationFrame(this.threeApp.animationId); } 
@@ -684,7 +688,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   box-shadow: 0 0 0 2px rgba(0,0,0,0.1), inset 0 0 0 2px rgba(255,255,255,0.8);
 }
 
-/* NEW: View Selector Styles (Single Row) */
+/* View Selector Styles (Single Row) */
 .view-selector {
   margin-top: 8px;
   padding: 6px;
