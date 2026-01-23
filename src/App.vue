@@ -234,7 +234,7 @@
 import * as echarts from 'echarts';
 // 引入 Three.js 核心库
 import * as THREE from 'three';
-// 引入轨道控制器 (OrbitControls)，用于支持鼠标/触摸旋转视角
+// 引入轨道控制器
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // =================================================================
@@ -393,40 +393,107 @@ export default {
     closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
 
     // =================================================================
-    // 3D 模块逻辑
+    // 3D 模块逻辑 (已修复点击无效和悬空问题)
     // =================================================================
     startCubicMode() { this.viewState = 'cubic'; this.$nextTick(() => { this.initThree(); }); },
     quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; },
     initThree() {
-      const container = document.getElementById('three-container'); if (!container) return;
-      const width = container.clientWidth; const height = container.clientHeight;
-      const scene = new THREE.Scene(); scene.background = new THREE.Color('#f2f2f7'); scene.fog = new THREE.Fog('#f2f2f7', 20, 50);
-      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000); camera.position.set(8, 8, 8); camera.lookAt(0, 0, 0);
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(width, height); renderer.setPixelRatio(window.devicePixelRatio); container.appendChild(renderer.domElement);
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.7); dirLight.position.set(10, 20, 10); scene.add(dirLight);
-      const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xdddddd); scene.add(gridHelper);
-      const planeGeometry = new THREE.PlaneGeometry(20, 20); planeGeometry.rotateX(-Math.PI / 2);
-      const planeMaterial = new THREE.MeshBasicMaterial({ visible: false }); const plane = new THREE.Mesh(planeGeometry, planeMaterial); plane.name = 'ground'; scene.add(plane);
-      const controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.05;
-      const raycaster = new THREE.Raycaster(); const pointer = new THREE.Vector2();
-      renderer.domElement.addEventListener('pointerdown', (event) => {
-         const rect = renderer.domElement.getBoundingClientRect(); pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1; pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-         this.handle3DClick(raycaster, pointer, scene, camera, plane);
+      const container = document.getElementById('three-container'); 
+      if (!container) return;
+      const width = container.clientWidth; 
+      const height = container.clientHeight;
+
+      // 1. 场景
+      const scene = new THREE.Scene(); 
+      scene.background = new THREE.Color('#f2f2f7'); 
+      scene.fog = new THREE.Fog('#f2f2f7', 20, 50);
+
+      // 2. 相机
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000); 
+      camera.position.set(8, 8, 8); 
+      camera.lookAt(0, 0, 0);
+
+      // 3. 渲染器
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
+      renderer.setSize(width, height); 
+      renderer.setPixelRatio(window.devicePixelRatio); 
+      container.appendChild(renderer.domElement);
+
+      // 4. 灯光
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
+      scene.add(ambientLight);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.7); 
+      dirLight.position.set(10, 20, 10); 
+      scene.add(dirLight);
+
+      // 5. 辅助网格
+      const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xdddddd); 
+      scene.add(gridHelper);
+
+      // === 核心修复 1: 物理地面 (用于点击检测) ===
+      const planeGeometry = new THREE.PlaneGeometry(20, 20); 
+      planeGeometry.rotateX(-Math.PI / 2);
+      const planeMaterial = new THREE.MeshBasicMaterial({ 
+        visible: true,      // 必须为 true 才能被射线检测
+        transparent: true,  // 开启透明
+        opacity: 0          // 完全透明不可见
+      }); 
+      const plane = new THREE.Mesh(planeGeometry, planeMaterial); 
+      plane.name = 'ground'; 
+      scene.add(plane);
+
+      // 6. 控制器
+      const controls = new OrbitControls(camera, renderer.domElement); 
+      controls.enableDamping = true; 
+      controls.dampingFactor = 0.05;
+
+      // 7. 交互
+      const raycaster = new THREE.Raycaster(); 
+      const pointer = new THREE.Vector2();
+      
+      // 防止拖动时误触点击
+      let downTime = 0;
+      renderer.domElement.addEventListener('pointerdown', () => { downTime = Date.now(); });
+      renderer.domElement.addEventListener('pointerup', (event) => {
+        if (Date.now() - downTime < 200) {
+          const rect = renderer.domElement.getBoundingClientRect(); 
+          pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1; 
+          pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+          this.handle3DClick(raycaster, pointer, scene, camera, plane);
+        }
       });
+
       this.threeApp = { scene, camera, renderer, controls, objects: [plane], raycaster, animationId: null };
+      
+      // 放置初始中心块
       this.addCubeAt(scene, new THREE.Vector3(0, 0.5, 0));
       this.animate3D();
     },
     animate3D() { const { scene, camera, renderer, controls } = this.threeApp; if (!renderer) return; this.threeApp.animationId = requestAnimationFrame(this.animate3D); controls.update(); renderer.render(scene, camera); },
     handle3DClick(raycaster, pointer, scene, camera, plane) {
-      raycaster.setFromCamera(pointer, camera); const intersects = raycaster.intersectObjects(this.threeApp.objects, false);
+      raycaster.setFromCamera(pointer, camera); 
+      const intersects = raycaster.intersectObjects(this.threeApp.objects, false);
+
       if (intersects.length > 0) {
         const intersect = intersects[0];
+        
         if (this.isDeleteMode) {
-          if (intersect.object.name !== 'ground') { scene.remove(intersect.object); const idx = this.threeApp.objects.indexOf(intersect.object); if (idx > -1) this.threeApp.objects.splice(idx, 1); intersect.object.geometry.dispose(); intersect.object.material.dispose(); }
+          // 删除模式
+          if (intersect.object.name !== 'ground') {
+             scene.remove(intersect.object);
+             const idx = this.threeApp.objects.indexOf(intersect.object);
+             if (idx > -1) this.threeApp.objects.splice(idx, 1);
+             intersect.object.geometry.dispose();
+             intersect.object.material.dispose();
+          }
         } else {
-          const voxelPos = new THREE.Vector3().copy(intersect.point).add(intersect.face.normal); voxelPos.divideScalar(1).floor().multiplyScalar(1).addScalar(0.5); if (voxelPos.y < 0) return; this.addCubeAt(scene, voxelPos);
+          // 放置模式
+          // === 核心修复 2: 使用 0.5 倍法线向量，防止方块悬空或错位 ===
+          const voxelPos = new THREE.Vector3().copy(intersect.point).addScaledVector(intersect.face.normal, 0.5);
+          voxelPos.divideScalar(1).floor().multiplyScalar(1).addScalar(0.5);
+          
+          if (voxelPos.y < 0) return; // 不允许在地下
+          this.addCubeAt(scene, voxelPos);
         }
       }
     },
@@ -698,7 +765,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 }
 
 /* ============================
-   3D 模式专用样式 (关键修复)
+   3D 模式专用样式
    ============================ */
 .cubic-ui {
   position: absolute;
