@@ -102,21 +102,33 @@
       <div id="three-container" style="width:100%; height:100%; display:block; outline:none; touch-action: none;"></div>
 
       <div class="cubic-ui safe-top">
-        <div class="glass-panel" style="padding: 10px; display: flex; gap: 10px; align-items: center;">
+        <div class="glass-panel" style="padding: 8px 12px; display: flex; gap: 8px; align-items: center; border-radius: 24px; max-width: 95%;">
+          
           <button class="btnBack glass-btn small-btn" @click="quitCubicMode">退出</button>
+          
           <div class="divider"></div>
-          <button :class="['btnIcon', !isDeleteMode ? 'active' : '']" @click="isDeleteMode=false">
-            ➕ 放置
-          </button>
+          
+          <div style="display:flex; gap:6px;">
+            <div 
+              v-for="c in colors" 
+              :key="c" 
+              :style="{backgroundColor: c}"
+              :class="['color-dot', selectedColor === c && !isDeleteMode ? 'active' : '']"
+              @click="switchColor(c)"
+            ></div>
+          </div>
+
+          <div class="divider"></div>
+
           <button :class="['btnIcon', isDeleteMode ? 'active' : '']" @click="isDeleteMode=true">
-            🗑️ 消除
+            🗑️
           </button>
-          <div class="divider"></div>
+          
           <button class="btnIcon" @click="clearCubes">
-             🔄 清空
+             🔄
           </button>
         </div>
-        <div class="tip-toast">单指转动视角，点击方块/地面操作</div>
+        <div class="tip-toast">点击地面放置，点击方块叠加</div>
       </div>
     </div>
 
@@ -298,7 +310,9 @@ export default {
       modeGroups: MODE_GROUPS, divisorList: [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],
       
       // 3D 模式状态
-      isDeleteMode: false
+      isDeleteMode: false,
+      colors: ['#007aff', '#ff3b30', '#34c759', '#ff9500'], // 蓝、红、绿、橙
+      selectedColor: '#007aff'
       // 注意：threeApp 已移出 data，避免 Vue 代理导致的性能和交互 Bug
     }
   },
@@ -384,10 +398,14 @@ export default {
     closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
 
     // =================================================================
-    // 3D 模块逻辑 (已修复点击无效、悬空问题、性能问题)
+    // 3D 模块逻辑 (已修复点击无效、悬空问题、性能问题，新增四色和清空)
     // =================================================================
     startCubicMode() { this.viewState = 'cubic'; this.$nextTick(() => { this.initThree(); }); },
     quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; },
+    switchColor(c) { 
+      this.selectedColor = c; 
+      this.isDeleteMode = false; // 选颜色时自动退出删除模式
+    },
     initThree() {
       const container = document.getElementById('three-container'); 
       if (!container) return;
@@ -464,8 +482,7 @@ export default {
       this.threeApp.controls = controls;
       this.threeApp.objects = [plane]; // 初始化交互对象列表，包含地面
       
-      // 放置初始中心块
-      this.addCubeAt(scene, new THREE.Vector3(0, 0.5, 0));
+      // 移除初始方块放置
       this.animate3D();
     },
     animate3D() { 
@@ -503,7 +520,8 @@ export default {
     },
     addCubeAt(scene, position) {
       const geometry = new THREE.BoxGeometry(1, 1, 1); 
-      const material = new THREE.MeshLambertMaterial({ color: 0x007aff }); 
+      // 使用选中的颜色
+      const material = new THREE.MeshLambertMaterial({ color: this.selectedColor }); 
       const cube = new THREE.Mesh(geometry, material); 
       cube.position.copy(position);
       
@@ -526,7 +544,7 @@ export default {
           objects.splice(i, 1); 
         } 
       } 
-      this.addCubeAt(scene, new THREE.Vector3(0, 0.5, 0)); 
+      // 不再重新放置初始方块，保持清空状态
     },
     cleanup3D() { 
       if (this.threeApp.animationId) { cancelAnimationFrame(this.threeApp.animationId); } 
@@ -623,4 +641,20 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .btnIcon.active { background: #007aff; color: white; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
 .divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); margin: 0 5px; }
 .tip-toast { margin-top: 10px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); }
+
+/* 颜色选择小圆点 */
+.color-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.5);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.color-dot:active { transform: scale(0.9); }
+.color-dot.active {
+  transform: scale(1.1);
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.1), inset 0 0 0 2px rgba(255,255,255,0.8);
+}
 </style>
