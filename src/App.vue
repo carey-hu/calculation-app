@@ -521,12 +521,26 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 .qText-small { font-size: 52px !important; letter-spacing: -1px !important; white-space: nowrap; margin-top: 10px; overflow: visible; }
 
-/* 3D 模式样式 */
-.cubic-ui { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; box-sizing: border-box; pointer-events: none; z-index: 10; display: flex; flex-direction: column; align-items: center; }
-.cubic-ui > * { pointer-events: auto; }
-.small-btn { width: auto !important; height: 36px !important; line-height: 36px !important; padding: 0 16px !important; font-size: 14px !important; }
-.btnIcon { background: rgba(255,255,255,0.4); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 8px 12px; font-size: 14px; font-weight: 600; color: #333; transition: all 0.2s; }
-.btnIcon.active { background: #007aff; color: white; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
-.divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); margin: 0 5px; }
-.tip-toast { margin-top: 10px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); }
+  /* 3D 模式样式 */
+.cubic-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  
+  /* 修改这里：将 padding 拆开写，确保顶部有足够的空间避开灵动岛 */
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 10px;
+  /* 增加顶部距离：取 60px 和 安全区域+10px 中的较大值 */
+  padding-top: max(60px, calc(env(safe-area-inset-top) + 10px));
+  
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 </style>
+
