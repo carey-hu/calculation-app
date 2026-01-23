@@ -99,7 +99,7 @@
     </div>
 
     <div v-if="viewState==='cubic'" class="wrap full-height" style="padding:0; overflow:hidden;">
-      <div id="three-container" style="width:100%; height:100%; display:block; outline:none;"></div>
+      <div id="three-container" style="width:100%; height:100%; display:block; outline:none; touch-action: none;"></div>
 
       <div class="cubic-ui safe-top">
         <div class="glass-panel" style="padding: 10px; display: flex; gap: 10px; align-items: center;">
@@ -232,13 +232,11 @@
 
 <script>
 import * as echarts from 'echarts';
-// 引入 Three.js 核心库
 import * as THREE from 'three';
-// 引入轨道控制器
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // =================================================================
-// 核心逻辑层：生成策略配置
+// 核心逻辑层
 // =================================================================
 
 const shuffle = (arr) => {
@@ -259,24 +257,16 @@ const buildBasePool = () => {
   return arr;
 };
 
-// 游戏模式配置
 const GAME_MODES = {
-  // --- 基础训练 ---
   'train': { name: '训练', title: '基础训练完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()) },
   'speed': { name: '竞速', title: '竞速完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()).slice(0, 10) },
   'first': { name: '首位(随机)', title: '商首位完成！', hintNote: '目标：输入商的第一位数字', gen: (n) => { const pool=[]; for(let i=0;i<n;i++){ const dr=11+Math.floor(Math.random()*9); const dd=100+Math.floor(Math.random()*900); const fd=parseInt(String(Math.floor(dd/dr))[0],10); pool.push({dividend:dd,divisor:dr,ans:fd,symbol:'÷'}); } return pool; } },
   'firstSpec': { name: '商首位专项', title: '商首位专项完成！', gen: (n, ex) => { const d=ex.divisor||12; const pool=[]; for(let i=0;i<n;i++){ const dd=Math.floor(Math.random()*(999-d+1))+d; const fq=Math.floor(dd/d); const fd=parseInt(String(fq)[0],10); pool.push({dividend:dd,divisor:d,ans:fd,symbol:'÷'}); } return pool; } },
-
-  // --- 一位数 ---
   'plus': { name: '进位加', title: '一位数进位加完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a+b<10); p.push({dividend:a,divisor:b,ans:(a+b)%10,symbol:'+'});} return p;} },
   'minus': { name: '退位减', title: '一位数退位减完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a>=b); p.push({dividend:a,divisor:b,ans:(10+a-b),symbol:'-'});} return p;} },
-
-  // --- 两位数 ---
   'doublePlus': { name: '双进位加', title: '双进位加完成！', hintNote: '个位十位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
   'doubleMinus': { name: '双退位减', title: '双退位减完成！', hintNote: '个位退，十位不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(!(a2<b2&&a1-1>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
   'fourSum': { name: '四数相加', title: '四数相加完成！', hintNote: '计算准确和', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*90)+10;const b=Math.floor(Math.random()*90)+10;const c=Math.floor(Math.random()*90)+10;const d=Math.floor(Math.random()*90)+10; p.push({dividend:`${a}+${b}+${c}`,divisor:d,ans:a+b+c+d,symbol:'+'});} return p;} },
-
-  // --- 三位数 ---
   'triplePlus': { name: '三进位加', title: '三进位加完成！', hintNote: '个位十位百位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(a3+b3<10||a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
   'tripleMinus': { name: '三退位减', title: '三退位减完成！', hintNote: '个十退，百不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(!(a3<b3&&(a2-1)<b2&&(a1-1)>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
   'tripleAnyPlus': { name: '任意加', title: '任意三数加完成！', hintNote: '任意三位数加法', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*900)+100; p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
@@ -284,13 +274,10 @@ const GAME_MODES = {
   'tripleMix': { name: '加减混合', title: '三数加减混合完成！', hintNote: '三数加减混合 (结果为正)', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,c,op1,op2,ans; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;c=Math.floor(Math.random()*900)+100;op1=Math.random()>0.5?'+':'-';op2=Math.random()>0.5?'+':'-';let step1=(op1==='+')?(a+b):(a-b);ans=(op2==='+')?(step1+c):(step1-c);}while(ans<0); p.push({dividend:`${a}${op1}${b}`,divisor:c,ans:ans,symbol:op2});} return p;} },
   'tripleMult': { name: '三乘一', title: '三乘一完成！', hintNote: '计算准确积', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a*b,symbol:'×'});} return p;} },
   'tripleDiv': { name: '三除一', title: '三除一完成！', hintNote: '若为小数，填相邻整数均对', check: (v, t) => { if(Number.isInteger(t)){ return {ok:v===t,display:t}; }else{ const f=Math.floor(t),c=Math.ceil(t); return {ok:(v===f||v===c),display:`${f}或${c} (${t.toFixed(2)})`}; } }, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a/b,symbol:'÷'});} return p;} },
-
-  // --- 五除三 ---
   'divSpecA': { name: '反向放缩', title: '反向放缩完成！', hintNote: '除数111-199 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const dr=Math.floor(Math.random()*(199-111+1))+111;const dd=Math.floor(Math.random()*(99999-10000+1))+10000; p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'});} return p;} },
   'divSpecB': { name: '平移法', title: '平移法完成！', hintNote: '商90-111 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; let c=0; while(c<n){ const dr=Math.floor(Math.random()*900)+100;const tq=Math.floor(Math.random()*(111-90+1))+90;const dd=dr*tq+Math.floor(Math.random()*dr); if(dd>=10000&&dd<=99999){ p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'}); c++;} } return p;} }
 };
 
-// 界面分组配置
 const MODE_GROUPS = {
   basic: { label: '大九九/除法', modes: ['train', 'speed', 'first'] },
   divSelect: { label: '商首位专项', modes: [] }, 
@@ -311,8 +298,8 @@ export default {
       modeGroups: MODE_GROUPS, divisorList: [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],
       
       // 3D 模式状态
-      isDeleteMode: false,
-      threeApp: { scene: null, camera: null, renderer: null, controls: null, raycaster: null, pointer: null, objects: [], animationId: null }
+      isDeleteMode: false
+      // 注意：threeApp 已移出 data，避免 Vue 代理导致的性能和交互 Bug
     }
   },
   computed: {
@@ -341,7 +328,11 @@ export default {
     window.addEventListener('resize', () => { if(this.chartInstance) this.chartInstance.resize(); });
   },
   beforeUnmount() {
-    this.cleanup3D(); // 销毁组件时清理 3D 资源
+    this.cleanup3D(); 
+  },
+  created() {
+    // 关键修复：将 Three.js 对象放在这里，不放入 data()，避免 Vue 响应式代理造成的性能问题和 Bug
+    this.threeApp = { scene: null, camera: null, renderer: null, controls: null, raycaster: null, pointer: null, objects: [], animationId: null };
   },
   methods: {
     now() { return Date.now(); },
@@ -393,7 +384,7 @@ export default {
     closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
 
     // =================================================================
-    // 3D 模块逻辑 (已修复点击无效和悬空问题)
+    // 3D 模块逻辑 (已修复点击无效、悬空问题、性能问题)
     // =================================================================
     startCubicMode() { this.viewState = 'cubic'; this.$nextTick(() => { this.initThree(); }); },
     quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; },
@@ -431,12 +422,13 @@ export default {
       scene.add(gridHelper);
 
       // === 核心修复 1: 物理地面 (用于点击检测) ===
+      // 必须 visible: true 才能被射线检测！如果想隐藏，用 opacity: 0
       const planeGeometry = new THREE.PlaneGeometry(20, 20); 
       planeGeometry.rotateX(-Math.PI / 2);
       const planeMaterial = new THREE.MeshBasicMaterial({ 
-        visible: true,      // 必须为 true 才能被射线检测
+        visible: true,      // 必须为 true
         transparent: true,  // 开启透明
-        opacity: 0          // 完全透明不可见
+        opacity: 0          // 透明度0
       }); 
       const plane = new THREE.Mesh(planeGeometry, planeMaterial); 
       plane.name = 'ground'; 
@@ -447,13 +439,15 @@ export default {
       controls.enableDamping = true; 
       controls.dampingFactor = 0.05;
 
-      // 7. 交互
+      // 7. 交互 (防止拖拽误触点击)
       const raycaster = new THREE.Raycaster(); 
       const pointer = new THREE.Vector2();
-      
-      // 防止拖动时误触点击
       let downTime = 0;
+
+      // 监听按下时间
       renderer.domElement.addEventListener('pointerdown', () => { downTime = Date.now(); });
+      
+      // 监听抬起，判断是否为短促点击
       renderer.domElement.addEventListener('pointerup', (event) => {
         if (Date.now() - downTime < 200) {
           const rect = renderer.domElement.getBoundingClientRect(); 
@@ -463,22 +457,33 @@ export default {
         }
       });
 
-      this.threeApp = { scene, camera, renderer, controls, objects: [plane], raycaster, animationId: null };
+      // 直接赋值给 this，不经过 data() 响应式，防止 Vue 代理导致的性能问题
+      this.threeApp.scene = scene;
+      this.threeApp.camera = camera;
+      this.threeApp.renderer = renderer;
+      this.threeApp.controls = controls;
+      this.threeApp.objects = [plane]; // 初始化交互对象列表，包含地面
       
       // 放置初始中心块
       this.addCubeAt(scene, new THREE.Vector3(0, 0.5, 0));
       this.animate3D();
     },
-    animate3D() { const { scene, camera, renderer, controls } = this.threeApp; if (!renderer) return; this.threeApp.animationId = requestAnimationFrame(this.animate3D); controls.update(); renderer.render(scene, camera); },
+    animate3D() { 
+      const { scene, camera, renderer, controls } = this.threeApp; 
+      if (!renderer) return; 
+      this.threeApp.animationId = requestAnimationFrame(this.animate3D); 
+      controls.update(); 
+      renderer.render(scene, camera); 
+    },
     handle3DClick(raycaster, pointer, scene, camera, plane) {
       raycaster.setFromCamera(pointer, camera); 
+      // 这里的 objects 必须包含 visible: true 的物体
       const intersects = raycaster.intersectObjects(this.threeApp.objects, false);
 
       if (intersects.length > 0) {
         const intersect = intersects[0];
         
         if (this.isDeleteMode) {
-          // 删除模式
           if (intersect.object.name !== 'ground') {
              scene.remove(intersect.object);
              const idx = this.threeApp.objects.indexOf(intersect.object);
@@ -487,350 +492,135 @@ export default {
              intersect.object.material.dispose();
           }
         } else {
-          // 放置模式
-          // === 核心修复 2: 使用 0.5 倍法线向量，防止方块悬空或错位 ===
+          // === 核心修复 2: 计算新位置，防止悬空 ===
           const voxelPos = new THREE.Vector3().copy(intersect.point).addScaledVector(intersect.face.normal, 0.5);
           voxelPos.divideScalar(1).floor().multiplyScalar(1).addScalar(0.5);
           
-          if (voxelPos.y < 0) return; // 不允许在地下
+          if (voxelPos.y < 0) return;
           this.addCubeAt(scene, voxelPos);
         }
       }
     },
     addCubeAt(scene, position) {
-      const geometry = new THREE.BoxGeometry(1, 1, 1); const material = new THREE.MeshLambertMaterial({ color: 0x007aff }); const cube = new THREE.Mesh(geometry, material); cube.position.copy(position);
-      const edges = new THREE.EdgesGeometry(geometry); const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 })); cube.add(line);
-      scene.add(cube); this.threeApp.objects.push(cube);
+      const geometry = new THREE.BoxGeometry(1, 1, 1); 
+      const material = new THREE.MeshLambertMaterial({ color: 0x007aff }); 
+      const cube = new THREE.Mesh(geometry, material); 
+      cube.position.copy(position);
+      
+      const edges = new THREE.EdgesGeometry(geometry); 
+      const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 })); 
+      cube.add(line);
+
+      scene.add(cube); 
+      this.threeApp.objects.push(cube);
     },
-    clearCubes() { const { scene, objects } = this.threeApp; for (let i = objects.length - 1; i >= 0; i--) { const obj = objects[i]; if (obj.name !== 'ground') { scene.remove(obj); obj.geometry.dispose(); obj.material.dispose(); objects.splice(i, 1); } } this.addCubeAt(scene, new THREE.Vector3(0, 0.5, 0)); },
-    cleanup3D() { if (this.threeApp.animationId) { cancelAnimationFrame(this.threeApp.animationId); } if (this.threeApp.renderer) { this.threeApp.renderer.dispose(); const container = document.getElementById('three-container'); if (container) container.innerHTML = ''; } this.threeApp = { scene: null, camera: null, renderer: null, controls: null, objects: [] }; }
+    clearCubes() { 
+      const { scene, objects } = this.threeApp; 
+      // 倒序删除，保留 ground
+      for (let i = objects.length - 1; i >= 0; i--) { 
+        const obj = objects[i]; 
+        if (obj.name !== 'ground') { 
+          scene.remove(obj); 
+          obj.geometry.dispose(); 
+          obj.material.dispose(); 
+          objects.splice(i, 1); 
+        } 
+      } 
+      this.addCubeAt(scene, new THREE.Vector3(0, 0.5, 0)); 
+    },
+    cleanup3D() { 
+      if (this.threeApp.animationId) { cancelAnimationFrame(this.threeApp.animationId); } 
+      if (this.threeApp.renderer) { 
+        this.threeApp.renderer.dispose(); 
+        const container = document.getElementById('three-container'); 
+        if (container) container.innerHTML = ''; 
+      } 
+      this.threeApp = { scene: null, camera: null, renderer: null, controls: null, objects: [] }; 
+    }
   }
 }
 </script>
 
 <style scoped>
-.homeStartBtn{
-  margin-top: 14px;
-}
-
-.page {
-  height: 100vh;
-  min-height: 100vh;
-  background: 
-    radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 0%, hsla(260,100%,94%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 100%, hsla(300,100%,94%,1) 0, transparent 50%), 
-    radial-gradient(at 0% 100%, hsla(180,100%,94%,1) 0, transparent 50%);
-  background-color: #f2f2f7; 
-  color: #1c1c1e;
-  display: flex; flex-direction: column;
-  max-width: 480px; margin: 0 auto;
-  box-shadow: 0 0 40px rgba(0,0,0,0.08);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  box-sizing: border-box;
-  position: relative; overflow: hidden;
-}
-
-/* 动态流体光斑 */
+.homeStartBtn{ margin-top: 14px; }
+.page { height: 100vh; min-height: 100vh; background: radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(260,100%,94%,1) 0, transparent 50%), radial-gradient(at 100% 100%, hsla(300,100%,94%,1) 0, transparent 50%), radial-gradient(at 0% 100%, hsla(180,100%,94%,1) 0, transparent 50%); background-color: #f2f2f7; color: #1c1c1e; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,0.08); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; position: relative; overflow: hidden; }
 .mesh-bg { position: absolute; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
 .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.7; animation: float 10s infinite alternate ease-in-out; }
 .orb-1 { width: 350px; height: 350px; background: #a2d2ff; top: -100px; left: -100px; }
 .orb-2 { width: 300px; height: 300px; background: #e2c2ff; bottom: -50px; right: -80px; animation-delay: -3s; }
 .orb-3 { width: 200px; height: 200px; background: #ffdfba; top: 40%; left: 30%; opacity:0.5; animation-delay: -6s; }
 @keyframes float { 0% { transform: translate(0, 0); } 100% { transform: translate(20px, 30px); } }
-
 .toast-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; z-index: 999; pointer-events: none; }
 .toast-content { background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); color: #fff; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-
-/* 容器布局 */
 .wrap { padding: 20px 16px 24px; box-sizing: border-box; position: relative; z-index: 1; }
-
-.homeWrap { 
-  flex: 1; 
-  display: flex; 
-  flex-direction: column; 
-  justify-content: flex-start;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch; 
-  padding-top: max(60px, env(safe-area-inset-top)); 
-  padding-bottom: 40px;
-  scrollbar-width: none;
-}
+.homeWrap { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: max(60px, env(safe-area-inset-top)); padding-bottom: 40px; scrollbar-width: none; }
 .homeWrap::-webkit-scrollbar { display: none; }
-
 .full-height { flex: 1; display: flex; flex-direction: column; height: 100vh; }
 .full-flex { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; }
-
-/* 头部样式 */
 .header-area { margin-bottom: 20px; text-align: center; flex-shrink: 0; }
 .title { font-size: 34px; font-weight: 900; margin: 0 0 6px; color: #000; letter-spacing: -0.5px; }
 .subtitle { font-size: 15px; color: #8e8e93; font-weight: 500; }
-
-/* --- 核心磨砂玻璃卡片 --- */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.65); 
-  backdrop-filter: blur(50px) saturate(200%); 
-  -webkit-backdrop-filter: blur(50px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 
-    0 20px 40px -10px rgba(0,0,0,0.1),
-    inset 0 0 0 1px rgba(255,255,255,0.5);
-}
+.glass-panel { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(50px) saturate(200%); -webkit-backdrop-filter: blur(50px) saturate(200%); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.5); }
 .card { border-radius: 28px; padding: 16px; }
-
-/* 标签文字 */
 .rowLabel { font-size: 13px; font-weight: 700; color: #007aff; margin: 16px 0 8px 6px; opacity: 0.9; letter-spacing: 0.5px; }
-
-/* 首页模式按键 (Flex布局) */
-.modeRow { 
-  display: flex; 
-  gap: 8px; 
-  margin-bottom: 8px; 
-  flex-wrap: wrap; 
-}
-.modeItem { 
-  flex: 1 0 30%; 
-  padding: 14px 4px; 
-  border-radius: 16px; 
-  background: rgba(255,255,255,0.5); 
-  border: 1px solid rgba(0,0,0,0.05); 
-  text-align: center; 
-  box-sizing: border-box; 
-  transition: all 0.1s; 
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-}
+.modeRow { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.modeItem { flex: 1 0 30%; padding: 14px 4px; border-radius: 16px; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.05); text-align: center; box-sizing: border-box; transition: all 0.1s; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
 .modeItem:active { transform: scale(0.97); }
-.modeItem.active { 
-  background: #007aff; 
-  border-color: transparent; 
-  box-shadow: 0 8px 20px rgba(0,122,255,0.3);
-}
+.modeItem.active { background: #007aff; border-color: transparent; box-shadow: 0 8px 20px rgba(0,122,255,0.3); }
 .modeTitle { display: block; font-size: 16px; font-weight: 700; color: #1c1c1e; }
 .modeItem.active .modeTitle { color: #fff; }
-
-/* 按钮通用 */
 button { border: none; outline: none; cursor: pointer; font-family: inherit; }
-.btnPrimary { 
-  width: 100%; height: 50px; line-height: 50px; 
-  border-radius: 16px; 
-  background: linear-gradient(135deg, #34c759 0%, #28a745 100%);
-  color: #fff; font-size: 20px; font-weight: 700; 
-  box-shadow: 0 10px 25px rgba(0,122,255,0.25);
-  transition: transform 0.1s;
-}
+.btnPrimary { width: 100%; height: 50px; line-height: 50px; border-radius: 16px; background: linear-gradient(135deg, #34c759 0%, #28a745 100%); color: #fff; font-size: 20px; font-weight: 700; box-shadow: 0 10px 25px rgba(0,122,255,0.25); transition: transform 0.1s; }
 .btnPrimary:active { transform: scale(0.98); opacity: 0.9; }
-
-.btnGhost { 
-  width: 100%; height: 48px; line-height: 48px; 
-  border-radius: 16px; 
-  background: rgba(255,255,255,0.5); 
-  border: 1px solid rgba(0,0,0,0.05); 
-  color: #007aff; font-size: 18px; font-weight: 600; 
-  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-  transition: background 0.2s;
-}
+.btnGhost { width: 100%; height: 48px; line-height: 48px; border-radius: 16px; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.05); color: #007aff; font-size: 18px; font-weight: 600; box-shadow: 0 2px 10px rgba(0,0,0,0.02); transition: background 0.2s; }
 .btnGhost:active { background: rgba(255,255,255,0.8); }
-
-.btnHistory {
-  width: 100%; height: 48px;
-  line-height: 48px; margin-top: 9px;
-  border-radius: 16px;
-  background: rgba(88, 86, 214, 0.1); 
-  color: #5856d6; font-size: 20px; font-weight: 700;
-  border: 1px solid rgba(88, 86, 214, 0.2);
-}
+.btnHistory { width: 100%; height: 48px; line-height: 48px; margin-top: 9px; border-radius: 16px; background: rgba(88, 86, 214, 0.1); color: #5856d6; font-size: 20px; font-weight: 700; border: 1px solid rgba(88, 86, 214, 0.2); }
 .btnHistory:active { background: rgba(88, 86, 214, 0.2); }
-
-.btnDanger {
-  width: 100%; height: 48px; line-height: 48px;
-  border-radius: 16px;
-  background: rgba(255, 59, 48, 0.1);
-  color: #ff3b30; font-size: 20px; font-weight: 700;
-  border: 1px solid rgba(255, 59, 48, 0.2);
-}
+.btnDanger { width: 100%; height: 48px; line-height: 48px; border-radius: 16px; background: rgba(255, 59, 48, 0.1); color: #ff3b30; font-size: 20px; font-weight: 700; border: 1px solid rgba(255, 59, 48, 0.2); }
 .btnDanger:active { background: rgba(255, 59, 48, 0.2); }
-
 .main-action-btn { font-size: 20px !important; height: 54px !important; line-height: 54px !important; }
-
-/* --- 游戏界面 --- */
-.gameRoot { 
-  min-height: 100vh; 
-  display: flex; 
-  flex-direction: column;
-  padding-bottom: 0;
-}
-.safe-top { 
-  padding-top: max(44px, env(safe-area-inset-top)); 
-  padding-bottom: 12px; height: auto; box-sizing: content-box; 
-  display: flex; align-items: center; gap: 12px; margin-bottom: 5px;
-}
+.gameRoot { min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 0; }
+.safe-top { padding-top: max(44px, env(safe-area-inset-top)); padding-bottom: 12px; height: auto; box-sizing: content-box; display: flex; align-items: center; gap: 12px; margin-bottom: 5px; }
 .safe-header { padding-top: max(44px, env(safe-area-inset-top)); margin-bottom: 20px; }
-
-.btnBack { 
-  width: 80px; height: 44px; line-height: 44px; border-radius: 14px; 
-  background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.05); 
-  font-weight: 700; font-size: 16px; margin: 0; color: #1c1c1e;
-  backdrop-filter: blur(10px);
-}
+.btnBack { width: 80px; height: 44px; line-height: 44px; border-radius: 14px; background: rgba(255,255,255,0.6); border: 1px solid rgba(0,0,0,0.05); font-weight: 700; font-size: 16px; margin: 0; color: #1c1c1e; backdrop-filter: blur(10px); }
 .topStats { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; color: #333; }
-.glass-pill {
-  background: rgba(255,255,255,0.5); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(0,0,0,0.03);
-  backdrop-filter: blur(10px);
-}
-
+.glass-pill { background: rgba(255,255,255,0.5); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(0,0,0,0.03); backdrop-filter: blur(10px); }
 .gameMain { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .qCard { text-align: center; padding: 30px 20px; }
-.qText { 
-  font-size: 64px; font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px;
-}
+.qText { font-size: 64px; font-weight: 800; margin-top: 0; color: #1c1c1e; letter-spacing: -2px; }
 .qNote { margin-top: 8px; font-size: 16px; color: #8e8e93; font-weight: 500; }
-.ansBox { 
-  margin-top: 20px; padding: 15px; border-radius: 20px; 
-  background: rgba(255,255,255,0.5); 
-  font-size: 44px; font-weight: 800; min-height: 44px; color: #007aff;
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.03);
-}
+.ansBox { margin-top: 20px; padding: 15px; border-radius: 20px; background: rgba(255,255,255,0.5); font-size: 44px; font-weight: 800; min-height: 44px; color: #007aff; box-shadow: inset 0 2px 6px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.03); }
 .hint { margin-top: 15px; color: #8e8e93; font-size: 15px; font-weight: 600; }
-
-.keypad {
-  border-radius: 28px;
-  overflow: hidden;
-  clip-path: inset(0 0 0 0 round 28px);
-  margin-bottom: calc( 6px + env(safe-area-inset-bottom));
-}
-
+.keypad { border-radius: 28px; overflow: hidden; clip-path: inset(0 0 0 0 round 28px); margin-bottom: calc( 6px + env(safe-area-inset-bottom)); }
 .fnRow { display: flex; gap: 9px; margin-bottom: 9px; }
-.kFn { 
-  flex: 1; height: 65px; line-height: 65px; border-radius: 14px; 
-  font-size: 20px; font-weight: 900; margin: 0; color: #fff; 
-  border: 1px solid rgba(0,0,0,0.05);
-  backdrop-filter: blur(10px);
-}
+.kFn { flex: 1; height: 65px; line-height: 65px; border-radius: 14px; font-size: 20px; font-weight: 900; margin: 0; color: #fff; border: 1px solid rgba(0,0,0,0.05); backdrop-filter: blur(10px); }
 .style-skip { background: #34c759; border-color: #248a3d; } 
 .style-clear { background: #ff9500; border-color: #e08600; } 
 .style-del { background: #ff3b30; border-color: #d63329; } 
-
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.k { 
-  width: 100%; height: 70px; line-height: 70px; border-radius: 14px; 
-  background: rgba(255,255,255,0.85); 
-  border: 1px solid rgba(0,0,0,0.03); 
-  font-size: 30px; font-weight: 900; margin: 0; color: #000;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.04); 
-  transition: all 0.1s;
-}
+.k { width: 100%; height: 70px; line-height: 70px; border-radius: 14px; background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.03); font-size: 30px; font-weight: 900; margin: 0; color: #000; box-shadow: 0 4px 0 rgba(0,0,0,0.04); transition: all 0.1s; }
 .k:active { transform: translateY(4px); box-shadow: none; background: #fff; }
-
-.glass-key-confirm { 
-  background: #34c759; color: #fff; border:none; font-size: 28px; 
-  box-shadow: 0 4px 0 #248a3d; 
-  border-radius: 11px;
-}
+.glass-key-confirm { background: #34c759; color: #fff; border:none; font-size: 28px; box-shadow: 0 4px 0 #248a3d; border-radius: 11px; }
 .glass-key-confirm:active { background: #28a745; box-shadow: none; transform: translateY(4px); }
-
 .k.wide { grid-column: 1 / 2; }
 .k.wide2 { grid-column: 2 / 4; }
-
-.chart-container { 
-  background: rgba(255,255,255,0.4); border-radius: 20px; padding: 15px; margin-bottom: 20px; 
-  border: 1px solid rgba(255,255,255,0.5);
-}
-.chart-tabs { 
-  display: flex; gap: 4px; overflow-x: auto; padding: 4px; margin-bottom: 12px;
-  background: rgba(118, 118, 128, 0.12); 
-  border-radius: 12px; scrollbar-width: none; 
-}
+.chart-container { background: rgba(255,255,255,0.4); border-radius: 20px; padding: 15px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.5); }
+.chart-tabs { display: flex; gap: 4px; overflow-x: auto; padding: 4px; margin-bottom: 12px; background: rgba(118, 118, 128, 0.12); border-radius: 12px; scrollbar-width: none; }
 .chart-tabs::-webkit-scrollbar { display: none; }
-.chart-tab-item { 
-  flex-shrink: 0; font-size: 13px; padding: 6px 14px; border-radius: 8px; 
-  color: #666; cursor: pointer; font-weight: 600; 
-  border: 1px solid transparent; 
-}
+.chart-tab-item { flex-shrink: 0; font-size: 13px; padding: 6px 14px; border-radius: 8px; color: #666; cursor: pointer; font-weight: 600; border: 1px solid transparent; }
 .chart-tab-item.active { background: #fff; color: #000; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-
 .resultScroll { width: 100%; flex: 1; overflow-y: auto; padding-right: 4px; }
-.row { 
-  display: flex; justify-content: space-between; align-items: center; 
-  padding: 18px 0; border-bottom: 1px solid rgba(0,0,0,0.05); 
-  font-weight: 600; white-space: nowrap; color: #1c1c1e;
-}
+.row { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-weight: 600; white-space: nowrap; color: #1c1c1e; }
 .hover-row:active { background: rgba(0,0,0,0.03); border-radius: 12px; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
+.qText-small { font-size: 52px !important; letter-spacing: -1px !important; white-space: nowrap; margin-top: 10px; overflow: visible; }
 
-.qText-small {
-  font-size: 52px !important; letter-spacing: -1px !important; white-space: nowrap; margin-top: 10px; overflow: visible;
-}
-
-/* ============================
-   3D 模式专用样式
-   ============================ */
-.cubic-ui {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  
-  /* 布局与避让刘海 */
-  padding-left: 10px;
-  padding-right: 10px;
-  padding-bottom: 10px;
-  padding-top: max(60px, calc(env(safe-area-inset-top) + 10px));
-  
-  box-sizing: border-box;
-  pointer-events: none; /* 关键：让容器不阻挡 3D 场景的点击 */
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* 关键修复：恢复按钮的点击响应 */
-.cubic-ui > * {
-  pointer-events: auto;
-}
-
-.small-btn {
-  width: auto !important;
-  height: 36px !important;
-  line-height: 36px !important;
-  padding: 0 16px !important;
-  font-size: 14px !important;
-}
-
-.btnIcon {
-  background: rgba(255,255,255,0.4);
-  border: 1px solid rgba(0,0,0,0.05);
-  border-radius: 12px;
-  padding: 8px 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-  transition: all 0.2s;
-}
-
-.btnIcon.active {
-  background: #007aff;
-  color: white;
-  box-shadow: 0 4px 10px rgba(0,122,255,0.3);
-}
-
-.divider {
-  width: 1px;
-  height: 20px;
-  background: rgba(0,0,0,0.1);
-  margin: 0 5px;
-}
-
-.tip-toast {
-  margin-top: 10px;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  backdrop-filter: blur(4px);
-}
+.cubic-ui { position: absolute; top: 0; left: 0; width: 100%; padding-left: 10px; padding-right: 10px; padding-bottom: 10px; padding-top: max(60px, calc(env(safe-area-inset-top) + 10px)); box-sizing: border-box; pointer-events: none; z-index: 10; display: flex; flex-direction: column; align-items: center; }
+.cubic-ui > * { pointer-events: auto; }
+.small-btn { width: auto !important; height: 36px !important; line-height: 36px !important; padding: 0 16px !important; font-size: 14px !important; }
+.btnIcon { background: rgba(255,255,255,0.4); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 8px 12px; font-size: 14px; font-weight: 600; color: #333; transition: all 0.2s; }
+.btnIcon.active { background: #007aff; color: white; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
+.divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); margin: 0 5px; }
+.tip-toast { margin-top: 10px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); }
 </style>
