@@ -768,8 +768,32 @@ export default {
 .glass-panel { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(50px) saturate(200%); -webkit-backdrop-filter: blur(50px) saturate(200%); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.5); }
 .card { border-radius: 28px; padding: 16px; }
 .rowLabel { font-size: 13px; font-weight: 700; color: #007aff; margin: 16px 0 8px 6px; opacity: 0.9; letter-spacing: 0.5px; }
-.modeRow { display: flex; gap: 8px; margin-bottom: 8px; }
-.modeItem { flex: 1; padding: 14px 4px; border-radius: 16px; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.05); text-align: center; box-sizing: border-box; transition: all 0.1s; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+/* 修改后： */
+.modeRow { 
+  display: flex; 
+  gap: 8px; 
+  margin-bottom: 8px; 
+  /* 核心改动1：允许换行 */
+  flex-wrap: wrap; 
+}
+.modeItem { 
+  /* 核心改动2：
+     flex-grow: 1 (自动填满剩余空间)
+     flex-shrink: 0 (空间不足时不压缩)
+     flex-basis: 30% (基准宽度30%，强制让一行最多只能容纳3个)
+  */
+  flex: 1 0 30%; 
+  
+  padding: 14px 4px; 
+  border-radius: 16px; 
+  background: rgba(255,255,255,0.5); 
+  border: 1px solid rgba(0,0,0,0.05); 
+  text-align: center; 
+  box-sizing: border-box; 
+  transition: all 0.1s; 
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
 .modeItem:active { transform: scale(0.97); }
 .modeItem.active { background: #007aff; border-color: transparent; box-shadow: 0 8px 20px rgba(0,122,255,0.3); }
 .modeTitle { display: block; font-size: 16px; font-weight: 700; color: #1c1c1e; }
@@ -821,3 +845,4 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 .qText-small { font-size: 52px !important; letter-spacing: -1px !important; white-space: nowrap; margin-top: 10px; overflow: visible; }
 </style>
+
