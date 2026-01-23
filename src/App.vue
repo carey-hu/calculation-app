@@ -123,16 +123,12 @@
         </div>
 
         <div class="view-selector glass-panel">
-          <div class="view-row">
-            <button class="view-btn" @click="setCameraView('front')">正视</button>
-            <button class="view-btn" @click="setCameraView('back')">后视</button>
-            <button class="view-btn" @click="setCameraView('left')">左视</button>
-          </div>
-          <div class="view-row">
-            <button class="view-btn" @click="setCameraView('right')">右视</button>
-            <button class="view-btn" @click="setCameraView('top')">俯视</button>
-            <button class="view-btn active-view" @click="setCameraView('iso')">轴测</button>
-          </div>
+          <button class="view-btn" @click="setCameraView('front')">正</button>
+          <button class="view-btn" @click="setCameraView('back')">后</button>
+          <button class="view-btn" @click="setCameraView('left')">左</button>
+          <button class="view-btn" @click="setCameraView('right')">右</button>
+          <button class="view-btn" @click="setCameraView('top')">俯</button>
+          <button class="view-btn active-view" @click="setCameraView('iso')">轴</button>
         </div>
 
         <div class="tip-toast">点击地面放置，点击方块叠加</div>
@@ -688,25 +684,21 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   box-shadow: 0 0 0 2px rgba(0,0,0,0.1), inset 0 0 0 2px rgba(255,255,255,0.8);
 }
 
-/* NEW: View Selector Styles */
+/* NEW: View Selector Styles (Single Row) */
 .view-selector {
   margin-top: 8px;
   padding: 6px;
-  display: flex;
-  flex-direction: column;
+  display: flex; /* Default is row */
   gap: 6px;
   border-radius: 20px;
-}
-.view-row {
-  display: flex;
-  gap: 6px;
+  flex-wrap: wrap; /* Ensure wrap if screen is very small */
   justify-content: center;
 }
 .view-btn {
   background: rgba(255,255,255,0.5);
   border: 1px solid rgba(0,0,0,0.05);
   border-radius: 12px;
-  padding: 6px 16px;
+  padding: 6px 14px; /* Slightly adjusted padding */
   font-size: 13px;
   font-weight: 600;
   color: #333;
