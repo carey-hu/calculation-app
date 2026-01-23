@@ -21,7 +21,7 @@
           <div class="rowLabel" v-if="group.label">{{ group.label }}</div>
           
           <div v-if="groupKey === 'divSelect'" style="margin-bottom: 10px;">
-             <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
+              <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
               进入除数选择模式
             </button>
           </div>
@@ -118,7 +118,8 @@
 
           <div class="divider"></div>
 
-          <button :class="['btnIcon', isDeleteMode ? 'active' : '']" @click="isDeleteMode=true">🗑️</button>
+          <button :class="['btnIcon', isDeleteMode ? 'active' : '']" @click="toggleDeleteMode">🗑️</button>
+          <button :class="['btnIcon', isSliceMode ? 'active' : '']" @click="toggleSliceMode">🔪</button>
           <button class="btnIcon" @click="clearCubes">🔄</button>
         </div>
 
@@ -131,7 +132,29 @@
           <button class="view-btn active-view" @click="setCameraView('iso')">轴</button>
         </div>
 
-        <div class="tip-toast">点击地面放置，点击方块叠加</div>
+        <div v-if="isSliceMode" class="glass-panel slice-panel">
+          <div class="slice-row">
+            <span class="slice-label">位置</span>
+            <input type="range" min="-10" max="15" step="0.1" v-model.number="sliceConfig.constant" @input="updateSlicePlane" class="slice-slider">
+          </div>
+          <div class="slice-row">
+            <span class="slice-label">X轴倾斜</span>
+            <input type="range" min="-1" max="1" step="0.1" v-model.number="sliceConfig.x" @input="updateSlicePlane" class="slice-slider">
+          </div>
+          <div class="slice-row">
+            <span class="slice-label">Y轴倾斜</span>
+            <input type="range" min="-1" max="1" step="0.1" v-model.number="sliceConfig.y" @input="updateSlicePlane" class="slice-slider">
+          </div>
+          <div class="slice-row">
+            <span class="slice-label">Z轴倾斜</span>
+            <input type="range" min="-1" max="1" step="0.1" v-model.number="sliceConfig.z" @input="updateSlicePlane" class="slice-slider">
+          </div>
+          <div style="text-align:center; margin-top:5px;">
+             <button class="btnGhost small-btn" style="height:28px; line-height:28px; font-size:12px;" @click="resetSlice">重置切面</button>
+          </div>
+        </div>
+
+        <div class="tip-toast" v-if="!isSliceMode">点击地面放置，点击方块叠加</div>
       </div>
     </div>
 
@@ -156,9 +179,9 @@
             <div v-for="(item, index) in results" :key="index" class="row">
               <span class="rowLeft">{{index+1}}. {{item.q}} = {{item.yourAns}}</span>
               <span class="rowRight">
-                 <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
-                 <span>{{item.ok ? '✅' : '❌'}}</span>
-                 <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
+                  <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
+                  <span>{{item.ok ? '✅' : '❌'}}</span>
+                  <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
               </span>
             </div>
           </template>
@@ -314,9 +337,17 @@ export default {
       
       // 3D 模式状态
       isDeleteMode: false,
-      // 修改：颜色配置（黑、白、蓝、橙）
+      isSliceMode: false, // 切面模式
       colors: ['#007aff', '#ff9500', '#333333', '#ffffff'], 
-      selectedColor: '#007aff'
+      selectedColor: '#007aff',
+      
+      // 切面配置
+      sliceConfig: {
+        constant: 0,
+        x: 0,
+        y: -1, 
+        z: 0
+      }
     }
   },
   computed: {
@@ -348,7 +379,7 @@ export default {
     this.cleanup3D(); 
   },
   created() {
-    this.threeApp = { scene: null, camera: null, renderer: null, controls: null, raycaster: null, pointer: null, objects: [], animationId: null };
+    this.threeApp = { scene: null, camera: null, renderer: null, controls: null, raycaster: null, pointer: null, objects: [], animationId: null, clippingPlane: null, planeHelper: null };
   },
   methods: {
     now() { return Date.now(); },
@@ -400,92 +431,139 @@ export default {
     closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
 
     // =================================================================
-    // 3D 模块逻辑 (使用正交相机修复变形，增强边线)
+    // 3D 模块逻辑 (增强：正交相机、下沉视图、任意切面)
     // =================================================================
     startCubicMode() { this.viewState = 'cubic'; this.$nextTick(() => { this.initThree(); }); },
-    quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; },
+    quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; this.isSliceMode = false; },
     switchColor(c) { 
       this.selectedColor = c; 
       this.isDeleteMode = false; 
     },
-    // 设置正交视图
+    toggleDeleteMode() {
+      this.isDeleteMode = !this.isDeleteMode;
+      if(this.isDeleteMode) this.isSliceMode = false;
+    },
+    
+    // 切换切面模式
+    toggleSliceMode() {
+      this.isSliceMode = !this.isSliceMode;
+      if (this.isSliceMode) {
+        this.isDeleteMode = false;
+        if(this.threeApp.planeHelper) this.threeApp.planeHelper.visible = true;
+        this.threeApp.renderer.localClippingEnabled = true;
+      } else {
+        if(this.threeApp.planeHelper) this.threeApp.planeHelper.visible = false;
+        this.threeApp.renderer.localClippingEnabled = false;
+      }
+    },
+    
+    // 更新切面参数
+    updateSlicePlane() {
+      if (!this.threeApp.clippingPlane) return;
+      const { x, y, z, constant } = this.sliceConfig;
+      // 更新法向量
+      const normal = new THREE.Vector3(x, y, z).normalize();
+      if (normal.length() === 0) normal.set(0, -1, 0); // 防止全0
+      
+      this.threeApp.clippingPlane.normal.copy(normal);
+      this.threeApp.clippingPlane.constant = constant;
+    },
+
+    resetSlice() {
+      this.sliceConfig = { constant: 5, x: 0, y: -1, z: 0 };
+      this.updateSlicePlane();
+    },
+
+    // 设置正交视图 (关键：targetY 偏移)
     setCameraView(type) {
       if (!this.threeApp.camera || !this.threeApp.controls) return;
       const { camera, controls } = this.threeApp;
-      const dist = 20; // 只要足够远即可，正交投影下距离不影响大小
+      const dist = 20; 
       
+      // 核心调整：将观察中心点(Target)上移，这会让物体在屏幕中下移
+      const targetY = 6; 
+      
+      controls.target.set(0, targetY, 0);
+
       switch(type) {
-        case 'front': camera.position.set(0, 0, dist); break;
-        case 'back': camera.position.set(0, 0, -dist); break;
-        case 'left': camera.position.set(-dist, 0, 0); break;
-        case 'right': camera.position.set(dist, 0, 0); break;
-        case 'top': camera.position.set(0, dist, 0); break;
-        case 'iso': camera.position.set(12, 12, 12); break;
+        case 'front': camera.position.set(0, targetY, dist); break;
+        case 'back': camera.position.set(0, targetY, -dist); break;
+        case 'left': camera.position.set(-dist, targetY, 0); break;
+        case 'right': camera.position.set(dist, targetY, 0); break;
+        case 'top': camera.position.set(0, dist + targetY, 0); break;
+        case 'iso': camera.position.set(12, 12 + targetY, 12); break;
       }
       
-      camera.lookAt(0, 0, 0);
-      controls.target.set(0, 0, 0); 
+      camera.lookAt(0, targetY, 0);
       controls.update();
     },
+
     initThree() {
       const container = document.getElementById('three-container'); 
       if (!container) return;
       const width = container.clientWidth; 
       const height = container.clientHeight;
 
-      // 1. 场景
       const scene = new THREE.Scene(); 
       scene.background = new THREE.Color('#f2f2f7'); 
       scene.fog = new THREE.Fog('#f2f2f7', 20, 50);
 
-      // 2. 核心修改：使用正交相机 (OrthographicCamera) 消除透视变形
+      // 正交相机
       const aspect = width / height;
-      const d = 18; // 视野范围 (决定物体显示多大)
+      const d = 18; 
       const camera = new THREE.OrthographicCamera(
-        -d * aspect, d * aspect, // left, right
-        d, -d,                   // top, bottom
-        1, 1000                  // near, far
+        -d * aspect, d * aspect, 
+        d, -d,                   
+        1, 1000                  
       );
       
-      // 初始设为轴测角度
-      camera.position.set(12, 12, 12); 
-      camera.lookAt(0, 0, 0);
+      // 初始视角位置 (配合 Target 偏移)
+      const targetY = 6; 
+      camera.position.set(12, 12 + targetY, 12); 
+      camera.lookAt(0, targetY, 0);
 
-      // 3. 渲染器
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
       renderer.setSize(width, height); 
       renderer.setPixelRatio(window.devicePixelRatio); 
+      renderer.localClippingEnabled = false; // 初始关闭
       container.appendChild(renderer.domElement);
 
-      // 4. 灯光
+      // 初始化全局裁剪平面
+      const clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 5);
+      const planeHelper = new THREE.PlaneHelper(clippingPlane, 20, 0xff0000);
+      planeHelper.visible = false;
+      scene.add(planeHelper);
+      
+      this.threeApp.clippingPlane = clippingPlane;
+      this.threeApp.planeHelper = planeHelper;
+
+      // 灯光
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
       scene.add(ambientLight);
       const dirLight = new THREE.DirectionalLight(0xffffff, 0.7); 
       dirLight.position.set(10, 20, 10); 
       scene.add(dirLight);
 
-      // 5. 辅助网格
+      // 辅助网格 & 地面
       const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xdddddd); 
       scene.add(gridHelper);
 
-      // 物理地面 (隐形但可点击)
       const planeGeometry = new THREE.PlaneGeometry(20, 20); 
       planeGeometry.rotateX(-Math.PI / 2);
-      const planeMaterial = new THREE.MeshBasicMaterial({ 
-        visible: true,      
-        transparent: true,  
-        opacity: 0          
-      }); 
+      const planeMaterial = new THREE.MeshBasicMaterial({ visible: true, transparent: true, opacity: 0 }); 
       const plane = new THREE.Mesh(planeGeometry, planeMaterial); 
       plane.name = 'ground'; 
       scene.add(plane);
 
-      // 6. 控制器
+      // 控制器
       const controls = new OrbitControls(camera, renderer.domElement); 
       controls.enableDamping = true; 
       controls.dampingFactor = 0.05;
+      // 设置控制中心偏上，使物体沉底
+      controls.target.set(0, targetY, 0);
+      controls.update();
 
-      // 7. 交互
+      // 交互事件
       const raycaster = new THREE.Raycaster(); 
       const pointer = new THREE.Vector2();
       let downTime = 0;
@@ -507,8 +585,12 @@ export default {
       this.threeApp.controls = controls;
       this.threeApp.objects = [plane]; 
       
+      // 初始化已保存的切面配置
+      this.updateSlicePlane();
+
       this.animate3D();
     },
+
     animate3D() { 
       const { scene, camera, renderer, controls } = this.threeApp; 
       if (!renderer) return; 
@@ -516,6 +598,7 @@ export default {
       controls.update(); 
       renderer.render(scene, camera); 
     },
+
     handle3DClick(raycaster, pointer, scene, camera, plane) {
       raycaster.setFromCamera(pointer, camera); 
       const intersects = raycaster.intersectObjects(this.threeApp.objects, false);
@@ -532,6 +615,7 @@ export default {
              intersect.object.material.dispose();
           }
         } else {
+          // 放置逻辑
           const voxelPos = new THREE.Vector3().copy(intersect.point).addScaledVector(intersect.face.normal, 0.5);
           voxelPos.divideScalar(1).floor().multiplyScalar(1).addScalar(0.5);
           
@@ -540,15 +624,17 @@ export default {
         }
       }
     },
+
     addCubeAt(scene, position) {
       const geometry = new THREE.BoxGeometry(1, 1, 1); 
       
-      // 核心修改：添加 polygonOffset 使得面稍微后退，让边线更清晰（解决z-fighting）
+      // 材质加入 clippingPlanes
       const material = new THREE.MeshLambertMaterial({ 
         color: this.selectedColor,
         polygonOffset: true,
         polygonOffsetFactor: 1, 
-        polygonOffsetUnits: 1
+        polygonOffsetUnits: 1,
+        clippingPlanes: [this.threeApp.clippingPlane] 
       }); 
       
       const cube = new THREE.Mesh(geometry, material); 
@@ -558,12 +644,18 @@ export default {
       const edgeColor = isDarkBlock ? 0xffffff : 0x000000;
       
       const edges = new THREE.EdgesGeometry(geometry); 
-      const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: edgeColor })); 
+      // 边线材质也需要裁剪
+      const lineMaterial = new THREE.LineBasicMaterial({ 
+        color: edgeColor,
+        clippingPlanes: [this.threeApp.clippingPlane] 
+      });
+      const line = new THREE.LineSegments(edges, lineMaterial); 
       cube.add(line);
 
       scene.add(cube); 
       this.threeApp.objects.push(cube);
     },
+
     clearCubes() { 
       const { scene, objects } = this.threeApp; 
       for (let i = objects.length - 1; i >= 0; i--) { 
@@ -688,27 +780,69 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   box-shadow: 0 0 0 2px rgba(0,0,0,0.1), inset 0 0 0 2px rgba(255,255,255,0.8);
 }
 
-/* View Selector Styles (Single Row) */
+/* View Selector Styles */
 .view-selector {
   margin-top: 8px;
   padding: 6px;
-  display: flex; /* Default is row */
+  display: flex; 
   gap: 6px;
   border-radius: 20px;
-  flex-wrap: wrap; /* Ensure wrap if screen is very small */
+  flex-wrap: wrap; 
   justify-content: center;
 }
 .view-btn {
   background: rgba(255,255,255,0.5);
   border: 1px solid rgba(0,0,0,0.05);
   border-radius: 12px;
-  padding: 6px 14px; /* Slightly adjusted padding */
+  padding: 6px 14px; 
   font-size: 13px;
   font-weight: 600;
   color: #333;
 }
-.view-btn:active {
+.view-btn:active, .view-btn.active-view {
   background: #007aff;
   color: white;
+}
+
+/* Slice Panel Styles */
+.slice-panel {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 90%;
+  max-width: 300px;
+}
+.slice-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+.slice-label {
+  width: 50px;
+  text-align: right;
+}
+.slice-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 2px;
+  outline: none;
+}
+.slice-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #007aff;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 </style>
