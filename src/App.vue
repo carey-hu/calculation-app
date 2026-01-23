@@ -102,41 +102,39 @@
       <div id="three-container" style="width:100%; height:100%; display:block; outline:none; touch-action: none;"></div>
 
       <div class="cubic-ui safe-top">
-        <div class="glass-panel" style="padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; border-radius: 24px; max-width: 95%;">
+        <div class="glass-panel" style="padding: 8px 12px; display: flex; gap: 8px; align-items: center; border-radius: 24px; max-width: 95%;">
+          <button class="btnBack glass-btn small-btn" @click="quitCubicMode">退出</button>
+          <div class="divider"></div>
           
-          <div style="display:flex; gap: 8px; align-items:center; justify-content: space-between; width: 100%;">
-            <button class="btnBack glass-btn small-btn" @click="quitCubicMode">退出</button>
-            
-            <div class="divider"></div>
-            
-            <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;">
-              <div 
-                v-for="c in colors" 
-                :key="c" 
-                :style="{backgroundColor: c, border: c==='#ffffff' ? '1px solid #ccc' : '2px solid rgba(255,255,255,0.5)'}"
-                :class="['color-dot', selectedColor === c && !isDeleteMode ? 'active' : '']"
-                @click="switchColor(c)"
-              ></div>
-            </div>
-
-            <div class="divider"></div>
-
-            <div style="display:flex; gap: 5px;">
-              <button :class="['btnIcon', isDeleteMode ? 'active' : '']" @click="isDeleteMode=true">🗑️</button>
-              <button class="btnIcon" @click="clearCubes">🔄</button>
-            </div>
+          <div style="display:flex; gap:8px;">
+            <div 
+              v-for="c in colors" 
+              :key="c" 
+              :style="{backgroundColor: c, border: c === '#ffffff' ? '1px solid #ccc' : 'none'}"
+              :class="['color-dot', selectedColor === c && !isDeleteMode ? 'active' : '']"
+              @click="switchColor(c)"
+            ></div>
           </div>
 
-          <div style="display:flex; gap: 6px; justify-content: center; width:100%; padding-top:4px; border-top:1px solid rgba(0,0,0,0.05);">
-            <button class="view-btn" @click="setCameraView('front')">正视</button>
-            <button class="view-btn" @click="setCameraView('left')">左视</button>
-            <button class="view-btn" @click="setCameraView('top')">俯视</button>
-            <button class="view-btn" @click="setCameraView('iso')">复位</button>
-            <button class="view-btn small-text" @click="setCameraView('right')">右</button>
-            <button class="view-btn small-text" @click="setCameraView('back')">后</button>
-          </div>
+          <div class="divider"></div>
 
+          <button :class="['btnIcon', isDeleteMode ? 'active' : '']" @click="isDeleteMode=true">🗑️</button>
+          <button class="btnIcon" @click="clearCubes">🔄</button>
         </div>
+
+        <div class="view-selector glass-panel">
+          <div class="view-row">
+            <button class="view-btn" @click="setCameraView('front')">正视</button>
+            <button class="view-btn" @click="setCameraView('back')">后视</button>
+            <button class="view-btn" @click="setCameraView('left')">左视</button>
+          </div>
+          <div class="view-row">
+            <button class="view-btn" @click="setCameraView('right')">右视</button>
+            <button class="view-btn" @click="setCameraView('top')">俯视</button>
+            <button class="view-btn active-view" @click="setCameraView('iso')">轴测</button>
+          </div>
+        </div>
+
         <div class="tip-toast">点击地面放置，点击方块叠加</div>
       </div>
     </div>
@@ -257,7 +255,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // =================================================================
-// 核心逻辑层 (保持不变)
+// 核心逻辑层
 // =================================================================
 
 const shuffle = (arr) => {
@@ -320,10 +318,9 @@ export default {
       
       // 3D 模式状态
       isDeleteMode: false,
-      // 修改：增加了黑色 #000000 和 白色 #ffffff
-      colors: ['#007aff', '#ff3b30', '#34c759', '#ff9500', '#000000', '#ffffff'], 
+      // 修改后的颜色配置：蓝、橙、黑(深灰)、白
+      colors: ['#007aff', '#ff9500', '#333333', '#ffffff'], 
       selectedColor: '#007aff'
-      // 注意：threeApp 已移出 data，避免 Vue 代理导致的性能和交互 Bug
     }
   },
   computed: {
@@ -355,7 +352,6 @@ export default {
     this.cleanup3D(); 
   },
   created() {
-    // 关键修复：将 Three.js 对象放在这里，不放入 data()，避免 Vue 响应式代理造成的性能问题和 Bug
     this.threeApp = { scene: null, camera: null, renderer: null, controls: null, raycaster: null, pointer: null, objects: [], animationId: null };
   },
   methods: {
@@ -366,7 +362,7 @@ export default {
     selectDivisorAndStart(d){ this.currentModeKey = 'firstSpec'; this.selectedDivisor = d; this.startGame(); },
     showToast(title) { this.toast.title = title; this.toast.show = true; setTimeout(() => { this.toast.show = false; }, 1500); },
     
-    // --- 游戏核心逻辑 (保持不变) ---
+    // --- 游戏核心逻辑 ---
     startGame(){
       const config = this.activeConfig;
       if (!config.gen) return;
@@ -408,7 +404,7 @@ export default {
     closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
 
     // =================================================================
-    // 3D 模块逻辑 (增强版)
+    // 3D 模块逻辑 (已修复点击无效、悬空问题、性能问题，新增四色和清空)
     // =================================================================
     startCubicMode() { this.viewState = 'cubic'; this.$nextTick(() => { this.initThree(); }); },
     quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; },
@@ -416,27 +412,25 @@ export default {
       this.selectedColor = c; 
       this.isDeleteMode = false; // 选颜色时自动退出删除模式
     },
-    // 新增：设置相机视角
+    // 新增：设置摄像机视图
     setCameraView(type) {
+      if (!this.threeApp.camera || !this.threeApp.controls) return;
       const { camera, controls } = this.threeApp;
-      if (!camera || !controls) return;
-      const d = 16; // 观察距离
-
-      switch (type) {
-        case 'front': camera.position.set(0, 0, d); break;
-        case 'back': camera.position.set(0, 0, -d); break;
-        case 'left': camera.position.set(-d, 0, 0); break;
-        case 'right': camera.position.set(d, 0, 0); break;
-        case 'top': camera.position.set(0, d, 0); break;
-        case 'iso': camera.position.set(8, 8, 8); break; // 默认等轴测
+      const dist = 14; // 标准距离
+      
+      switch(type) {
+        case 'front': camera.position.set(0, 0, dist); break;
+        case 'back': camera.position.set(0, 0, -dist); break;
+        case 'left': camera.position.set(-dist, 0, 0); break;
+        case 'right': camera.position.set(dist, 0, 0); break;
+        case 'top': camera.position.set(0, dist, 0); break;
+        case 'iso': camera.position.set(8, 8, 8); break;
       }
       
-      // 重置观察中心点为原点，确保切换视角后不会看偏
-      controls.target.set(0, 0, 0);
       camera.lookAt(0, 0, 0);
+      controls.target.set(0, 0, 0); // 重置观察点
       controls.update();
     },
-
     initThree() {
       const container = document.getElementById('three-container'); 
       if (!container) return;
@@ -470,13 +464,14 @@ export default {
       const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xdddddd); 
       scene.add(gridHelper);
 
-      // 地面 (不可见，用于点击)
+      // === 核心修复 1: 物理地面 (用于点击检测) ===
+      // 必须 visible: true 才能被射线检测！如果想隐藏，用 opacity: 0
       const planeGeometry = new THREE.PlaneGeometry(20, 20); 
       planeGeometry.rotateX(-Math.PI / 2);
       const planeMaterial = new THREE.MeshBasicMaterial({ 
-        visible: true,      
-        transparent: true, 
-        opacity: 0          
+        visible: true,      // 必须为 true
+        transparent: true,  // 开启透明
+        opacity: 0          // 透明度0
       }); 
       const plane = new THREE.Mesh(planeGeometry, planeMaterial); 
       plane.name = 'ground'; 
@@ -487,13 +482,15 @@ export default {
       controls.enableDamping = true; 
       controls.dampingFactor = 0.05;
 
-      // 7. 交互
+      // 7. 交互 (防止拖拽误触点击)
       const raycaster = new THREE.Raycaster(); 
       const pointer = new THREE.Vector2();
       let downTime = 0;
 
+      // 监听按下时间
       renderer.domElement.addEventListener('pointerdown', () => { downTime = Date.now(); });
       
+      // 监听抬起，判断是否为短促点击
       renderer.domElement.addEventListener('pointerup', (event) => {
         if (Date.now() - downTime < 200) {
           const rect = renderer.domElement.getBoundingClientRect(); 
@@ -503,12 +500,14 @@ export default {
         }
       });
 
+      // 直接赋值给 this，不经过 data() 响应式，防止 Vue 代理导致的性能问题
       this.threeApp.scene = scene;
       this.threeApp.camera = camera;
       this.threeApp.renderer = renderer;
       this.threeApp.controls = controls;
-      this.threeApp.objects = [plane]; 
+      this.threeApp.objects = [plane]; // 初始化交互对象列表，包含地面
       
+      // 移除初始方块放置
       this.animate3D();
     },
     animate3D() { 
@@ -520,6 +519,7 @@ export default {
     },
     handle3DClick(raycaster, pointer, scene, camera, plane) {
       raycaster.setFromCamera(pointer, camera); 
+      // 这里的 objects 必须包含 visible: true 的物体
       const intersects = raycaster.intersectObjects(this.threeApp.objects, false);
 
       if (intersects.length > 0) {
@@ -534,6 +534,7 @@ export default {
              intersect.object.material.dispose();
           }
         } else {
+          // === 核心修复 2: 计算新位置，防止悬空 ===
           const voxelPos = new THREE.Vector3().copy(intersect.point).addScaledVector(intersect.face.normal, 0.5);
           voxelPos.divideScalar(1).floor().multiplyScalar(1).addScalar(0.5);
           
@@ -544,26 +545,18 @@ export default {
     },
     addCubeAt(scene, position) {
       const geometry = new THREE.BoxGeometry(1, 1, 1); 
-      
-      // 优化 1：使用 polygonOffset 防止边线与面重叠（Z-fighting），让边线更清晰
-      const material = new THREE.MeshLambertMaterial({ 
-        color: this.selectedColor,
-        polygonOffset: true,
-        polygonOffsetFactor: 1, // 将面稍微向后推
-        polygonOffsetUnits: 1
-      }); 
-      
+      const material = new THREE.MeshLambertMaterial({ color: this.selectedColor }); 
       const cube = new THREE.Mesh(geometry, material); 
       cube.position.copy(position);
       
-      // 优化 2：智能边线颜色。如果是黑色方块，用白线；否则用黑线
-      const isBlackBlock = this.selectedColor === '#000000';
-      const lineColor = isBlackBlock ? 0xffffff : 0x000000;
-
+      // === 核心修改 3: 边线颜色逻辑 ===
+      // 黑色方块(深灰)用白色线，其他用黑色线
+      // 注意：this.selectedColor 是字符串 '#333333'
+      const isDarkBlock = (this.selectedColor === '#333333');
+      const edgeColor = isDarkBlock ? 0xffffff : 0x000000;
+      
       const edges = new THREE.EdgesGeometry(geometry); 
-      // 优化 3：LineBasicMaterial 在 WebGL 中宽度通常固定为 1px，
-      // 但配合 polygonOffset 后会显得更“实”更黑
-      const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: lineColor })); 
+      const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: edgeColor })); 
       cube.add(line);
 
       scene.add(cube); 
@@ -571,6 +564,7 @@ export default {
     },
     clearCubes() { 
       const { scene, objects } = this.threeApp; 
+      // 倒序删除，保留 ground
       for (let i = objects.length - 1; i >= 0; i--) { 
         const obj = objects[i]; 
         if (obj.name !== 'ground') { 
@@ -580,6 +574,7 @@ export default {
           objects.splice(i, 1); 
         } 
       } 
+      // 不再重新放置初始方块，保持清空状态
     },
     cleanup3D() { 
       if (this.threeApp.animationId) { cancelAnimationFrame(this.threeApp.animationId); } 
@@ -677,7 +672,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); margin: 0 5px; }
 .tip-toast { margin-top: 10px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); }
 
-/* 颜色选择小圆点 */
+/* Color Dot */
 .color-dot {
   width: 28px; height: 28px;
   border-radius: 50%;
@@ -693,20 +688,31 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   box-shadow: 0 0 0 2px rgba(0,0,0,0.1), inset 0 0 0 2px rgba(255,255,255,0.8);
 }
 
-/* 视图切换按钮样式 */
+/* NEW: View Selector Styles */
+.view-selector {
+  margin-top: 8px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 20px;
+}
+.view-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
 .view-btn {
-  background: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.5);
   border: 1px solid rgba(0,0,0,0.05);
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 12px;
+  border-radius: 12px;
+  padding: 6px 16px;
+  font-size: 13px;
   font-weight: 600;
   color: #333;
-  transition: background 0.2s;
 }
 .view-btn:active {
-  background: rgba(255,255,255,0.6);
-  transform: scale(0.95);
+  background: #007aff;
+  color: white;
 }
-.small-text { font-size: 11px; padding: 4px 8px; color: #666; }
 </style>
