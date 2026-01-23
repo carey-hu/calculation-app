@@ -12,8 +12,8 @@
 
     <div v-if="viewState==='home'" class="wrap homeWrap">
       <div class="header-area">
-        <div class="title">计算助手</div>
-        <div class="subtitle">专项练习：进位加、退位减、大九九除法</div>
+        <div class="title">Calculation Helper</div>
+        <div class="subtitle">Drills: Carry Add, Borrow Sub, Big 99 Div</div>
       </div>
 
       <div class="card glass-panel">
@@ -22,7 +22,7 @@
           
           <div v-if="groupKey === 'divSelect'" style="margin-bottom: 10px;">
              <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
-              进入除数选择模式
+              Select Divisor Mode
             </button>
           </div>
 
@@ -38,22 +38,22 @@
           </div>
         </template>
         
-        <div class="rowLabel">空间思维专项</div>
+        <div class="rowLabel">Spatial Reasoning</div>
         <div class="modeRow">
            <div class="modeItem" style="flex: 1 0 100%; background: rgba(88, 86, 214, 0.1); border-color: rgba(88, 86, 214, 0.2);" @click="startCubicMode">
-              <span class="modeTitle" style="color: #5856d6;">🧊 立体拼合 / 积木训练</span>
+              <span class="modeTitle" style="color: #5856d6;">🧊 3D Block Training</span>
            </div>
         </div>
 
-        <button class="btnPrimary glass-primary main-action-btn homeStartBtn" @click="startGame">开始练习</button>
-        <button class="btnHistory glass-btn main-action-btn" @click="openHistory">历史记录</button>
+        <button class="btnPrimary glass-primary main-action-btn homeStartBtn" @click="startGame">Start Practice</button>
+        <button class="btnHistory glass-btn main-action-btn" @click="openHistory">History</button>
       </div>
     </div>
 
     <div v-if="viewState==='selectDivisor'" class="wrap homeWrap">
       <div class="header-area">
-        <div class="title">选择除数</div>
-        <div class="subtitle">点击下方数字开始练习商首位</div>
+        <div class="title">Select Divisor</div>
+        <div class="subtitle">Practice first digit of quotient</div>
       </div>
       <div class="card glass-panel">
         <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">
@@ -61,13 +61,13 @@
                   class="k glass-key" style="font-size:20px; height:50px; line-height:50px;" 
                   @click="selectDivisorAndStart(item)">{{item}}</button>
         </div>
-        <button class="btnGhost glass-btn main-action-btn" style="margin-top: 20px;" @click="goHome">返回主页</button>
+        <button class="btnGhost glass-btn main-action-btn" style="margin-top: 20px;" @click="goHome">Back Home</button>
       </div>
     </div>
 
     <div v-if="viewState==='game'" class="wrap gameRoot">
       <div class="topbar safe-top">
-        <button class="btnBack glass-btn" @click="goHome">返回</button>
+        <button class="btnBack glass-btn" @click="goHome">Back</button>
         <div class="topStats">
           <div class="stat glass-pill">{{progressText}}</div>
           <div class="stat glass-pill timer">⏱ {{totalText}}</div>
@@ -78,8 +78,8 @@
         <div class="card qCard glass-panel">
           <div :class="['qText', isSmallFont ? 'qText-small' : '']">{{qText}}</div>
           
-          <div class="qNote">{{activeConfig.hintNote || activeConfig.hint || '精确到整数'}}</div>
-          <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
+          <div class="qNote">{{activeConfig.hintNote || activeConfig.hint || 'Integer result'}}</div>
+          <div class="ansBox glass-input">Ans: {{input ? input : '—'}}</div>
           <div class="hint">{{uiHint}}</div>
         </div>
       </div>
@@ -87,13 +87,13 @@
       <div class="keypad card glass-panel">
         <div class="fnRow">
           <button class="kFn style-skip" @click="leftAction">{{leftText}}</button>
-          <button class="kFn style-clear" @click="clearInput">清空</button>
-          <button class="kFn style-del" @click="backspace">退格</button>
+          <button class="kFn style-clear" @click="clearInput">Clear</button>
+          <button class="kFn style-del" @click="backspace">Del</button>
         </div>
         <div class="grid">
           <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k glass-key" @click="pressDigit(item)">{{item}}</button>
           <button class="k wide glass-key" @click="pressDigit(0)">0</button>
-          <button class="k confirm wide2 glass-key-confirm" @click="confirmAnswer">确认</button>
+          <button class="k confirm wide2 glass-key-confirm" @click="confirmAnswer">Enter</button>
         </div>
       </div>
     </div>
@@ -104,7 +104,7 @@
       <div class="cubic-ui safe-top">
         <div class="glass-panel" style="padding: 8px 12px; display: flex; gap: 8px; align-items: center; border-radius: 24px; max-width: 95%;">
           
-          <button class="btnBack glass-btn small-btn" @click="quitCubicMode">退出</button>
+          <button class="btnBack glass-btn small-btn" @click="quitCubicMode">Exit</button>
           
           <div class="divider"></div>
           
@@ -128,7 +128,15 @@
              🔄
           </button>
         </div>
-        <div class="tip-toast">点击地面放置，点击方块叠加</div>
+
+        <div class="view-selector glass-panel">
+          <button class="view-btn" @click="setCameraView('front')">Front</button>
+          <button class="view-btn" @click="setCameraView('top')">Top</button>
+          <button class="view-btn" @click="setCameraView('left')">Left</button>
+          <button class="view-btn" @click="setCameraView('iso')">Iso</button>
+        </div>
+
+        <div class="tip-toast">Tap ground to place, tap block to stack</div>
       </div>
     </div>
 
@@ -145,7 +153,7 @@
               <span class="rowLeft">{{index+1}}. {{item.q}}</span>
               <span class="rowRight">
                 <span :style="{ color: parseFloat(item.usedStr) > 2 ? '#ff3b30' : 'inherit' }">{{item.usedStr}}</span> 
-                / 错{{item.wrong}}{{item.skipped?'(跳)':''}}
+                / Wrong{{item.wrong}}{{item.skipped?'(Skip)':''}}
               </span>
             </div>
           </template>
@@ -162,11 +170,11 @@
         </div>
         <div style="margin-top: 15px;">
           <div v-if="isHistoryReview">
-            <button class="btnPrimary glass-primary main-action-btn" @click="backToHistory">返回列表</button>
+            <button class="btnPrimary glass-primary main-action-btn" @click="backToHistory">Back to List</button>
           </div>
           <div v-else>
-            <button class="btnPrimary glass-primary main-action-btn" @click="goHome">返回主页</button>
-            <button class="btnGhost glass-btn main-action-btn" @click="startGame" style="margin-top:10px;">再来一局</button>
+            <button class="btnPrimary glass-primary main-action-btn" @click="goHome">Home</button>
+            <button class="btnGhost glass-btn main-action-btn" @click="startGame" style="margin-top:10px;">Retry</button>
           </div>
         </div>
       </div>
@@ -174,8 +182,8 @@
 
     <div v-if="viewState==='history'" class="wrap full-height">
       <div class="header-area safe-header">
-        <div class="title">历史记录</div>
-        <div class="subtitle">仅保留最近5000条训练数据</div>
+        <div class="title">History</div>
+        <div class="subtitle">Last 5000 records kept</div>
       </div>
       
       <div class="card full-flex glass-panel">
@@ -191,22 +199,22 @@
              </div>
            </div>
            <div id="accChart" style="width: 100%; height: 220px;"></div>
-           <button class="btnGhost small" style="margin-top:5px; font-size:13px;" @click="closeChart">收起图表</button>
+           <button class="btnGhost small" style="margin-top:5px; font-size:13px;" @click="closeChart">Hide Chart</button>
         </div>
         <div v-else>
            <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#007aff;" @click="initChart">
-             📊 按模块分析趋势
+             📊 Trend Analysis
            </button>
         </div>
 
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:0 8px; font-weight:700; color:#8e8e93; font-size:13px;">
-           <span>时间 / 模式</span>
-           <span>成绩 / 耗时</span>
+           <span>Time / Mode</span>
+           <span>Score / Time</span>
         </div>
         
         <div class="resultScroll">
           <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; color:rgba(0,0,0,0.4);">
-            暂无记录，快去练习吧！
+            No records yet. Go practice!
           </div>
           <div v-else>
             <div v-for="(item, index) in historyList" :key="item.ts" class="row hover-row" @click="viewHistoryDetail(index)" style="cursor:pointer;">
@@ -229,12 +237,12 @@
             style="margin:0; height: 40px; font-size: 16px; color: #ff3b30; background: rgba(255,59,48,0.08); border-color: rgba(255,59,48,0.2);" 
             @click="clearOldest"
           >
-            🗑️ 清理最早的 1000 条
+            🗑️ Clear Oldest 1000
           </button>
 
           <div style="display:flex; gap:10px;">
-            <button class="btnDanger glass-btn main-action-btn" style="margin:0; flex:1;" @click="clearHistory">清空全部</button>
-            <button class="btnPrimary glass-primary main-action-btn" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
+            <button class="btnDanger glass-btn main-action-btn" style="margin:0; flex:1;" @click="clearHistory">Clear All</button>
+            <button class="btnPrimary glass-primary main-action-btn" style="margin:0; flex:1;" @click="closeHistory">Back</button>
           </div>
         </div>
       </div>
@@ -248,7 +256,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // =================================================================
-// 核心逻辑层
+// Core Logic: Generation Strategies
 // =================================================================
 
 const shuffle = (arr) => {
@@ -270,68 +278,68 @@ const buildBasePool = () => {
 };
 
 const GAME_MODES = {
-  'train': { name: '训练', title: '基础训练完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()) },
-  'speed': { name: '竞速', title: '竞速完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()).slice(0, 10) },
-  'first': { name: '首位(随机)', title: '商首位完成！', hintNote: '目标：输入商的第一位数字', gen: (n) => { const pool=[]; for(let i=0;i<n;i++){ const dr=11+Math.floor(Math.random()*9); const dd=100+Math.floor(Math.random()*900); const fd=parseInt(String(Math.floor(dd/dr))[0],10); pool.push({dividend:dd,divisor:dr,ans:fd,symbol:'÷'}); } return pool; } },
-  'firstSpec': { name: '商首位专项', title: '商首位专项完成！', gen: (n, ex) => { const d=ex.divisor||12; const pool=[]; for(let i=0;i<n;i++){ const dd=Math.floor(Math.random()*(999-d+1))+d; const fq=Math.floor(dd/d); const fd=parseInt(String(fq)[0],10); pool.push({dividend:dd,divisor:d,ans:fd,symbol:'÷'}); } return pool; } },
-  'plus': { name: '进位加', title: '一位数进位加完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a+b<10); p.push({dividend:a,divisor:b,ans:(a+b)%10,symbol:'+'});} return p;} },
-  'minus': { name: '退位减', title: '一位数退位减完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a>=b); p.push({dividend:a,divisor:b,ans:(10+a-b),symbol:'-'});} return p;} },
-  'doublePlus': { name: '双进位加', title: '双进位加完成！', hintNote: '个位十位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
-  'doubleMinus': { name: '双退位减', title: '双退位减完成！', hintNote: '个位退，十位不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(!(a2<b2&&a1-1>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
-  'fourSum': { name: '四数相加', title: '四数相加完成！', hintNote: '计算准确和', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*90)+10;const b=Math.floor(Math.random()*90)+10;const c=Math.floor(Math.random()*90)+10;const d=Math.floor(Math.random()*90)+10; p.push({dividend:`${a}+${b}+${c}`,divisor:d,ans:a+b+c+d,symbol:'+'});} return p;} },
-  'triplePlus': { name: '三进位加', title: '三进位加完成！', hintNote: '个位十位百位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(a3+b3<10||a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
-  'tripleMinus': { name: '三退位减', title: '三退位减完成！', hintNote: '个十退，百不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(!(a3<b3&&(a2-1)<b2&&(a1-1)>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
-  'tripleAnyPlus': { name: '任意加', title: '任意三数加完成！', hintNote: '任意三位数加法', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*900)+100; p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
-  'tripleAnyMinus': { name: '任意减', title: '任意三数减完成！', hintNote: '任意三位数减法', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a=Math.floor(Math.random()*900)+100;let b=Math.floor(Math.random()*900)+100;if(a<b)[a,b]=[b,a]; p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
-  'tripleMix': { name: '加减混合', title: '三数加减混合完成！', hintNote: '三数加减混合 (结果为正)', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,c,op1,op2,ans; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;c=Math.floor(Math.random()*900)+100;op1=Math.random()>0.5?'+':'-';op2=Math.random()>0.5?'+':'-';let step1=(op1==='+')?(a+b):(a-b);ans=(op2==='+')?(step1+c):(step1-c);}while(ans<0); p.push({dividend:`${a}${op1}${b}`,divisor:c,ans:ans,symbol:op2});} return p;} },
-  'tripleMult': { name: '三乘一', title: '三乘一完成！', hintNote: '计算准确积', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a*b,symbol:'×'});} return p;} },
-  'tripleDiv': { name: '三除一', title: '三除一完成！', hintNote: '若为小数，填相邻整数均对', check: (v, t) => { if(Number.isInteger(t)){ return {ok:v===t,display:t}; }else{ const f=Math.floor(t),c=Math.ceil(t); return {ok:(v===f||v===c),display:`${f}或${c} (${t.toFixed(2)})`}; } }, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a/b,symbol:'÷'});} return p;} },
-  'divSpecA': { name: '反向放缩', title: '反向放缩完成！', hintNote: '除数111-199 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const dr=Math.floor(Math.random()*(199-111+1))+111;const dd=Math.floor(Math.random()*(99999-10000+1))+10000; p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'});} return p;} },
-  'divSpecB': { name: '平移法', title: '平移法完成！', hintNote: '商90-111 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; let c=0; while(c<n){ const dr=Math.floor(Math.random()*900)+100;const tq=Math.floor(Math.random()*(111-90+1))+90;const dd=dr*tq+Math.floor(Math.random()*dr); if(dd>=10000&&dd<=99999){ p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'}); c++;} } return p;} }
+  'train': { name: 'Train', title: 'Training Complete!', hintNote: 'Integer only', gen: () => shuffle(buildBasePool()) },
+  'speed': { name: 'Speed', title: 'Speed Run Complete!', hintNote: 'Integer only', gen: () => shuffle(buildBasePool()).slice(0, 10) },
+  'first': { name: '1st Digit (Rand)', title: 'First Digit Complete!', hintNote: 'Target: 1st digit of quotient', gen: (n) => { const pool=[]; for(let i=0;i<n;i++){ const dr=11+Math.floor(Math.random()*9); const dd=100+Math.floor(Math.random()*900); const fd=parseInt(String(Math.floor(dd/dr))[0],10); pool.push({dividend:dd,divisor:dr,ans:fd,symbol:'÷'}); } return pool; } },
+  'firstSpec': { name: '1st Digit Spec', title: 'Special Training Complete!', gen: (n, ex) => { const d=ex.divisor||12; const pool=[]; for(let i=0;i<n;i++){ const dd=Math.floor(Math.random()*(999-d+1))+d; const fq=Math.floor(dd/d); const fd=parseInt(String(fq)[0],10); pool.push({dividend:dd,divisor:d,ans:fd,symbol:'÷'}); } return pool; } },
+  'plus': { name: 'Carry Add', title: 'Carry Addition Complete!', hintNote: 'Last digit only', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a+b<10); p.push({dividend:a,divisor:b,ans:(a+b)%10,symbol:'+'});} return p;} },
+  'minus': { name: 'Borrow Sub', title: 'Borrow Subtraction Complete!', hintNote: 'Last digit only', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a>=b); p.push({dividend:a,divisor:b,ans:(10+a-b),symbol:'-'});} return p;} },
+  'doublePlus': { name: '2-Digit Add', title: '2-Digit Addition Complete!', hintNote: 'Both digits carry', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
+  'doubleMinus': { name: '2-Digit Sub', title: '2-Digit Subtraction Complete!', hintNote: 'Ones borrow, tens don\'t', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(!(a2<b2&&a1-1>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
+  'fourSum': { name: '4-Num Add', title: '4-Number Addition Complete!', hintNote: 'Exact sum', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*90)+10;const b=Math.floor(Math.random()*90)+10;const c=Math.floor(Math.random()*90)+10;const d=Math.floor(Math.random()*90)+10; p.push({dividend:`${a}+${b}+${c}`,divisor:d,ans:a+b+c+d,symbol:'+'});} return p;} },
+  'triplePlus': { name: '3-Digit Add', title: '3-Digit Addition Complete!', hintNote: 'All digits carry', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(a3+b3<10||a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
+  'tripleMinus': { name: '3-Digit Sub', title: '3-Digit Subtraction Complete!', hintNote: 'Ones/tens borrow', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(!(a3<b3&&(a2-1)<b2&&(a1-1)>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
+  'tripleAnyPlus': { name: 'Any 3-Add', title: 'Any 3-Digit Add Complete!', hintNote: 'Any 3-digit addition', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*900)+100; p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
+  'tripleAnyMinus': { name: 'Any 3-Sub', title: 'Any 3-Digit Sub Complete!', hintNote: 'Any 3-digit subtraction', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a=Math.floor(Math.random()*900)+100;let b=Math.floor(Math.random()*900)+100;if(a<b)[a,b]=[b,a]; p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
+  'tripleMix': { name: 'Add/Sub Mix', title: 'Add/Sub Mix Complete!', hintNote: 'Mixed operations (pos result)', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,c,op1,op2,ans; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;c=Math.floor(Math.random()*900)+100;op1=Math.random()>0.5?'+':'-';op2=Math.random()>0.5?'+':'-';let step1=(op1==='+')?(a+b):(a-b);ans=(op2==='+')?(step1+c):(step1-c);}while(ans<0); p.push({dividend:`${a}${op1}${b}`,divisor:c,ans:ans,symbol:op2});} return p;} },
+  'tripleMult': { name: '3x1 Mult', title: '3x1 Multiplication Complete!', hintNote: 'Exact product', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a*b,symbol:'×'});} return p;} },
+  'tripleDiv': { name: '3/1 Div', title: '3/1 Division Complete!', hintNote: 'Adjacent integers if decimal', check: (v, t) => { if(Number.isInteger(t)){ return {ok:v===t,display:t}; }else{ const f=Math.floor(t),c=Math.ceil(t); return {ok:(v===f||v===c),display:`${f} or ${c} (${t.toFixed(2)})`}; } }, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a/b,symbol:'÷'});} return p;} },
+  'divSpecA': { name: 'Inv Scaling', title: 'Inv Scaling Complete!', hintNote: 'Divisor 111-199 (3% err)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const dr=Math.floor(Math.random()*(199-111+1))+111;const dd=Math.floor(Math.random()*(99999-10000+1))+10000; p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'});} return p;} },
+  'divSpecB': { name: 'Shift Method', title: 'Shift Method Complete!', hintNote: 'Quotient 90-111 (3% err)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; let c=0; while(c<n){ const dr=Math.floor(Math.random()*900)+100;const tq=Math.floor(Math.random()*(111-90+1))+90;const dd=dr*tq+Math.floor(Math.random()*dr); if(dd>=10000&&dd<=99999){ p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'}); c++;} } return p;} }
 };
 
 const MODE_GROUPS = {
-  basic: { label: '大九九/除法', modes: ['train', 'speed', 'first'] },
-  divSelect: { label: '商首位专项', modes: [] }, 
-  single: { label: '一位数专项 (仅填尾数)', modes: ['plus', 'minus'] },
-  double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum'] },
-  triple: { label: '三位数专项 (完整答案)', modes: ['triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus', 'tripleMix', 'tripleMult', 'tripleDiv'] },
-  spec: { label: '五除三专项 (允许3%误差)', modes: ['divSpecA', 'divSpecB'] }
+  basic: { label: 'Basic Drills', modes: ['train', 'speed', 'first'] },
+  divSelect: { label: 'Special Divisor', modes: [] }, 
+  single: { label: '1-Digit Special', modes: ['plus', 'minus'] },
+  double: { label: '2-Digit Special', modes: ['doublePlus', 'doubleMinus', 'fourSum'] },
+  triple: { label: '3-Digit Special', modes: ['triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus', 'tripleMix', 'tripleMult', 'tripleDiv'] },
+  spec: { label: 'Approximation', modes: ['divSpecA', 'divSpecB'] }
 };
 
 export default {
   data() {
     return {
       viewState: 'home', currentModeKey: 'train', selectedDivisor: 0,
-      pool: [], idx: 0, current: null, input: '', uiHint: 'Ready?', totalText: '0:00.0', progressText: '1/81', qText: '—', leftText: '跳过', 
+      pool: [], idx: 0, current: null, input: '', uiHint: 'Ready?', totalText: '0:00.0', progressText: '1/81', qText: '—', leftText: 'Skip', 
       totalStartTs: 0, qStartTs: 0, timer: null, trainWrong: 0, trainSkip: 0, curWrongTries: 0, trainLog: [], results: [], 
       historyList: [], showChart: false, chartInstance: null, chartTab: '', availableModes: [], isHistoryReview: false,
       toast: { show: false, title: '' },
       modeGroups: MODE_GROUPS, divisorList: [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],
       
-      // 3D 模式状态
+      // 3D mode state
       isDeleteMode: false,
-      colors: ['#007aff', '#ff3b30', '#34c759', '#ff9500'], // 蓝、红、绿、橙
+      colors: ['#007aff', '#ff3b30', '#34c759', '#ff9500'], // Blue, Red, Green, Orange
       selectedColor: '#007aff'
-      // 注意：threeApp 已移出 data，避免 Vue 代理导致的性能和交互 Bug
+      // Note: threeApp is moved out of data to avoid Vue reactivity performance issues
     }
   },
   computed: {
     activeConfig() {
       if(this.currentModeKey === 'firstSpec') {
-        return { name: `商首位(除${this.selectedDivisor})`, title: `商首位(除${this.selectedDivisor})完成！`, hintNote: `除数${this.selectedDivisor}专项：只填商首位`, gen: GAME_MODES['firstSpec'].gen };
+        return { name: `First Digit (/${this.selectedDivisor})`, title: `First Digit (/${this.selectedDivisor}) Complete!`, hintNote: `Divisor ${this.selectedDivisor}: 1st digit only`, gen: GAME_MODES['firstSpec'].gen };
       }
       return GAME_MODES[this.currentModeKey] || {};
     },
-    resultTitle() { return this.activeConfig.title || '训练完成！'; },
+    resultTitle() { return this.activeConfig.title || 'Training Complete!'; },
     resultMeta() {
        const totalSec = this.totalSec || 0;
        if(this.currentModeKey === 'train') {
-         return `用时：${totalSec.toFixed(1)}s｜错误：${this.trainWrong}｜跳过：${this.trainSkip}`;
+         return `Time: ${totalSec.toFixed(1)}s | Wrong: ${this.trainWrong} | Skip: ${this.trainSkip}`;
        } else {
          const correctCount = this.results.filter(x=>x.ok).length;
          const totalCount = this.results.length;
-         return `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`;
+         return `Correct: ${correctCount}/${totalCount} | Time: ${totalSec.toFixed(1)}s`;
        }
     },
     isSmallFont() { return this.activeConfig.isSmallFont || (this.currentModeKey === 'fourSum' || this.currentModeKey === 'tripleMix'); }
@@ -345,7 +353,7 @@ export default {
     this.cleanup3D(); 
   },
   created() {
-    // 关键修复：将 Three.js 对象放在这里，不放入 data()，避免 Vue 响应式代理造成的性能问题和 Bug
+    // Critical Fix: Place Three.js object here, not in data(), to avoid Vue reactivity performance issues
     this.threeApp = { scene: null, camera: null, renderer: null, controls: null, raycaster: null, pointer: null, objects: [], animationId: null };
   },
   methods: {
@@ -356,14 +364,14 @@ export default {
     selectDivisorAndStart(d){ this.currentModeKey = 'firstSpec'; this.selectedDivisor = d; this.startGame(); },
     showToast(title) { this.toast.title = title; this.toast.show = true; setTimeout(() => { this.toast.show = false; }, 1500); },
     
-    // --- 游戏核心逻辑 ---
+    // --- Game Core Logic ---
     startGame(){
       const config = this.activeConfig;
       if (!config.gen) return;
       this.pool = config.gen(10, { divisor: this.selectedDivisor });
       if(this.timer) clearInterval(this.timer);
       const totalStartTs = this.now();
-      this.viewState = 'game'; this.idx = 0; this.input = ''; this.uiHint = '请输入答案'; this.leftText = (this.currentModeKey === 'train' ? '跳过' : '重开');
+      this.viewState = 'game'; this.idx = 0; this.input = ''; this.uiHint = 'Enter Answer'; this.leftText = (this.currentModeKey === 'train' ? 'Skip' : 'Restart');
       this.totalStartTs = totalStartTs; this.qStartTs = 0; this.trainWrong = 0; this.trainSkip = 0; this.curWrongTries = 0; this.trainLog = []; this.results = []; this.isHistoryReview = false;
       this.$nextTick(() => { this._nextQuestion(); this.timer = setInterval(()=> this._tick(), 100); });
     },
@@ -378,11 +386,11 @@ export default {
       const { current: cur, input, currentModeKey: mode, activeConfig } = this; if(!input) return; const n = parseFloat(input); const used = (this.now() - this.qStartTs)/1000;
       let correct = false; let realAnsDisplay = cur.ans;
       if (activeConfig.check) { const checkResult = activeConfig.check(n, cur.ans); correct = checkResult.ok; realAnsDisplay = checkResult.display; } else { correct = (parseInt(input) === cur.ans); }
-      if(mode === 'train'){ if(correct){ const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); this.trainLog = log; this.showToast('正确'); this._nextQuestion(); } else { this.trainWrong++; this.curWrongTries++; this.input = ''; this.uiHint = `错误！答案是：${realAnsDisplay}`; } return; }
-      const results = this.results.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, ok: correct, yourAns: input, realAns: realAnsDisplay, usedStr: used.toFixed(1) + 's' }]); this.results = results; this.showToast(correct ? '正确' : `错误(${realAnsDisplay})`); this._nextQuestion();
+      if(mode === 'train'){ if(correct){ const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); this.trainLog = log; this.showToast('Correct'); this._nextQuestion(); } else { this.trainWrong++; this.curWrongTries++; this.input = ''; this.uiHint = `Wrong! Ans: ${realAnsDisplay}`; } return; }
+      const results = this.results.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, ok: correct, yourAns: input, realAns: realAnsDisplay, usedStr: used.toFixed(1) + 's' }]); this.results = results; this.showToast(correct ? 'Correct' : `Wrong(${realAnsDisplay})`); this._nextQuestion();
     },
-    _finish(){ if(this.timer) clearInterval(this.timer); this.totalSec = (this.now() - this.totalStartTs)/1000; let recordSummary = ''; let detailLog = []; if(this.currentModeKey === 'train'){ recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = this.trainLog; } else { const correctCount = this.results.filter(x=>x.ok).length; const totalCount = this.results.length; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = this.results; } this.viewState = 'result'; this.isHistoryReview = false; this._saveRecord({ totalSec: this.totalSec }, recordSummary, detailLog); },
-    _saveRecord(meta, summary, detailLog){ const modeName = (this.currentModeKey === 'firstSpec') ? `商首位(除${this.selectedDivisor})` : (GAME_MODES[this.currentModeKey]?.name || '未知模式'); const record = { ts: this.now(), timeStr: this.formatTime(this.now()), mode: this.currentModeKey, modeName: modeName, duration: meta.totalSec.toFixed(1) + 's', summary: summary, detail: detailLog }; let history = this.historyList; history.unshift(record); if(history.length > 5000) history = history.slice(0, 5000); this.historyList = history; localStorage.setItem('calc_history', JSON.stringify(history)); },
+    _finish(){ if(this.timer) clearInterval(this.timer); this.totalSec = (this.now() - this.totalStartTs)/1000; let recordSummary = ''; let detailLog = []; if(this.currentModeKey === 'train'){ recordSummary = `Wrong${this.trainWrong}/Skip${this.trainSkip}`; detailLog = this.trainLog; } else { const correctCount = this.results.filter(x=>x.ok).length; const totalCount = this.results.length; recordSummary = `Score ${Math.round(correctCount/totalCount*100)}%`; detailLog = this.results; } this.viewState = 'result'; this.isHistoryReview = false; this._saveRecord({ totalSec: this.totalSec }, recordSummary, detailLog); },
+    _saveRecord(meta, summary, detailLog){ const modeName = (this.currentModeKey === 'firstSpec') ? `1st Digit (/${this.selectedDivisor})` : (GAME_MODES[this.currentModeKey]?.name || 'Unknown'); const record = { ts: this.now(), timeStr: this.formatTime(this.now()), mode: this.currentModeKey, modeName: modeName, duration: meta.totalSec.toFixed(1) + 's', summary: summary, detail: detailLog }; let history = this.historyList; history.unshift(record); if(history.length > 5000) history = history.slice(0, 5000); this.historyList = history; localStorage.setItem('calc_history', JSON.stringify(history)); },
     msToMMSS(ms){ const totalSec = ms / 1000; const m = Math.floor(totalSec / 60); const s = (totalSec % 60).toFixed(1); return `${m}:${s < 10 ? '0' + s : s}`; },
     formatTime(ts) { const date = new Date(ts); const m = date.getMonth() + 1; const d = date.getDate(); const h = date.getHours(); const min = date.getMinutes(); const pad = n => n < 10 ? '0' + n : n; return `${m}/${d} ${pad(h)}:${pad(min)}`; },
     goHome(){ if(this.timer) clearInterval(this.timer); this.viewState = 'home'; },
@@ -390,21 +398,38 @@ export default {
     viewHistoryDetail(index){ const record = this.historyList[index]; if(!record) return; this.currentModeKey = record.mode; this.totalSec = parseFloat(record.duration.replace('s','')); if(record.mode === 'train'){ this.trainLog = record.detail || []; this.results = []; } else { this.results = record.detail || []; this.trainLog = []; } this.viewState = 'result'; this.isHistoryReview = true; },
     backToHistory(){ this.viewState = 'history'; if(this.showChart) this.$nextTick(() => this.renderChart(this.chartTab)); },
     closeHistory(){ this.viewState = 'home'; },
-    clearOldest() { if(confirm(`当前共有 ${this.historyList.length} 条记录。\n确定要清除【最早的 1000 条】数据吗？`)){ const keepCount = this.historyList.length - 1000; this.historyList = this.historyList.slice(0, keepCount); localStorage.setItem('calc_history', JSON.stringify(this.historyList)); this.showToast('清理成功'); if(this.showChart) this.initChart(); } },
-    clearHistory(){ if(confirm('【严重警告】\n确定要清空【所有】历史记录吗？\n此操作不可恢复！')){ localStorage.removeItem('calc_history'); this.historyList = []; this.showToast('所有记录已清空'); } },
+    clearOldest() { if(confirm(`Confirm deleting oldest 1000 records?`)){ const keepCount = this.historyList.length - 1000; this.historyList = this.historyList.slice(0, keepCount); localStorage.setItem('calc_history', JSON.stringify(this.historyList)); this.showToast('Cleaned'); if(this.showChart) this.initChart(); } },
+    clearHistory(){ if(confirm('WARNING: Clear ALL history?')){ localStorage.removeItem('calc_history'); this.historyList = []; this.showToast('Cleared All'); } },
     initChart() { this.showChart = true; const modeSet = new Set(this.historyList.map(item => item.modeName)); this.availableModes = Array.from(modeSet); if(this.historyList.length > 0 && !this.chartTab) { this.chartTab = this.historyList[0].modeName; } else if (this.availableModes.length > 0 && !this.chartTab) { this.chartTab = this.availableModes[0]; } this.$nextTick(() => { this.renderChart(this.chartTab); }); },
     switchChartTab(modeName) { this.chartTab = modeName; this.renderChart(modeName); },
-    renderChart(targetModeName) { const chartDom = document.getElementById('accChart'); if(!chartDom) return; if(this.chartInstance) this.chartInstance.dispose(); this.chartInstance = echarts.init(chartDom); const allData = JSON.parse(JSON.stringify(this.historyList)).reverse(); const filteredData = allData.filter(item => item.modeName === targetModeName); const dateList = []; const accuracyList = []; const timeList = []; filteredData.forEach(item => { let accuracy = 0; if(item.mode === 'train') { let wrong = 0; if(item.detail && item.detail.length > 0) { wrong = item.detail.filter(x => x.wrong > 0).length; } else { const match = item.summary.match(/错(\d+)/); if(match) wrong = parseInt(match[1]); } accuracy = ((81 - wrong) / 81) * 100; } else { if(item.detail && item.detail.length > 0) { const correctCount = item.detail.filter(x => x.ok).length; accuracy = (correctCount / item.detail.length) * 100; } else { const match = item.summary.match(/(\d+)%/); if(match) accuracy = parseInt(match[1]); } } let duration = 0; if(item.duration) { duration = parseFloat(item.duration.replace('s', '')); } dateList.push(item.timeStr); accuracyList.push(accuracy.toFixed(0)); timeList.push(duration.toFixed(1)); }); if(dateList.length === 0) { this.chartInstance.setOption({ title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } } }); return; } const option = { grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, yAxis: [ { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff', formatter: '{value}%'} }, { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30', formatter: '{value}s'} } ], series: [ { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 3 }, itemStyle: { color: '#007aff' }, data: accuracyList }, { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#ff3b30', width: 2, type: 'dashed' }, itemStyle: { color: '#ff3b30' }, data: timeList } ] }; this.chartInstance.setOption(option); },
+    renderChart(targetModeName) { const chartDom = document.getElementById('accChart'); if(!chartDom) return; if(this.chartInstance) this.chartInstance.dispose(); this.chartInstance = echarts.init(chartDom); const allData = JSON.parse(JSON.stringify(this.historyList)).reverse(); const filteredData = allData.filter(item => item.modeName === targetModeName); const dateList = []; const accuracyList = []; const timeList = []; filteredData.forEach(item => { let accuracy = 0; if(item.mode === 'train') { let wrong = 0; if(item.detail && item.detail.length > 0) { wrong = item.detail.filter(x => x.wrong > 0).length; } else { const match = item.summary.match(/Wrong(\d+)/); if(match) wrong = parseInt(match[1]); } accuracy = ((81 - wrong) / 81) * 100; } else { if(item.detail && item.detail.length > 0) { const correctCount = item.detail.filter(x => x.ok).length; accuracy = (correctCount / item.detail.length) * 100; } else { const match = item.summary.match(/(\d+)%/); if(match) accuracy = parseInt(match[1]); } } let duration = 0; if(item.duration) { duration = parseFloat(item.duration.replace('s', '')); } dateList.push(item.timeStr); accuracyList.push(accuracy.toFixed(0)); timeList.push(duration.toFixed(1)); }); if(dateList.length === 0) { this.chartInstance.setOption({ title: { text: 'No Data', left: 'center', top: 'center', textStyle: { color: '#999' } } }); return; } const option = { grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, yAxis: [ { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff', formatter: '{value}%'} }, { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30', formatter: '{value}s'} } ], series: [ { name: 'Accuracy', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 3 }, itemStyle: { color: '#007aff' }, data: accuracyList }, { name: 'Time', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#ff3b30', width: 2, type: 'dashed' }, itemStyle: { color: '#ff3b30' }, data: timeList } ] }; this.chartInstance.setOption(option); },
     closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
 
     // =================================================================
-    // 3D 模块逻辑 (已修复点击无效、悬空问题、性能问题，新增四色和清空)
+    // 3D Logic (Fixed click, float, perf, colors, clear)
     // =================================================================
     startCubicMode() { this.viewState = 'cubic'; this.$nextTick(() => { this.initThree(); }); },
     quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; },
     switchColor(c) { 
       this.selectedColor = c; 
-      this.isDeleteMode = false; // 选颜色时自动退出删除模式
+      this.isDeleteMode = false; 
+    },
+    // NEW: View Switcher
+    setCameraView(type) {
+      if (!this.threeApp.camera || !this.threeApp.controls) return;
+      const { camera, controls } = this.threeApp;
+      const dist = 14; // standard distance
+      
+      switch(type) {
+        case 'front': camera.position.set(0, 0, dist); break;
+        case 'top': camera.position.set(0, dist, 0); break;
+        case 'left': camera.position.set(-dist, 0, 0); break; // Left view typically from negative X
+        case 'iso': camera.position.set(8, 8, 8); break;
+      }
+      
+      camera.lookAt(0, 0, 0);
+      controls.target.set(0, 0, 0); // Reset target to origin
+      controls.update();
     },
     initThree() {
       const container = document.getElementById('three-container'); 
@@ -412,60 +437,59 @@ export default {
       const width = container.clientWidth; 
       const height = container.clientHeight;
 
-      // 1. 场景
+      // 1. Scene
       const scene = new THREE.Scene(); 
       scene.background = new THREE.Color('#f2f2f7'); 
       scene.fog = new THREE.Fog('#f2f2f7', 20, 50);
 
-      // 2. 相机
+      // 2. Camera
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000); 
       camera.position.set(8, 8, 8); 
       camera.lookAt(0, 0, 0);
 
-      // 3. 渲染器
+      // 3. Renderer
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
       renderer.setSize(width, height); 
       renderer.setPixelRatio(window.devicePixelRatio); 
       container.appendChild(renderer.domElement);
 
-      // 4. 灯光
+      // 4. Light
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
       scene.add(ambientLight);
       const dirLight = new THREE.DirectionalLight(0xffffff, 0.7); 
       dirLight.position.set(10, 20, 10); 
       scene.add(dirLight);
 
-      // 5. 辅助网格
+      // 5. Helpers
       const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xdddddd); 
       scene.add(gridHelper);
 
-      // === 核心修复 1: 物理地面 (用于点击检测) ===
-      // 必须 visible: true 才能被射线检测！如果想隐藏，用 opacity: 0
+      // === Physical Ground (for clicks) ===
+      // Must be visible: true to be raycast! Opacity 0 to hide.
       const planeGeometry = new THREE.PlaneGeometry(20, 20); 
       planeGeometry.rotateX(-Math.PI / 2);
       const planeMaterial = new THREE.MeshBasicMaterial({ 
-        visible: true,      // 必须为 true
-        transparent: true,  // 开启透明
-        opacity: 0          // 透明度0
+        visible: true,      
+        transparent: true,  
+        opacity: 0          
       }); 
       const plane = new THREE.Mesh(planeGeometry, planeMaterial); 
       plane.name = 'ground'; 
       scene.add(plane);
 
-      // 6. 控制器
+      // 6. Controls
       const controls = new OrbitControls(camera, renderer.domElement); 
       controls.enableDamping = true; 
       controls.dampingFactor = 0.05;
 
-      // 7. 交互 (防止拖拽误触点击)
+      // 7. Interaction (Raycaster)
       const raycaster = new THREE.Raycaster(); 
       const pointer = new THREE.Vector2();
       let downTime = 0;
 
-      // 监听按下时间
+      // Listen for click duration to distinguish from drag
       renderer.domElement.addEventListener('pointerdown', () => { downTime = Date.now(); });
       
-      // 监听抬起，判断是否为短促点击
       renderer.domElement.addEventListener('pointerup', (event) => {
         if (Date.now() - downTime < 200) {
           const rect = renderer.domElement.getBoundingClientRect(); 
@@ -475,14 +499,14 @@ export default {
         }
       });
 
-      // 直接赋值给 this，不经过 data() 响应式，防止 Vue 代理导致的性能问题
+      // Bind to this (non-reactive)
       this.threeApp.scene = scene;
       this.threeApp.camera = camera;
       this.threeApp.renderer = renderer;
       this.threeApp.controls = controls;
-      this.threeApp.objects = [plane]; // 初始化交互对象列表，包含地面
+      this.threeApp.objects = [plane]; // interactable objects
       
-      // 移除初始方块放置
+      // Start empty (removed initial cube)
       this.animate3D();
     },
     animate3D() { 
@@ -494,7 +518,6 @@ export default {
     },
     handle3DClick(raycaster, pointer, scene, camera, plane) {
       raycaster.setFromCamera(pointer, camera); 
-      // 这里的 objects 必须包含 visible: true 的物体
       const intersects = raycaster.intersectObjects(this.threeApp.objects, false);
 
       if (intersects.length > 0) {
@@ -509,7 +532,7 @@ export default {
              intersect.object.material.dispose();
           }
         } else {
-          // === 核心修复 2: 计算新位置，防止悬空 ===
+          // === Core Fix 2: Calc new position to prevent floating ===
           const voxelPos = new THREE.Vector3().copy(intersect.point).addScaledVector(intersect.face.normal, 0.5);
           voxelPos.divideScalar(1).floor().multiplyScalar(1).addScalar(0.5);
           
@@ -520,7 +543,7 @@ export default {
     },
     addCubeAt(scene, position) {
       const geometry = new THREE.BoxGeometry(1, 1, 1); 
-      // 使用选中的颜色
+      // Use selected color
       const material = new THREE.MeshLambertMaterial({ color: this.selectedColor }); 
       const cube = new THREE.Mesh(geometry, material); 
       cube.position.copy(position);
@@ -534,7 +557,7 @@ export default {
     },
     clearCubes() { 
       const { scene, objects } = this.threeApp; 
-      // 倒序删除，保留 ground
+      // Reverse delete, keep ground
       for (let i = objects.length - 1; i >= 0; i--) { 
         const obj = objects[i]; 
         if (obj.name !== 'ground') { 
@@ -544,7 +567,6 @@ export default {
           objects.splice(i, 1); 
         } 
       } 
-      // 不再重新放置初始方块，保持清空状态
     },
     cleanup3D() { 
       if (this.threeApp.animationId) { cancelAnimationFrame(this.threeApp.animationId); } 
@@ -642,7 +664,7 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); margin: 0 5px; }
 .tip-toast { margin-top: 10px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); }
 
-/* 颜色选择小圆点 */
+/* Color Dot */
 .color-dot {
   width: 28px; height: 28px;
   border-radius: 50%;
@@ -656,5 +678,27 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   transform: scale(1.1);
   border-color: #fff;
   box-shadow: 0 0 0 2px rgba(0,0,0,0.1), inset 0 0 0 2px rgba(255,255,255,0.8);
+}
+
+/* NEW: View Selector Styles */
+.view-selector {
+  margin-top: 8px;
+  padding: 6px;
+  display: flex;
+  gap: 6px;
+  border-radius: 20px;
+}
+.view-btn {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+.view-btn:active {
+  background: #007aff;
+  color: white;
 }
 </style>
