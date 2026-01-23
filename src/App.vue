@@ -37,6 +37,13 @@
             </div>
           </div>
         </template>
+        
+        <div class="rowLabel">空间思维专项</div>
+        <div class="modeRow">
+           <div class="modeItem" style="flex: 1 0 100%; background: rgba(88, 86, 214, 0.1); border-color: rgba(88, 86, 214, 0.2);" @click="startCubicMode">
+              <span class="modeTitle" style="color: #5856d6;">🧊 立体拼合 / 积木训练</span>
+           </div>
+        </div>
 
         <button class="btnPrimary glass-primary main-action-btn homeStartBtn" @click="startGame">开始练习</button>
         <button class="btnHistory glass-btn main-action-btn" @click="openHistory">历史记录</button>
@@ -88,6 +95,28 @@
           <button class="k wide glass-key" @click="pressDigit(0)">0</button>
           <button class="k confirm wide2 glass-key-confirm" @click="confirmAnswer">确认</button>
         </div>
+      </div>
+    </div>
+
+    <div v-if="viewState==='cubic'" class="wrap full-height" style="padding:0; overflow:hidden;">
+      <div id="three-container" style="width:100%; height:100%; display:block; outline:none;"></div>
+
+      <div class="cubic-ui safe-top">
+        <div class="glass-panel" style="padding: 10px; display: flex; gap: 10px; align-items: center;">
+          <button class="btnBack glass-btn small-btn" @click="quitCubicMode">退出</button>
+          <div class="divider"></div>
+          <button :class="['btnIcon', !isDeleteMode ? 'active' : '']" @click="isDeleteMode=false">
+            ➕ 放置
+          </button>
+          <button :class="['btnIcon', isDeleteMode ? 'active' : '']" @click="isDeleteMode=true">
+            🗑️ 消除
+          </button>
+          <div class="divider"></div>
+          <button class="btnIcon" @click="clearCubes">
+             🔄 清空
+          </button>
+        </div>
+        <div class="tip-toast">单指转动视角，点击方块/地面操作</div>
       </div>
     </div>
 
@@ -203,13 +232,16 @@
 
 <script>
 import * as echarts from 'echarts';
+// 引入 Three.js 核心库
+import * as THREE from 'three';
+// 引入轨道控制器 (OrbitControls)，用于支持鼠标/触摸旋转视角
+// 注意：确保你已经运行了 npm install three
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // =================================================================
 // 核心逻辑层：生成策略配置
-// 说明：新增模式只需在此处添加配置，无需修改 Vue 组件逻辑
 // =================================================================
 
-// 辅助：洗牌算法
 const shuffle = (arr) => {
   for(let i=arr.length-1;i>0;i--){ 
     const j = Math.floor(Math.random()*(i+1)); 
@@ -218,7 +250,6 @@ const shuffle = (arr) => {
   return arr; 
 };
 
-// 辅助：基础大九九池构建
 const buildBasePool = () => {
   const arr = []; 
   for(let d=11; d<=19; d++){ 
@@ -229,229 +260,41 @@ const buildBasePool = () => {
   return arr;
 };
 
-/**
- * GAME_MODES 配置定义
- * 结构说明：
- * key: 模式ID (如 'train')
- * value: {
- * name: 按钮显示名,
- * title: 结算页标题后缀,
- * hintNote: 题目下方小提示,
- * isSmallFont: 是否缩小字体(可选),
- * gen: (count, config) => Array<Question>, // 题目生成函数
- * check: (input, ans) => { ok: boolean, display: string } // (可选)自定义判题，默认全等
- * }
- */
+// 游戏模式配置
 const GAME_MODES = {
-  // --- 基础训练类 ---
-  'train': {
-    name: '训练', title: '基础训练完成！', hintNote: '精确到整数',
-    gen: () => shuffle(buildBasePool())
-  },
-  'speed': {
-    name: '竞速', title: '竞速完成！', hintNote: '精确到整数',
-    gen: () => shuffle(buildBasePool()).slice(0, 10)
-  },
-  'first': {
-    name: '首位(随机)', title: '商首位完成！', hintNote: '目标：输入商的第一位数字',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ 
-        const divisor = 11 + Math.floor(Math.random() * 9); 
-        const dividend = 100 + Math.floor(Math.random() * 900); 
-        const firstDigit = parseInt(String(Math.floor(dividend / divisor))[0], 10); 
-        pool.push({ dividend, divisor, ans: firstDigit, symbol: '÷' }); 
-      }
-      return pool;
-    }
-  },
-  'firstSpec': {
-    // 这是一个特殊模式，依赖外部参数 selectedDivisor，在代码中特殊处理
-    name: '商首位专项', title: '商首位专项完成！',
-    gen: (n, extra) => {
-      const d = extra.divisor || 12;
-      const pool = [];
-      for(let i=0; i<n; i++){ 
-        const dividend = Math.floor(Math.random() * (999 - d + 1)) + d; 
-        const fullQuotient = Math.floor(dividend / d); 
-        const firstDigit = parseInt(String(fullQuotient)[0], 10); 
-        pool.push({ dividend, divisor: d, ans: firstDigit, symbol: '÷' }); 
-      }
-      return pool;
-    }
-  },
+  // --- 基础训练 ---
+  'train': { name: '训练', title: '基础训练完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()) },
+  'speed': { name: '竞速', title: '竞速完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()).slice(0, 10) },
+  'first': { name: '首位(随机)', title: '商首位完成！', hintNote: '目标：输入商的第一位数字', gen: (n) => { const pool=[]; for(let i=0;i<n;i++){ const dr=11+Math.floor(Math.random()*9); const dd=100+Math.floor(Math.random()*900); const fd=parseInt(String(Math.floor(dd/dr))[0],10); pool.push({dividend:dd,divisor:dr,ans:fd,symbol:'÷'}); } return pool; } },
+  'firstSpec': { name: '商首位专项', title: '商首位专项完成！', gen: (n, ex) => { const d=ex.divisor||12; const pool=[]; for(let i=0;i<n;i++){ const dd=Math.floor(Math.random()*(999-d+1))+d; const fq=Math.floor(dd/d); const fd=parseInt(String(fq)[0],10); pool.push({dividend:dd,divisor:d,ans:fd,symbol:'÷'}); } return pool; } },
 
-  // --- 一位数专项 ---
-  'plus': {
-    name: '进位加', title: '一位数进位加完成！', hintNote: '一位数进位加：只填个位尾数',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ 
-        let a, b; 
-        do { a = Math.floor(Math.random()*9)+1; b = Math.floor(Math.random()*9)+1; } while(a + b < 10); 
-        pool.push({ dividend: a, divisor: b, ans: (a+b)%10, symbol: '+' }); 
-      }
-      return pool;
-    }
-  },
-  'minus': {
-    name: '退位减', title: '一位数退位减完成！', hintNote: '一位数退位减：只填个位尾数',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ 
-        let a, b; 
-        do { a = Math.floor(Math.random()*9)+1; b = Math.floor(Math.random()*9)+1; } while(a >= b); 
-        pool.push({ dividend: a, divisor: b, ans: (10+a-b), symbol: '-' }); 
-      }
-      return pool;
-    }
-  },
+  // --- 一位数 ---
+  'plus': { name: '进位加', title: '一位数进位加完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a+b<10); p.push({dividend:a,divisor:b,ans:(a+b)%10,symbol:'+'});} return p;} },
+  'minus': { name: '退位减', title: '一位数退位减完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a>=b); p.push({dividend:a,divisor:b,ans:(10+a-b),symbol:'-'});} return p;} },
 
-  // --- 两位数专项 ---
-  'doublePlus': {
-    name: '双进位加', title: '双进位加完成！', hintNote: '双进位加：个位十位均需进位',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ 
-        let a, b, a1, a2, b1, b2; 
-        do { a = Math.floor(Math.random()*90)+10; b = Math.floor(Math.random()*90)+10; a1 = Math.floor(a/10); a2 = a%10; b1 = Math.floor(b/10); b2 = b%10; } while(a2 + b2 < 10 || a1 + b1 < 10); 
-        pool.push({ dividend: a, divisor: b, ans: a + b, symbol: '+' }); 
-      }
-      return pool;
-    }
-  },
-  'doubleMinus': {
-    name: '双退位减', title: '双退位减完成！', hintNote: '双退位减：个位退，十位不退',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ 
-        let a, b, a1, a2, b1, b2; 
-        do { a = Math.floor(Math.random()*90)+10; b = Math.floor(Math.random()*90)+10; a1 = Math.floor(a/10); a2 = a%10; b1 = Math.floor(b/10); b2 = b%10; } while(!(a2 < b2 && a1 - 1 >= b1)); 
-        pool.push({ dividend: a, divisor: b, ans: a - b, symbol: '-' }); 
-      }
-      return pool;
-    }
-  },
-  'fourSum': {
-    name: '四数相加', title: '四数相加完成！', hintNote: '四数相加：计算准确和', isSmallFont: true,
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ 
-        const a = Math.floor(Math.random()*90)+10; const b = Math.floor(Math.random()*90)+10; const c = Math.floor(Math.random()*90)+10; const d = Math.floor(Math.random()*90)+10; 
-        pool.push({ dividend: `${a}+${b}+${c}`, divisor: d, ans: a+b+c+d, symbol: '+' }); 
-      }
-      return pool;
-    }
-  },
+  // --- 两位数 ---
+  'doublePlus': { name: '双进位加', title: '双进位加完成！', hintNote: '个位十位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
+  'doubleMinus': { name: '双退位减', title: '双退位减完成！', hintNote: '个位退，十位不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(!(a2<b2&&a1-1>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
+  'fourSum': { name: '四数相加', title: '四数相加完成！', hintNote: '计算准确和', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*90)+10;const b=Math.floor(Math.random()*90)+10;const c=Math.floor(Math.random()*90)+10;const d=Math.floor(Math.random()*90)+10; p.push({dividend:`${a}+${b}+${c}`,divisor:d,ans:a+b+c+d,symbol:'+'});} return p;} },
 
-  // --- 三位数专项 ---
-  'triplePlus': {
-    name: '三进位加', title: '三进位加完成！', hintNote: '三进位加：个位十位百位均需进位',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ 
-        let a, b, a1, a2, a3, b1, b2, b3; 
-        do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10; b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10; } while(a3 + b3 < 10 || a2 + b2 < 10 || a1 + b1 < 10); 
-        pool.push({ dividend: a, divisor: b, ans: a + b, symbol: '+' }); 
-      }
-      return pool;
-    }
-  },
-  'tripleMinus': {
-    name: '三退位减', title: '三退位减完成！', hintNote: '三退位减：个十退，百不退',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ 
-        let a, b, a1, a2, a3, b1, b2, b3; 
-        do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; a1 = Math.floor(a/100); a2 = Math.floor((a%100)/10); a3 = a%10; b1 = Math.floor(b/100); b2 = Math.floor((b%100)/10); b3 = b%10; } while(!(a3 < b3 && (a2 - 1) < b2 && (a1 - 1) >= b1)); 
-        pool.push({ dividend: a, divisor: b, ans: a - b, symbol: '-' }); 
-      }
-      return pool;
-    }
-  },
-  'tripleAnyPlus': {
-    name: '任意加', title: '任意三数加完成！', hintNote: '任意三位数加法',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ const a = Math.floor(Math.random()*900)+100; const b = Math.floor(Math.random()*900)+100; pool.push({ dividend: a, divisor: b, ans: a+b, symbol: '+' }); }
-      return pool;
-    }
-  },
-  'tripleAnyMinus': {
-    name: '任意减', title: '任意三数减完成！', hintNote: '任意三位数减法',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ let a = Math.floor(Math.random()*900)+100; let b = Math.floor(Math.random()*900)+100; if(a < b) [a,b] = [b,a]; pool.push({ dividend: a, divisor: b, ans: a-b, symbol: '-' }); }
-      return pool;
-    }
-  },
-  'tripleMix': {
-    name: '加减混合', title: '三数加减混合完成！', hintNote: '三数加减混合 (结果为正)', isSmallFont: true,
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ let a, b, c, op1, op2, ans; do { a = Math.floor(Math.random()*900)+100; b = Math.floor(Math.random()*900)+100; c = Math.floor(Math.random()*900)+100; op1 = Math.random()>0.5 ? '+' : '-'; op2 = Math.random()>0.5 ? '+' : '-'; let step1 = (op1 === '+') ? (a + b) : (a - b); ans = (op2 === '+') ? (step1 + c) : (step1 - c); } while(ans < 0); pool.push({ dividend: `${a}${op1}${b}`, divisor: c, ans: ans, symbol: op2 }); }
-      return pool;
-    }
-  },
-  'tripleMult': {
-    name: '三乘一', title: '三乘一完成！', hintNote: '三乘一：计算准确积',
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ const a = Math.floor(Math.random()*900)+100; const b = Math.floor(Math.random()*8)+2; pool.push({ dividend: a, divisor: b, ans: a*b, symbol: '×' }); }
-      return pool;
-    }
-  },
-  'tripleDiv': {
-    name: '三除一', title: '三除一完成！', hintNote: '三除一：若为小数，填相邻整数均对',
-    // 允许自定义判题逻辑
-    check: (inputVal, targetAns) => {
-      const n = inputVal;
-      if(Number.isInteger(targetAns)) {
-         return { ok: (n === targetAns), display: targetAns };
-      } else {
-         const f = Math.floor(targetAns);
-         const c = Math.ceil(targetAns);
-         return { ok: (n === f || n === c), display: `${f}或${c} (${targetAns.toFixed(2)})` };
-      }
-    },
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ const a = Math.floor(Math.random()*900)+100; const b = Math.floor(Math.random()*8)+2; const ans = a/b; pool.push({ dividend: a, divisor: b, ans: ans, symbol: '÷' }); }
-      return pool;
-    }
-  },
+  // --- 三位数 ---
+  'triplePlus': { name: '三进位加', title: '三进位加完成！', hintNote: '个位十位百位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(a3+b3<10||a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
+  'tripleMinus': { name: '三退位减', title: '三退位减完成！', hintNote: '个十退，百不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(!(a3<b3&&(a2-1)<b2&&(a1-1)>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
+  'tripleAnyPlus': { name: '任意加', title: '任意三数加完成！', hintNote: '任意三位数加法', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*900)+100; p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
+  'tripleAnyMinus': { name: '任意减', title: '任意三数减完成！', hintNote: '任意三位数减法', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a=Math.floor(Math.random()*900)+100;let b=Math.floor(Math.random()*900)+100;if(a<b)[a,b]=[b,a]; p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
+  'tripleMix': { name: '加减混合', title: '三数加减混合完成！', hintNote: '三数加减混合 (结果为正)', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,c,op1,op2,ans; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;c=Math.floor(Math.random()*900)+100;op1=Math.random()>0.5?'+':'-';op2=Math.random()>0.5?'+':'-';let step1=(op1==='+')?(a+b):(a-b);ans=(op2==='+')?(step1+c):(step1-c);}while(ans<0); p.push({dividend:`${a}${op1}${b}`,divisor:c,ans:ans,symbol:op2});} return p;} },
+  'tripleMult': { name: '三乘一', title: '三乘一完成！', hintNote: '计算准确积', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a*b,symbol:'×'});} return p;} },
+  'tripleDiv': { name: '三除一', title: '三除一完成！', hintNote: '若为小数，填相邻整数均对', check: (v, t) => { if(Number.isInteger(t)){ return {ok:v===t,display:t}; }else{ const f=Math.floor(t),c=Math.ceil(t); return {ok:(v===f||v===c),display:`${f}或${c} (${t.toFixed(2)})`}; } }, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a/b,symbol:'÷'});} return p;} },
 
-  // --- 五除三专项 ---
-  'divSpecA': {
-    name: '反向放缩', title: '反向放缩完成！', hintNote: '反向放缩：除数111-199 (误差3%内)',
-    check: (inputVal, targetAns) => {
-       const diffRatio = Math.abs(inputVal - targetAns) / targetAns;
-       return { ok: diffRatio <= 0.03, display: Math.round(targetAns) };
-    },
-    gen: (n) => {
-      const pool = [];
-      for(let i=0; i<n; i++){ const divisor = Math.floor(Math.random() * (199 - 111 + 1)) + 111; const dividend = Math.floor(Math.random() * (99999 - 10000 + 1)) + 10000; const ans = dividend / divisor; pool.push({ dividend, divisor, ans, symbol: '÷' }); }
-      return pool;
-    }
-  },
-  'divSpecB': {
-    name: '平移法', title: '平移法完成！', hintNote: '平移法：商90-111 (误差3%内)',
-    check: (inputVal, targetAns) => {
-       const diffRatio = Math.abs(inputVal - targetAns) / targetAns;
-       return { ok: diffRatio <= 0.03, display: Math.round(targetAns) };
-    },
-    gen: (n) => {
-      const pool = [];
-      let count = 0; while(count < n){ const divisor = Math.floor(Math.random() * 900) + 100; const targetQ = Math.floor(Math.random() * (111 - 90 + 1)) + 90; const dividend = divisor * targetQ + Math.floor(Math.random() * divisor); if(dividend >= 10000 && dividend <= 99999){ const ans = dividend / divisor; pool.push({ dividend, divisor, ans, symbol: '÷' }); count++; } }
-      return pool;
-    }
-  }
+  // --- 五除三 ---
+  'divSpecA': { name: '反向放缩', title: '反向放缩完成！', hintNote: '除数111-199 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const dr=Math.floor(Math.random()*(199-111+1))+111;const dd=Math.floor(Math.random()*(99999-10000+1))+10000; p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'});} return p;} },
+  'divSpecB': { name: '平移法', title: '平移法完成！', hintNote: '商90-111 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; let c=0; while(c<n){ const dr=Math.floor(Math.random()*900)+100;const tq=Math.floor(Math.random()*(111-90+1))+90;const dd=dr*tq+Math.floor(Math.random()*dr); if(dd>=10000&&dd<=99999){ p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'}); c++;} } return p;} }
 };
 
-// 界面分组配置（决定主页按钮显示顺序）
+// 界面分组配置
 const MODE_GROUPS = {
   basic: { label: '大九九/除法', modes: ['train', 'speed', 'first'] },
-  divSelect: { label: '商首位专项', modes: [] }, // 按钮特殊处理
+  divSelect: { label: '商首位专项', modes: [] }, 
   single: { label: '一位数专项 (仅填尾数)', modes: ['plus', 'minus'] },
   double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum'] },
   triple: { label: '三位数专项 (完整答案)', modes: ['triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus', 'tripleMix', 'tripleMult', 'tripleDiv'] },
@@ -461,57 +304,22 @@ const MODE_GROUPS = {
 export default {
   data() {
     return {
-      // 状态管理
-      viewState: 'home', 
-      currentModeKey: 'train', 
-      selectedDivisor: 0,
-      
-      // 游戏数据
-      pool: [], 
-      idx: 0, 
-      current: null, 
-      input: '', 
-      uiHint: 'Ready?', 
-      totalText: '0:00.0', 
-      progressText: '1/81', 
-      qText: '—', 
-      leftText: '跳过', 
-      
-      // 计时与统计
-      totalStartTs: 0, 
-      qStartTs: 0, 
-      timer: null, 
-      trainWrong: 0, 
-      trainSkip: 0, 
-      curWrongTries: 0, 
-      trainLog: [], 
-      results: [], 
-      
-      // 历史与图表
-      historyList: [], 
-      showChart: false, 
-      chartInstance: null, 
-      chartTab: '', 
-      availableModes: [], 
-      isHistoryReview: false,
-      
-      // UI杂项
+      viewState: 'home', currentModeKey: 'train', selectedDivisor: 0,
+      pool: [], idx: 0, current: null, input: '', uiHint: 'Ready?', totalText: '0:00.0', progressText: '1/81', qText: '—', leftText: '跳过', 
+      totalStartTs: 0, qStartTs: 0, timer: null, trainWrong: 0, trainSkip: 0, curWrongTries: 0, trainLog: [], results: [], 
+      historyList: [], showChart: false, chartInstance: null, chartTab: '', availableModes: [], isHistoryReview: false,
       toast: { show: false, title: '' },
-      modeGroups: MODE_GROUPS,
-      divisorList: [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+      modeGroups: MODE_GROUPS, divisorList: [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],
+      
+      // 3D 模式状态
+      isDeleteMode: false,
+      threeApp: { scene: null, camera: null, renderer: null, controls: null, raycaster: null, pointer: null, objects: [], animationId: null }
     }
   },
   computed: {
-    // 获取当前模式的配置对象
     activeConfig() {
-      // 如果是特殊模式，动态生成配置
       if(this.currentModeKey === 'firstSpec') {
-        return {
-           name: `商首位(除${this.selectedDivisor})`, 
-           title: `商首位(除${this.selectedDivisor})完成！`,
-           hintNote: `除数${this.selectedDivisor}专项：只填商首位`,
-           gen: GAME_MODES['firstSpec'].gen 
-        };
+        return { name: `商首位(除${this.selectedDivisor})`, title: `商首位(除${this.selectedDivisor})完成！`, hintNote: `除数${this.selectedDivisor}专项：只填商首位`, gen: GAME_MODES['firstSpec'].gen };
       }
       return GAME_MODES[this.currentModeKey] || {};
     },
@@ -526,221 +334,110 @@ export default {
          return `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`;
        }
     },
-    isSmallFont() {
-      return this.activeConfig.isSmallFont || (this.currentModeKey === 'fourSum' || this.currentModeKey === 'tripleMix');
-    }
+    isSmallFont() { return this.activeConfig.isSmallFont || (this.currentModeKey === 'fourSum' || this.currentModeKey === 'tripleMix'); }
   },
   mounted() {
     const history = localStorage.getItem('calc_history');
     if(history) { try { this.historyList = JSON.parse(history); } catch(e){ console.error(e) } }
     window.addEventListener('resize', () => { if(this.chartInstance) this.chartInstance.resize(); });
   },
+  beforeUnmount() {
+    this.cleanup3D(); // 销毁组件时清理 3D 资源
+  },
   methods: {
     now() { return Date.now(); },
     getModeConfig(key) { return GAME_MODES[key] || { name: key }; },
-    
-    // UI 交互
     setMode(mode){ this.currentModeKey = mode; },
     toSelectDivisor(){ this.viewState = 'selectDivisor'; },
     selectDivisorAndStart(d){ this.currentModeKey = 'firstSpec'; this.selectedDivisor = d; this.startGame(); },
     showToast(title) { this.toast.title = title; this.toast.show = true; setTimeout(() => { this.toast.show = false; }, 1500); },
     
-    // 游戏核心流程
+    // --- 游戏核心逻辑 ---
     startGame(){
       const config = this.activeConfig;
       if (!config.gen) return;
-
-      // 生成题目
-      this.pool = config.gen(10, { divisor: this.selectedDivisor }); // 默认生成10题，训练模式内部会覆盖
-      
-      // 初始化状态
+      this.pool = config.gen(10, { divisor: this.selectedDivisor });
       if(this.timer) clearInterval(this.timer);
       const totalStartTs = this.now();
-      this.viewState = 'game'; 
-      this.idx = 0; 
-      this.input = ''; 
-      this.uiHint = '请输入答案';
-      this.leftText = (this.currentModeKey === 'train' ? '跳过' : '重开');
-      
-      this.totalStartTs = totalStartTs; 
-      this.qStartTs = 0; 
-      this.trainWrong = 0; 
-      this.trainSkip = 0; 
-      this.curWrongTries = 0; 
-      this.trainLog = []; 
-      this.results = []; 
-      this.isHistoryReview = false;
-      
+      this.viewState = 'game'; this.idx = 0; this.input = ''; this.uiHint = '请输入答案'; this.leftText = (this.currentModeKey === 'train' ? '跳过' : '重开');
+      this.totalStartTs = totalStartTs; this.qStartTs = 0; this.trainWrong = 0; this.trainSkip = 0; this.curWrongTries = 0; this.trainLog = []; this.results = []; this.isHistoryReview = false;
       this.$nextTick(() => { this._nextQuestion(); this.timer = setInterval(()=> this._tick(), 100); });
     },
-    
     _tick(){ const diff = this.now() - this.totalStartTs; this.totalText = this.msToMMSS(diff); },
-    
-    _setQuestion(q, shownIdx){ 
-      this.current = q; 
-      this.qStartTs = this.now(); 
-      this.input = ''; 
-      this.curWrongTries = 0; 
-      this.qText = `${q.dividend}${q.symbol}${q.divisor}`; 
-      this.progressText = `${shownIdx}/${this.pool.length}`; 
-    },
-    
-    _nextQuestion(){ 
-      const { idx, pool } = this; 
-      if(idx >= pool.length){ this._finish(); return; } 
-      this._setQuestion(pool[idx], idx + 1); 
-      this.idx = idx + 1; 
-    },
-    
-    // 键盘逻辑
+    _setQuestion(q, shownIdx){ this.current = q; this.qStartTs = this.now(); this.input = ''; this.curWrongTries = 0; this.qText = `${q.dividend}${q.symbol}${q.divisor}`; this.progressText = `${shownIdx}/${this.pool.length}`; },
+    _nextQuestion(){ const { idx, pool } = this; if(idx >= pool.length){ this._finish(); return; } this._setQuestion(pool[idx], idx + 1); this.idx = idx + 1; },
     pressDigit(d){ let input = this.input || ''; if(input.length >= 6) return; input += String(d); this.input = input; },
     clearInput(){ this.input = ''; },
     backspace(){ this.input = (this.input || '').slice(0, -1); },
-    
-    leftAction(){ 
-      if(this.currentModeKey !== 'train'){ this.startGame(); return; } 
-      // 训练模式跳过逻辑
-      const cur = this.current; 
-      const used = (this.now() - this.qStartTs)/1000; 
-      const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: true }]); 
-      this.trainSkip++; 
-      this.trainLog = log; 
-      this._nextQuestion(); 
-    },
-    
-    // 判题逻辑
+    leftAction(){ if(this.currentModeKey !== 'train'){ this.startGame(); return; } const cur = this.current; const used = (this.now() - this.qStartTs)/1000; const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: true }]); this.trainSkip++; this.trainLog = log; this._nextQuestion(); },
     confirmAnswer(){
-      const { current: cur, input, currentModeKey: mode, activeConfig } = this; 
-      if(!input) return; 
-      const n = parseFloat(input); // 统一转数字
-      const used = (this.now() - this.qStartTs)/1000;
-      
-      let correct = false; 
-      let realAnsDisplay = cur.ans;
-
-      // 使用配置中的 check 函数，如果没有则默认全等判断
-      if (activeConfig.check) {
-        const checkResult = activeConfig.check(n, cur.ans);
-        correct = checkResult.ok;
-        realAnsDisplay = checkResult.display;
-      } else {
-        correct = (parseInt(input) === cur.ans);
-      }
-
-      // 训练模式：答对下一题，答错重试
-      if(mode === 'train'){ 
-        if(correct){ 
-          const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); 
-          this.trainLog = log; 
-          this.showToast('正确'); 
-          this._nextQuestion(); 
-        } else { 
-          this.trainWrong++; 
-          this.curWrongTries++; 
-          this.input = ''; 
-          this.uiHint = `错误！答案是：${realAnsDisplay}`; 
-        } 
-        return; 
-      }
-      
-      // 测试模式：记录对错并下一题
-      const results = this.results.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, ok: correct, yourAns: input, realAns: realAnsDisplay, usedStr: used.toFixed(1) + 's' }]); 
-      this.results = results; 
-      this.showToast(correct ? '正确' : `错误(${realAnsDisplay})`); 
-      this._nextQuestion();
+      const { current: cur, input, currentModeKey: mode, activeConfig } = this; if(!input) return; const n = parseFloat(input); const used = (this.now() - this.qStartTs)/1000;
+      let correct = false; let realAnsDisplay = cur.ans;
+      if (activeConfig.check) { const checkResult = activeConfig.check(n, cur.ans); correct = checkResult.ok; realAnsDisplay = checkResult.display; } else { correct = (parseInt(input) === cur.ans); }
+      if(mode === 'train'){ if(correct){ const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); this.trainLog = log; this.showToast('正确'); this._nextQuestion(); } else { this.trainWrong++; this.curWrongTries++; this.input = ''; this.uiHint = `错误！答案是：${realAnsDisplay}`; } return; }
+      const results = this.results.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, ok: correct, yourAns: input, realAns: realAnsDisplay, usedStr: used.toFixed(1) + 's' }]); this.results = results; this.showToast(correct ? '正确' : `错误(${realAnsDisplay})`); this._nextQuestion();
     },
-    
-    _finish(){ 
-      if(this.timer) clearInterval(this.timer); 
-      this.totalSec = (this.now() - this.totalStartTs)/1000; 
-      
-      let recordSummary = ''; 
-      let detailLog = []; 
-      
-      if(this.currentModeKey === 'train'){ 
-        recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; 
-        detailLog = this.trainLog; 
-      } else { 
-        const correctCount = this.results.filter(x=>x.ok).length; 
-        const totalCount = this.results.length; 
-        recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; 
-        detailLog = this.results; 
-      } 
-      
-      this.viewState = 'result'; 
-      this.isHistoryReview = false; 
-      this._saveRecord({ totalSec: this.totalSec }, recordSummary, detailLog); 
-    },
-    
-    // 数据持久化
-    _saveRecord(meta, summary, detailLog){ 
-      const modeName = (this.currentModeKey === 'firstSpec') 
-        ? `商首位(除${this.selectedDivisor})`
-        : (GAME_MODES[this.currentModeKey]?.name || '未知模式');
-        
-      const record = { 
-        ts: this.now(), 
-        timeStr: this.formatTime(this.now()), 
-        mode: this.currentModeKey, // 存储 key
-        modeName: modeName,        // 存储显示名
-        duration: meta.totalSec.toFixed(1) + 's', 
-        summary: summary, 
-        detail: detailLog 
-      }; 
-      let history = this.historyList; 
-      history.unshift(record); 
-      if(history.length > 5000) history = history.slice(0, 5000); 
-      this.historyList = history; 
-      localStorage.setItem('calc_history', JSON.stringify(history)); 
-    },
-
-    // 辅助工具函数
+    _finish(){ if(this.timer) clearInterval(this.timer); this.totalSec = (this.now() - this.totalStartTs)/1000; let recordSummary = ''; let detailLog = []; if(this.currentModeKey === 'train'){ recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = this.trainLog; } else { const correctCount = this.results.filter(x=>x.ok).length; const totalCount = this.results.length; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = this.results; } this.viewState = 'result'; this.isHistoryReview = false; this._saveRecord({ totalSec: this.totalSec }, recordSummary, detailLog); },
+    _saveRecord(meta, summary, detailLog){ const modeName = (this.currentModeKey === 'firstSpec') ? `商首位(除${this.selectedDivisor})` : (GAME_MODES[this.currentModeKey]?.name || '未知模式'); const record = { ts: this.now(), timeStr: this.formatTime(this.now()), mode: this.currentModeKey, modeName: modeName, duration: meta.totalSec.toFixed(1) + 's', summary: summary, detail: detailLog }; let history = this.historyList; history.unshift(record); if(history.length > 5000) history = history.slice(0, 5000); this.historyList = history; localStorage.setItem('calc_history', JSON.stringify(history)); },
     msToMMSS(ms){ const totalSec = ms / 1000; const m = Math.floor(totalSec / 60); const s = (totalSec % 60).toFixed(1); return `${m}:${s < 10 ? '0' + s : s}`; },
     formatTime(ts) { const date = new Date(ts); const m = date.getMonth() + 1; const d = date.getDate(); const h = date.getHours(); const min = date.getMinutes(); const pad = n => n < 10 ? '0' + n : n; return `${m}/${d} ${pad(h)}:${pad(min)}`; },
-    
     goHome(){ if(this.timer) clearInterval(this.timer); this.viewState = 'home'; },
-    
-    // --- 历史记录与图表逻辑 (保持原有逻辑，稍作变量适配) ---
     openHistory(){ this.viewState = 'history'; if(this.showChart) this.$nextTick(() => this.renderChart(this.chartTab)); },
-    viewHistoryDetail(index){ 
-      const record = this.historyList[index]; 
-      if(!record) return; 
-      // 临时覆盖 currentModeKey 以便结果页正确渲染（不会影响游戏逻辑，因为 viewState 是 result）
-      this.currentModeKey = record.mode; 
-      this.totalSec = parseFloat(record.duration.replace('s','')); // 用于结果页显示
-
-      if(record.mode === 'train'){ 
-        this.trainLog = record.detail || []; this.results = []; 
-      } else { 
-        this.results = record.detail || []; this.trainLog = []; 
-      }
-      this.viewState = 'result'; 
-      this.isHistoryReview = true; 
-    },
+    viewHistoryDetail(index){ const record = this.historyList[index]; if(!record) return; this.currentModeKey = record.mode; this.totalSec = parseFloat(record.duration.replace('s','')); if(record.mode === 'train'){ this.trainLog = record.detail || []; this.results = []; } else { this.results = record.detail || []; this.trainLog = []; } this.viewState = 'result'; this.isHistoryReview = true; },
     backToHistory(){ this.viewState = 'history'; if(this.showChart) this.$nextTick(() => this.renderChart(this.chartTab)); },
     closeHistory(){ this.viewState = 'home'; },
     clearOldest() { if(confirm(`当前共有 ${this.historyList.length} 条记录。\n确定要清除【最早的 1000 条】数据吗？`)){ const keepCount = this.historyList.length - 1000; this.historyList = this.historyList.slice(0, keepCount); localStorage.setItem('calc_history', JSON.stringify(this.historyList)); this.showToast('清理成功'); if(this.showChart) this.initChart(); } },
     clearHistory(){ if(confirm('【严重警告】\n确定要清空【所有】历史记录吗？\n此操作不可恢复！')){ localStorage.removeItem('calc_history'); this.historyList = []; this.showToast('所有记录已清空'); } },
-    
     initChart() { this.showChart = true; const modeSet = new Set(this.historyList.map(item => item.modeName)); this.availableModes = Array.from(modeSet); if(this.historyList.length > 0 && !this.chartTab) { this.chartTab = this.historyList[0].modeName; } else if (this.availableModes.length > 0 && !this.chartTab) { this.chartTab = this.availableModes[0]; } this.$nextTick(() => { this.renderChart(this.chartTab); }); },
     switchChartTab(modeName) { this.chartTab = modeName; this.renderChart(modeName); },
-    renderChart(targetModeName) {
-      const chartDom = document.getElementById('accChart'); if(!chartDom) return; if(this.chartInstance) this.chartInstance.dispose(); this.chartInstance = echarts.init(chartDom);
-      const allData = JSON.parse(JSON.stringify(this.historyList)).reverse(); const filteredData = allData.filter(item => item.modeName === targetModeName);
-      const dateList = []; const accuracyList = []; const timeList = [];
-      filteredData.forEach(item => { let accuracy = 0; if(item.mode === 'train') { let wrong = 0; if(item.detail && item.detail.length > 0) { wrong = item.detail.filter(x => x.wrong > 0).length; } else { const match = item.summary.match(/错(\d+)/); if(match) wrong = parseInt(match[1]); } accuracy = ((81 - wrong) / 81) * 100; } else { if(item.detail && item.detail.length > 0) { const correctCount = item.detail.filter(x => x.ok).length; accuracy = (correctCount / item.detail.length) * 100; } else { const match = item.summary.match(/(\d+)%/); if(match) accuracy = parseInt(match[1]); } } let duration = 0; if(item.duration) { duration = parseFloat(item.duration.replace('s', '')); } dateList.push(item.timeStr); accuracyList.push(accuracy.toFixed(0)); timeList.push(duration.toFixed(1)); });
-      if(dateList.length === 0) { this.chartInstance.setOption({ title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } } }); return; }
-      const option = {
-        grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, 
-        yAxis: [ 
-          { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff', formatter: '{value}%'} }, 
-          { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30', formatter: '{value}s'} } 
-        ], 
-        series: [ { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 3 }, itemStyle: { color: '#007aff' }, data: accuracyList }, { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#ff3b30', width: 2, type: 'dashed' }, itemStyle: { color: '#ff3b30' }, data: timeList } ]
-      };
-      this.chartInstance.setOption(option);
+    renderChart(targetModeName) { const chartDom = document.getElementById('accChart'); if(!chartDom) return; if(this.chartInstance) this.chartInstance.dispose(); this.chartInstance = echarts.init(chartDom); const allData = JSON.parse(JSON.stringify(this.historyList)).reverse(); const filteredData = allData.filter(item => item.modeName === targetModeName); const dateList = []; const accuracyList = []; const timeList = []; filteredData.forEach(item => { let accuracy = 0; if(item.mode === 'train') { let wrong = 0; if(item.detail && item.detail.length > 0) { wrong = item.detail.filter(x => x.wrong > 0).length; } else { const match = item.summary.match(/错(\d+)/); if(match) wrong = parseInt(match[1]); } accuracy = ((81 - wrong) / 81) * 100; } else { if(item.detail && item.detail.length > 0) { const correctCount = item.detail.filter(x => x.ok).length; accuracy = (correctCount / item.detail.length) * 100; } else { const match = item.summary.match(/(\d+)%/); if(match) accuracy = parseInt(match[1]); } } let duration = 0; if(item.duration) { duration = parseFloat(item.duration.replace('s', '')); } dateList.push(item.timeStr); accuracyList.push(accuracy.toFixed(0)); timeList.push(duration.toFixed(1)); }); if(dateList.length === 0) { this.chartInstance.setOption({ title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } } }); return; } const option = { grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, yAxis: [ { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff', formatter: '{value}%'} }, { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30', formatter: '{value}s'} } ], series: [ { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 3 }, itemStyle: { color: '#007aff' }, data: accuracyList }, { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#ff3b30', width: 2, type: 'dashed' }, itemStyle: { color: '#ff3b30' }, data: timeList } ] }; this.chartInstance.setOption(option); },
+    closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
+
+    // =================================================================
+    // 3D 模块逻辑
+    // =================================================================
+    startCubicMode() { this.viewState = 'cubic'; this.$nextTick(() => { this.initThree(); }); },
+    quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; },
+    initThree() {
+      const container = document.getElementById('three-container'); if (!container) return;
+      const width = container.clientWidth; const height = container.clientHeight;
+      const scene = new THREE.Scene(); scene.background = new THREE.Color('#f2f2f7'); scene.fog = new THREE.Fog('#f2f2f7', 20, 50);
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000); camera.position.set(8, 8, 8); camera.lookAt(0, 0, 0);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(width, height); renderer.setPixelRatio(window.devicePixelRatio); container.appendChild(renderer.domElement);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.7); dirLight.position.set(10, 20, 10); scene.add(dirLight);
+      const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xdddddd); scene.add(gridHelper);
+      const planeGeometry = new THREE.PlaneGeometry(20, 20); planeGeometry.rotateX(-Math.PI / 2);
+      const planeMaterial = new THREE.MeshBasicMaterial({ visible: false }); const plane = new THREE.Mesh(planeGeometry, planeMaterial); plane.name = 'ground'; scene.add(plane);
+      const controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.05;
+      const raycaster = new THREE.Raycaster(); const pointer = new THREE.Vector2();
+      renderer.domElement.addEventListener('pointerdown', (event) => {
+         const rect = renderer.domElement.getBoundingClientRect(); pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1; pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+         this.handle3DClick(raycaster, pointer, scene, camera, plane);
+      });
+      this.threeApp = { scene, camera, renderer, controls, objects: [plane], raycaster, animationId: null };
+      this.addCubeAt(scene, new THREE.Vector3(0, 0.5, 0));
+      this.animate3D();
     },
-    closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } }
+    animate3D() { const { scene, camera, renderer, controls } = this.threeApp; if (!renderer) return; this.threeApp.animationId = requestAnimationFrame(this.animate3D); controls.update(); renderer.render(scene, camera); },
+    handle3DClick(raycaster, pointer, scene, camera, plane) {
+      raycaster.setFromCamera(pointer, camera); const intersects = raycaster.intersectObjects(this.threeApp.objects, false);
+      if (intersects.length > 0) {
+        const intersect = intersects[0];
+        if (this.isDeleteMode) {
+          if (intersect.object.name !== 'ground') { scene.remove(intersect.object); const idx = this.threeApp.objects.indexOf(intersect.object); if (idx > -1) this.threeApp.objects.splice(idx, 1); intersect.object.geometry.dispose(); intersect.object.material.dispose(); }
+        } else {
+          const voxelPos = new THREE.Vector3().copy(intersect.point).add(intersect.face.normal); voxelPos.divideScalar(1).floor().multiplyScalar(1).addScalar(0.5); if (voxelPos.y < 0) return; this.addCubeAt(scene, voxelPos);
+        }
+      }
+    },
+    addCubeAt(scene, position) {
+      const geometry = new THREE.BoxGeometry(1, 1, 1); const material = new THREE.MeshLambertMaterial({ color: 0x007aff }); const cube = new THREE.Mesh(geometry, material); cube.position.copy(position);
+      const edges = new THREE.EdgesGeometry(geometry); const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 })); cube.add(line);
+      scene.add(cube); this.threeApp.objects.push(cube);
+    },
+    clearCubes() { const { scene, objects } = this.threeApp; for (let i = objects.length - 1; i >= 0; i--) { const obj = objects[i]; if (obj.name !== 'ground') { scene.remove(obj); obj.geometry.dispose(); obj.material.dispose(); objects.splice(i, 1); } } this.addCubeAt(scene, new THREE.Vector3(0, 0.5, 0)); },
+    cleanup3D() { if (this.threeApp.animationId) { cancelAnimationFrame(this.threeApp.animationId); } if (this.threeApp.renderer) { this.threeApp.renderer.dispose(); const container = document.getElementById('three-container'); if (container) container.innerHTML = ''; } this.threeApp = { scene: null, camera: null, renderer: null, controls: null, objects: [] }; }
   }
 }
 </script>
@@ -768,32 +465,11 @@ export default {
 .glass-panel { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(50px) saturate(200%); -webkit-backdrop-filter: blur(50px) saturate(200%); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.5); }
 .card { border-radius: 28px; padding: 16px; }
 .rowLabel { font-size: 13px; font-weight: 700; color: #007aff; margin: 16px 0 8px 6px; opacity: 0.9; letter-spacing: 0.5px; }
-/* 修改后： */
-.modeRow { 
-  display: flex; 
-  gap: 8px; 
-  margin-bottom: 8px; 
-  /* 核心改动1：允许换行 */
-  flex-wrap: wrap; 
-}
-.modeItem { 
-  /* 核心改动2：
-     flex-grow: 1 (自动填满剩余空间)
-     flex-shrink: 0 (空间不足时不压缩)
-     flex-basis: 30% (基准宽度30%，强制让一行最多只能容纳3个)
-  */
-  flex: 1 0 30%; 
-  
-  padding: 14px 4px; 
-  border-radius: 16px; 
-  background: rgba(255,255,255,0.5); 
-  border: 1px solid rgba(0,0,0,0.05); 
-  text-align: center; 
-  box-sizing: border-box; 
-  transition: all 0.1s; 
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-}
+
+/* 核心改动：允许换行 + 弹性宽度 */
+.modeRow { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.modeItem { flex: 1 0 30%; padding: 14px 4px; border-radius: 16px; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.05); text-align: center; box-sizing: border-box; transition: all 0.1s; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+
 .modeItem:active { transform: scale(0.97); }
 .modeItem.active { background: #007aff; border-color: transparent; box-shadow: 0 8px 20px rgba(0,122,255,0.3); }
 .modeTitle { display: block; font-size: 16px; font-weight: 700; color: #1c1c1e; }
@@ -844,5 +520,13 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .rowLeft { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
 .rowRight { flex-shrink: 0; display: flex; align-items: center; text-align: right; justify-content: flex-end; }
 .qText-small { font-size: 52px !important; letter-spacing: -1px !important; white-space: nowrap; margin-top: 10px; overflow: visible; }
-</style>
 
+/* 3D 模式样式 */
+.cubic-ui { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; box-sizing: border-box; pointer-events: none; z-index: 10; display: flex; flex-direction: column; align-items: center; }
+.cubic-ui > * { pointer-events: auto; }
+.small-btn { width: auto !important; height: 36px !important; line-height: 36px !important; padding: 0 16px !important; font-size: 14px !important; }
+.btnIcon { background: rgba(255,255,255,0.4); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 8px 12px; font-size: 14px; font-weight: 600; color: #333; transition: all 0.2s; }
+.btnIcon.active { background: #007aff; color: white; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
+.divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); margin: 0 5px; }
+.tip-toast { margin-top: 10px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); }
+</style>
