@@ -1,20 +1,20 @@
 <template>
-  <div class="wrap game-root">
+  <div class="wrap">
     <!-- 顶部栏 -->
-    <div class="topbar safe-top">
-      <button class="btn-back glass-btn" @click="$emit('back')">返回</button>
+    <div class="topbar">
+      <button class="btn-back" @click="$emit('back')">返回</button>
       <div class="top-stats">
-        <div class="stat glass-pill">{{ progressText }}</div>
-        <div class="stat glass-pill timer">⏱ {{ totalText }}</div>
+        <div class="stat-pill">{{ progressText }}</div>
+        <div class="stat-pill timer">⏱ {{ totalText }}</div>
       </div>
     </div>
     
     <!-- 题目区 -->
     <div class="game-main">
-      <div class="card q-card glass-panel">
+      <div class="q-card">
         <div :class="['q-text', isSmallFont ? 'q-text-small' : '']">{{ qText }}</div>
         <div class="q-note">{{ hintNote }}</div>
-        <div class="ans-box glass-input">答案：{{ input || '—' }}</div>
+        <div class="ans-box">答案：{{ input || '—' }}</div>
         <div class="hint">{{ uiHint }}</div>
       </div>
     </div>
@@ -50,45 +50,42 @@ defineEmits(['back', 'digit', 'clear', 'backspace', 'left', 'confirm'])
 
 <style scoped>
 .wrap {
-  padding: 20px 16px 24px;
-  box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
   position: relative;
   z-index: 1;
 }
 
-.game-root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 0;
-}
-
 .topbar {
+  padding-top: max(50px, env(safe-area-inset-top));
   padding-bottom: 12px;
-  height: auto;
-  box-sizing: content-box;
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 5px;
-}
-
-.safe-top {
-  padding-top: max(44px, env(safe-area-inset-top));
 }
 
 .btn-back {
-  width: 80px;
   height: 44px;
-  line-height: 44px;
+  padding: 0 20px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  font-weight: 700;
-  font-size: 16px;
-  margin: 0;
-  color: #1c1c1e;
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.75);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.04),
+    inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  transition: all 0.15s ease;
+}
+
+.btn-back:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .top-stats {
@@ -97,9 +94,19 @@ defineEmits(['back', 'digit', 'clear', 'backspace', 'left', 'confirm'])
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
-  font-size: 16px;
-  color: #333;
+}
+
+.stat-pill {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.7);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .game-main {
@@ -107,54 +114,81 @@ defineEmits(['back', 'digit', 'clear', 'backspace', 'left', 'confirm'])
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding: 10px 0;
 }
 
-.card {
-  padding: 18px 16px 20px;
-}
-
+/* 液态玻璃题目卡片 */
 .q-card {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(60px) saturate(200%);
+  -webkit-backdrop-filter: blur(60px) saturate(200%);
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.03);
+  padding: 32px 24px;
   text-align: center;
-  padding: 30px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.q-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  pointer-events: none;
+  border-radius: 28px 28px 0 0;
 }
 
 .q-text {
-  font-size: 64px;
-  font-weight: 800;
-  margin-top: 0;
-  color: #1c1c1e;
+  font-size: 58px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.85);
   letter-spacing: -2px;
+  position: relative;
+  z-index: 1;
 }
 
 .q-text-small {
-  font-size: 52px !important;
-  letter-spacing: -1px !important;
-  white-space: nowrap;
-  margin-top: 10px;
-  overflow: visible;
+  font-size: 46px;
+  letter-spacing: -1px;
 }
 
 .q-note {
-  margin-top: 8px;
-  font-size: 16px;
-  color: #8e8e93;
+  margin-top: 10px;
+  font-size: 15px;
+  color: rgba(0, 0, 0, 0.4);
   font-weight: 500;
+  position: relative;
+  z-index: 1;
 }
 
 .ans-box {
-  margin-top: 20px;
-  padding: 15px;
+  margin-top: 24px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.55);
   border-radius: 20px;
-  font-size: 44px;
-  font-weight: 800;
-  min-height: 44px;
-  color: #007aff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+  font-size: 40px;
+  font-weight: 700;
+  color: rgba(0, 122, 255, 0.9);
+  position: relative;
+  z-index: 1;
 }
 
 .hint {
-  margin-top: 15px;
-  color: #8e8e93;
-  font-size: 15px;
-  font-weight: 600;
+  margin-top: 16px;
+  color: rgba(0, 0, 0, 0.4);
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
 }
 </style>

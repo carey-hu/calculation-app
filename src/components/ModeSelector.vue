@@ -4,13 +4,9 @@
       <!-- 分组标签 -->
       <div class="row-label" v-if="group.label">{{ group.label }}</div>
       
-      <!-- 自定义入口（商首位专项） -->
-      <div v-if="group.hasCustomEntry" style="margin-bottom: 10px;">
-        <button 
-          class="btn-ghost glass-btn" 
-          style="margin-top:0; height:45px; line-height:45px; font-size:16px;" 
-          @click="$emit('selectDivisor')"
-        >
+      <!-- 自定义入口 -->
+      <div v-if="group.hasCustomEntry" class="custom-entry">
+        <button class="glass-btn" @click="$emit('selectDivisor')">
           进入除数选择模式
         </button>
       </div>
@@ -48,33 +44,45 @@ defineEmits(['select', 'selectDivisor'])
 </script>
 
 <style scoped>
+.mode-selector {
+  position: relative;
+}
+
 .row-label {
   font-size: 13px;
   font-weight: 700;
-  color: #007aff;
-  margin: 16px 0 8px 6px;
-  opacity: 0.9;
-  letter-spacing: 0.5px;
+  color: rgba(0, 122, 255, 0.9);
+  margin: 18px 0 10px 8px;
+  letter-spacing: 0.3px;
+}
+
+.row-label:first-child {
+  margin-top: 0;
 }
 
 .mode-row {
   display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .mode-item {
   flex: 1 0 30%;
-  padding: 14px 4px;
+  min-width: 0; /* 防止某些机型下因为内容/计算误差导致横向溢出 */
+  padding: 14px 6px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   text-align: center;
   box-sizing: border-box;
-  transition: all 0.1s;
+  transition: all 0.2s ease;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .mode-item:active {
@@ -82,19 +90,46 @@ defineEmits(['select', 'selectDivisor'])
 }
 
 .mode-item.active {
-  background: #007aff;
-  border-color: transparent;
-  box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3);
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.9) 0%, rgba(0, 100, 220, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 24px rgba(0, 122, 255, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .mode-title {
   display: block;
-  font-size: 16px;
-  font-weight: 700;
-  color: #1c1c1e;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .mode-item.active .mode-title {
   color: #fff;
+}
+
+.custom-entry {
+  margin-bottom: 10px;
+}
+
+.glass-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  color: rgba(0, 122, 255, 0.9);
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.glass-btn:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.7);
 }
 </style>

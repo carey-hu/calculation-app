@@ -30,25 +30,28 @@ defineProps({
 }
 
 .toast-content {
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  color: #fff;
-  padding: 12px 24px;
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  color: rgba(255, 255, 255, 0.95);
+  padding: 14px 28px;
   border-radius: 50px;
   font-weight: 600;
-  font-size: 15px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  font-size: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
-/* 动画 */
 .toast-enter-active,
 .toast-leave-active {
-  transition: opacity 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
+  transform: scale(0.9);
 }
 </style>
