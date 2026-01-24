@@ -65,13 +65,10 @@ defineEmits(['select', 'selectDivisor'])
   gap: 10px;
   margin-bottom: 10px;
   flex-wrap: wrap;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .mode-item {
   flex: 1 0 30%;
-  min-width: 0; /* 防止某些机型下因为内容/计算误差导致横向溢出 */
   padding: 14px 6px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.55);

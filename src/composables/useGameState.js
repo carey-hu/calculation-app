@@ -134,7 +134,6 @@ export function useGameState() {
   }
   
   function skipQuestion() {
-    if (!current.value) return false
     const cur = current.value
     const used = (Date.now() - qStartTs.value) / 1000
     
@@ -150,7 +149,6 @@ export function useGameState() {
   }
   
   function checkAnswer() {
-    if (!current.value) return null
     if (!input.value) return null
     
     const cur = current.value
@@ -223,9 +221,7 @@ export function useGameState() {
     } else {
       const correctCount = results.value.filter(x => x.ok).length
       const totalCount = results.value.length
-      // 正常情况下 totalCount 应为固定题数；但若中途退出/异常导致为 0，避免出现 NaN%
-      const rate = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0
-      summary = `正确率 ${rate}%`
+      summary = `正确率 ${Math.round((correctCount / totalCount) * 100)}%`
       detailLog = results.value
     }
     

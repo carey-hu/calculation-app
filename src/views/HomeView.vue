@@ -57,7 +57,6 @@ defineEmits(['setMode', 'toSelectDivisor', 'startCubic', 'start', 'openHistory']
   padding: 20px 16px 40px;
   padding-top: max(60px, env(safe-area-inset-top));
   overflow-y: auto;
-  overflow-x: hidden; /* iOS 上避免出现横向滚动指示条（黑色胶囊块） */
   -webkit-overflow-scrolling: touch;
   position: relative;
   z-index: 1;
@@ -88,40 +87,18 @@ defineEmits(['setMode', 'toSelectDivisor', 'startCubic', 'start', 'openHistory']
   font-weight: 500;
 }
 
-/* 液态玻璃卡片 - iOS/Safari 兼容处理：把 backdrop-filter 放到伪元素层，避免渲染黑块 */
+/* 液态玻璃卡片 - 简化版避免黑块 */
 .card {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-radius: 28px;
   border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow:
+  box-shadow: 
     0 12px 40px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   padding: 20px 18px 24px;
   flex-shrink: 0;
-  /* 轻微底色，防止伪元素渲染异常时出现透明穿透 */
-  background: rgba(255, 255, 255, 0.22);
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-}
-
-.card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  /* iOS 某些版本下有助于避免出现“黑色补丁” */
-  -webkit-mask-image: -webkit-radial-gradient(white, black);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.card > * {
-  position: relative;
-  z-index: 1;
 }
 
 .row-label {
