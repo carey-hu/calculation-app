@@ -292,9 +292,9 @@ function handleUpdateSlice(config) {
 
 <style scoped>
 .page {
+  width: 100%;
   height: 100vh;
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
+  height: 100dvh; /* 动态视口高度，更好支持移动端 */
   color: rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;

@@ -44,12 +44,20 @@ defineEmits(['select', 'selectDivisor'])
 </script>
 
 <style scoped>
+.mode-selector {
+  position: relative;
+}
+
 .row-label {
   font-size: 13px;
   font-weight: 700;
   color: rgba(0, 122, 255, 0.9);
   margin: 18px 0 10px 8px;
   letter-spacing: 0.3px;
+}
+
+.row-label:first-child {
+  margin-top: 0;
 }
 
 .mode-row {
@@ -62,33 +70,16 @@ defineEmits(['select', 'selectDivisor'])
 .mode-item {
   flex: 1 0 30%;
   padding: 14px 6px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   text-align: center;
   box-sizing: border-box;
   transition: all 0.2s ease;
   cursor: pointer;
   box-shadow: 
     0 4px 12px rgba(0, 0, 0, 0.04),
-    inset 0 1px 1px rgba(255, 255, 255, 0.8);
-  position: relative;
-  overflow: hidden;
-}
-
-/* 顶部光泽 */
-.mode-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, transparent 100%);
-  pointer-events: none;
-  border-radius: 18px 18px 0 0;
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .mode-item:active {
@@ -96,16 +87,11 @@ defineEmits(['select', 'selectDivisor'])
 }
 
 .mode-item.active {
-  background: linear-gradient(135deg, rgba(0, 122, 255, 0.85) 0%, rgba(0, 100, 220, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.9) 0%, rgba(0, 100, 220, 0.95) 100%);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 
     0 8px 24px rgba(0, 122, 255, 0.35),
-    inset 0 1px 1px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.1);
-}
-
-.mode-item.active::before {
-  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .mode-title {
@@ -113,13 +99,10 @@ defineEmits(['select', 'selectDivisor'])
   font-size: 15px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.75);
-  position: relative;
-  z-index: 1;
 }
 
 .mode-item.active .mode-title {
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  color: #fff;
 }
 
 .custom-entry {
@@ -131,29 +114,15 @@ defineEmits(['select', 'selectDivisor'])
   height: 48px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.7);
   color: rgba(0, 122, 255, 0.9);
   font-size: 16px;
   font-weight: 600;
   box-shadow: 
     0 4px 12px rgba(0, 0, 0, 0.04),
-    inset 0 1px 1px rgba(255, 255, 255, 0.8);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.glass-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, transparent 100%);
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .glass-btn:active {
