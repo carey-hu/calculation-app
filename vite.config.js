@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig({
+  base: '/',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -10,12 +11,7 @@ export default defineConfig({
     }
   },
   build: {
-    // 优化构建
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-      }
-    }
+    outDir: 'dist',
+    assetsDir: 'assets'
   }
 })
