@@ -343,6 +343,25 @@ export const GAME_MODES = {
       }
       return pool
     }
+  },
+
+  divSpecC: {
+    name: '任意五除三',
+    title: '任意五除三完成！',
+    hintNote: '五位数除以三位数 (误差3%内)',
+    check: (v, t) => {
+      const r = Math.abs(v - t) / t
+      return { ok: r <= 0.03, display: Math.round(t) }
+    },
+    gen: (n) => {
+      const pool = []
+      for (let i = 0; i < n; i++) {
+        const dr = randomInt(100, 999)
+        const dd = randomInt(10000, 99999)
+        pool.push({ dividend: dd, divisor: dr, ans: dd / dr, symbol: '÷' })
+      }
+      return pool
+    }
   }
 }
 
@@ -374,7 +393,7 @@ export const MODE_GROUPS = {
   },
   spec: {
     label: '五除三专项 (允许3%误差)',
-    modes: ['divSpecA', 'divSpecB']
+    modes: ['divSpecA', 'divSpecB', 'divSpecC']
   }
 }
 
