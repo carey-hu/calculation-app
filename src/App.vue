@@ -92,9 +92,8 @@
         </div>
         <div class="grid">
           <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k glass-key" @click="pressDigit(item)">{{item}}</button>
-          <button class="k glass-key" @click="pressDot">.</button>
-          <button class="k glass-key" @click="pressDigit(0)">0</button>
-          <button class="k confirm glass-key-confirm" @click="confirmAnswer">确认</button>
+          <button class="k wide glass-key" @click="pressDigit(0)">0</button>
+          <button class="k confirm wide2 glass-key-confirm" @click="confirmAnswer">确认</button>
         </div>
       </div>
     </div>
@@ -176,20 +175,13 @@
               </span>
             </div>
           </template>
-          
           <template v-else>
             <div v-for="(item, index) in results" :key="index" class="row">
               <span class="rowLeft">{{index+1}}. {{item.q}} = {{item.yourAns}}</span>
-              <span class="rowRight" style="display:flex; flex-direction:column; align-items:flex-end;">
-                  <div>
-                      <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
-                      <span>{{item.ok ? '✅' : '❌'}}</span>
-                      <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
-                  </div>
-                  
-                  <div v-if="item.ok && item.exactAns" style="font-size:11px; color:#007aff; margin-top:2px; font-weight:500;">
-                      准:{{ item.exactAns }} 误:{{ item.errorRate }}
-                  </div>
+              <span class="rowRight">
+                  <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
+                  <span>{{item.ok ? '✅' : '❌'}}</span>
+                  <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
               </span>
             </div>
           </template>
@@ -282,7 +274,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // =================================================================
-// 核心逻辑层 (原 math.js 和 gameModes.js 内容整合)
+// 核心逻辑层
 // =================================================================
 
 const shuffle = (arr) => {
@@ -303,13 +295,12 @@ const buildBasePool = () => {
   return arr;
 };
 
-// 游戏模式定义
 const GAME_MODES = {
   'train': { name: '训练', title: '基础训练完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()) },
   'speed': { name: '竞速', title: '竞速完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()).slice(0, 10) },
   'first': { name: '首位(随机)', title: '商首位完成！', hintNote: '目标：输入商的第一位数字', gen: (n) => { const pool=[]; for(let i=0;i<n;i++){ const dr=11+Math.floor(Math.random()*9); const dd=100+Math.floor(Math.random()*900); const fd=parseInt(String(Math.floor(dd/dr))[0],10); pool.push({dividend:dd,divisor:dr,ans:fd,symbol:'÷'}); } return pool; } },
   'firstSpec': { name: '商首位专项', title: '商首位专项完成！', gen: (n, ex) => { const d=ex.divisor||12; const pool=[]; for(let i=0;i<n;i++){ const dd=Math.floor(Math.random()*(999-d+1))+d; const fq=Math.floor(dd/d); const fd=parseInt(String(fq)[0],10); pool.push({dividend:dd,divisor:d,ans:fd,symbol:'÷'}); } return pool; } },
-  'plus': { name: '进位加', title: '一位数进位加完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;a1=a%10;b1=b%10;}while(a+b<10); p.push({dividend:a,divisor:b,ans:(a+b)%10,symbol:'+'});} return p;} },
+  'plus': { name: '进位加', title: '一位数进位加完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a+b<10); p.push({dividend:a,divisor:b,ans:(a+b)%10,symbol:'+'});} return p;} },
   'minus': { name: '退位减', title: '一位数退位减完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a>=b); p.push({dividend:a,divisor:b,ans:(10+a-b),symbol:'-'});} return p;} },
   'doublePlus': { name: '双进位加', title: '双进位加完成！', hintNote: '个位十位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
   'doubleMinus': { name: '双退位减', title: '双退位减完成！', hintNote: '个位退，十位不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(!(a2<b2&&a1-1>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
@@ -322,8 +313,7 @@ const GAME_MODES = {
   'tripleMult': { name: '三乘一', title: '三乘一完成！', hintNote: '计算准确积', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a*b,symbol:'×'});} return p;} },
   'tripleDiv': { name: '三除一', title: '三除一完成！', hintNote: '若为小数，填相邻整数均对', check: (v, t) => { if(Number.isInteger(t)){ return {ok:v===t,display:t}; }else{ const f=Math.floor(t),c=Math.ceil(t); return {ok:(v===f||v===c),display:`${f}或${c} (${t.toFixed(2)})`}; } }, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a/b,symbol:'÷'});} return p;} },
   'divSpecA': { name: '反向放缩', title: '反向放缩完成！', hintNote: '除数111-199 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const dr=Math.floor(Math.random()*(199-111+1))+111;const dd=Math.floor(Math.random()*(99999-10000+1))+10000; p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'});} return p;} },
-  'divSpecB': { name: '平移法', title: '平移法完成！', hintNote: '商90-111 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; let c=0; while(c<n){ const dr=Math.floor(Math.random()*900)+100;const tq=Math.floor(Math.random()*(111-90+1))+90;const dd=dr*tq+Math.floor(Math.random()*dr); if(dd>=10000&&dd<=99999){ p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'}); c++;} } return p;} },
-  'divSpecC': { name: '任意五除三', title: '任意五除三完成！', hintNote: '五位数除以三位数 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const dr=Math.floor(Math.random()*900)+100;const dd=Math.floor(Math.random()*(99999-10000+1))+10000; p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'});} return p;} }
+  'divSpecB': { name: '平移法', title: '平移法完成！', hintNote: '商90-111 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; let c=0; while(c<n){ const dr=Math.floor(Math.random()*900)+100;const tq=Math.floor(Math.random()*(111-90+1))+90;const dd=dr*tq+Math.floor(Math.random()*dr); if(dd>=10000&&dd<=99999){ p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'}); c++;} } return p;} }
 };
 
 const MODE_GROUPS = {
@@ -332,7 +322,7 @@ const MODE_GROUPS = {
   single: { label: '一位数专项 (仅填尾数)', modes: ['plus', 'minus'] },
   double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum'] },
   triple: { label: '三位数专项 (完整答案)', modes: ['triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus', 'tripleMix', 'tripleMult', 'tripleDiv'] },
-  spec: { label: '五除三专项 (允许3%误差)', modes: ['divSpecA', 'divSpecB', 'divSpecC'] }
+  spec: { label: '五除三专项 (允许3%误差)', modes: ['divSpecA', 'divSpecB'] }
 };
 
 export default {
@@ -353,7 +343,7 @@ export default {
       
       // 切面配置
       sliceConfig: {
-        constant: 5,
+        constant: 0,
         x: 0,
         y: -1, 
         z: 0
@@ -414,73 +404,16 @@ export default {
     _setQuestion(q, shownIdx){ this.current = q; this.qStartTs = this.now(); this.input = ''; this.curWrongTries = 0; this.qText = `${q.dividend}${q.symbol}${q.divisor}`; this.progressText = `${shownIdx}/${this.pool.length}`; },
     _nextQuestion(){ const { idx, pool } = this; if(idx >= pool.length){ this._finish(); return; } this._setQuestion(pool[idx], idx + 1); this.idx = idx + 1; },
     pressDigit(d){ let input = this.input || ''; if(input.length >= 6) return; input += String(d); this.input = input; },
-    pressDot(){ let input = this.input || ''; if(input.includes('.')) return; if(input.length >= 6) return; if(input === '') input = '0'; input += '.'; this.input = input; },
     clearInput(){ this.input = ''; },
     backspace(){ this.input = (this.input || '').slice(0, -1); },
     leftAction(){ if(this.currentModeKey !== 'train'){ this.startGame(); return; } const cur = this.current; const used = (this.now() - this.qStartTs)/1000; const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: true }]); this.trainSkip++; this.trainLog = log; this._nextQuestion(); },
-    
-    // ================== 修改重点：确认答案逻辑 ==================
     confirmAnswer(){
-      const { current: cur, input, currentModeKey: mode, activeConfig } = this; 
-      if(!input) return; 
-      const n = parseFloat(input); 
-      const used = (this.now() - this.qStartTs)/1000;
-      
-      let correct = false; 
-      let realAnsDisplay = cur.ans;
-      
-      if (activeConfig.check) { 
-        const checkResult = activeConfig.check(n, cur.ans); 
-        correct = checkResult.ok; 
-        realAnsDisplay = checkResult.display; 
-      } else { 
-        correct = (parseInt(input) === cur.ans); 
-      }
-      
-      if(mode === 'train'){ 
-        if(correct){ 
-          const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); 
-          this.trainLog = log; 
-          this._nextQuestion(); 
-        } else { 
-          this.trainWrong++; 
-          this.curWrongTries++; 
-          this.input = ''; 
-          this.uiHint = `错误！答案是：${realAnsDisplay}`; 
-        } 
-        return; 
-      }
-      
-      // >>>>>> 新增：计算误差率逻辑 >>>>>>
-      let extraInfo = {};
-      const estimateModes = ['tripleDiv', 'divSpecA', 'divSpecB', 'divSpecC'];
-      
-      if (correct && estimateModes.includes(mode)) {
-          const exact = cur.dividend / cur.divisor;
-          const error = Math.abs(n - exact) / exact;
-          // 若为整数显示整数，否则保留1位小数
-          const exactStr = Number.isInteger(exact) ? String(exact) : exact.toFixed(1);
-          
-          extraInfo = {
-              exactAns: exactStr,
-              errorRate: (error * 100).toFixed(2) + '%'
-          };
-      }
-      // <<<<<< 新增结束 <<<<<<
-      
-      const results = this.results.concat([{ 
-        q: `${cur.dividend}${cur.symbol}${cur.divisor}`, 
-        ok: correct, 
-        yourAns: input, 
-        realAns: realAnsDisplay, 
-        usedStr: used.toFixed(1) + 's',
-        ...extraInfo // 合并误差信息
-      }]); 
-      
-      this.results = results; 
-      this._nextQuestion();
+      const { current: cur, input, currentModeKey: mode, activeConfig } = this; if(!input) return; const n = parseFloat(input); const used = (this.now() - this.qStartTs)/1000;
+      let correct = false; let realAnsDisplay = cur.ans;
+      if (activeConfig.check) { const checkResult = activeConfig.check(n, cur.ans); correct = checkResult.ok; realAnsDisplay = checkResult.display; } else { correct = (parseInt(input) === cur.ans); }
+      if(mode === 'train'){ if(correct){ const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); this.trainLog = log; this._nextQuestion(); } else { this.trainWrong++; this.curWrongTries++; this.input = ''; this.uiHint = `错误！答案是：${realAnsDisplay}`; } return; }
+      const results = this.results.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, ok: correct, yourAns: input, realAns: realAnsDisplay, usedStr: used.toFixed(1) + 's' }]); this.results = results; this._nextQuestion();
     },
-
     _finish(){ if(this.timer) clearInterval(this.timer); this.totalSec = (this.now() - this.totalStartTs)/1000; let recordSummary = ''; let detailLog = []; if(this.currentModeKey === 'train'){ recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = this.trainLog; } else { const correctCount = this.results.filter(x=>x.ok).length; const totalCount = this.results.length; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = this.results; } this.viewState = 'result'; this.isHistoryReview = false; this._saveRecord({ totalSec: this.totalSec }, recordSummary, detailLog); },
     _saveRecord(meta, summary, detailLog){ const modeName = (this.currentModeKey === 'firstSpec') ? `商首位(除${this.selectedDivisor})` : (GAME_MODES[this.currentModeKey]?.name || '未知模式'); const record = { ts: this.now(), timeStr: this.formatTime(this.now()), mode: this.currentModeKey, modeName: modeName, duration: meta.totalSec.toFixed(1) + 's', summary: summary, detail: detailLog }; let history = this.historyList; history.unshift(record); if(history.length > 5000) history = history.slice(0, 5000); this.historyList = history; localStorage.setItem('calc_history', JSON.stringify(history)); },
     msToMMSS(ms){ const totalSec = ms / 1000; const m = Math.floor(totalSec / 60); const s = (totalSec % 60).toFixed(1); return `${m}:${s < 10 ? '0' + s : s}`; },
@@ -541,7 +474,7 @@ export default {
       this.updateSlicePlane();
     },
 
-    // 设置正交视图
+    // 设置正交视图 (关键：targetY 偏移)
     setCameraView(type) {
       if (!this.threeApp.camera || !this.threeApp.controls) return;
       const { camera, controls } = this.threeApp;
@@ -913,3 +846,4 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 </style>
+
