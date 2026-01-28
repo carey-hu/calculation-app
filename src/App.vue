@@ -176,13 +176,20 @@
               </span>
             </div>
           </template>
+          
           <template v-else>
             <div v-for="(item, index) in results" :key="index" class="row">
               <span class="rowLeft">{{index+1}}. {{item.q}} = {{item.yourAns}}</span>
-              <span class="rowRight">
-                  <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
-                  <span>{{item.ok ? '✅' : '❌'}}</span>
-                  <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
+              <span class="rowRight" style="display:flex; flex-direction:column; align-items:flex-end;">
+                  <div>
+                      <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
+                      <span>{{item.ok ? '✅' : '❌'}}</span>
+                      <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
+                  </div>
+                  
+                  <div v-if="item.ok && item.exactAns" style="font-size:11px; color:#007aff; margin-top:2px; font-weight:500;">
+                      准:{{ item.exactAns }} 误:{{ item.errorRate }}
+                  </div>
               </span>
             </div>
           </template>
@@ -275,7 +282,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // =================================================================
-// 核心逻辑层
+// 核心逻辑层 (原 math.js 和 gameModes.js 内容整合)
 // =================================================================
 
 const shuffle = (arr) => {
@@ -296,12 +303,13 @@ const buildBasePool = () => {
   return arr;
 };
 
+// 游戏模式定义
 const GAME_MODES = {
   'train': { name: '训练', title: '基础训练完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()) },
   'speed': { name: '竞速', title: '竞速完成！', hintNote: '精确到整数', gen: () => shuffle(buildBasePool()).slice(0, 10) },
   'first': { name: '首位(随机)', title: '商首位完成！', hintNote: '目标：输入商的第一位数字', gen: (n) => { const pool=[]; for(let i=0;i<n;i++){ const dr=11+Math.floor(Math.random()*9); const dd=100+Math.floor(Math.random()*900); const fd=parseInt(String(Math.floor(dd/dr))[0],10); pool.push({dividend:dd,divisor:dr,ans:fd,symbol:'÷'}); } return pool; } },
   'firstSpec': { name: '商首位专项', title: '商首位专项完成！', gen: (n, ex) => { const d=ex.divisor||12; const pool=[]; for(let i=0;i<n;i++){ const dd=Math.floor(Math.random()*(999-d+1))+d; const fq=Math.floor(dd/d); const fd=parseInt(String(fq)[0],10); pool.push({dividend:dd,divisor:d,ans:fd,symbol:'÷'}); } return pool; } },
-  'plus': { name: '进位加', title: '一位数进位加完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a+b<10); p.push({dividend:a,divisor:b,ans:(a+b)%10,symbol:'+'});} return p;} },
+  'plus': { name: '进位加', title: '一位数进位加完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;a1=a%10;b1=b%10;}while(a+b<10); p.push({dividend:a,divisor:b,ans:(a+b)%10,symbol:'+'});} return p;} },
   'minus': { name: '退位减', title: '一位数退位减完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a>=b); p.push({dividend:a,divisor:b,ans:(10+a-b),symbol:'-'});} return p;} },
   'doublePlus': { name: '双进位加', title: '双进位加完成！', hintNote: '个位十位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
   'doubleMinus': { name: '双退位减', title: '双退位减完成！', hintNote: '个位退，十位不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(!(a2<b2&&a1-1>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
@@ -345,7 +353,7 @@ export default {
       
       // 切面配置
       sliceConfig: {
-        constant: 0,
+        constant: 5,
         x: 0,
         y: -1, 
         z: 0
@@ -410,13 +418,69 @@ export default {
     clearInput(){ this.input = ''; },
     backspace(){ this.input = (this.input || '').slice(0, -1); },
     leftAction(){ if(this.currentModeKey !== 'train'){ this.startGame(); return; } const cur = this.current; const used = (this.now() - this.qStartTs)/1000; const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: true }]); this.trainSkip++; this.trainLog = log; this._nextQuestion(); },
+    
+    // ================== 修改重点：确认答案逻辑 ==================
     confirmAnswer(){
-      const { current: cur, input, currentModeKey: mode, activeConfig } = this; if(!input) return; const n = parseFloat(input); const used = (this.now() - this.qStartTs)/1000;
-      let correct = false; let realAnsDisplay = cur.ans;
-      if (activeConfig.check) { const checkResult = activeConfig.check(n, cur.ans); correct = checkResult.ok; realAnsDisplay = checkResult.display; } else { correct = (parseInt(input) === cur.ans); }
-      if(mode === 'train'){ if(correct){ const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); this.trainLog = log; this._nextQuestion(); } else { this.trainWrong++; this.curWrongTries++; this.input = ''; this.uiHint = `错误！答案是：${realAnsDisplay}`; } return; }
-      const results = this.results.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, ok: correct, yourAns: input, realAns: realAnsDisplay, usedStr: used.toFixed(1) + 's' }]); this.results = results; this._nextQuestion();
+      const { current: cur, input, currentModeKey: mode, activeConfig } = this; 
+      if(!input) return; 
+      const n = parseFloat(input); 
+      const used = (this.now() - this.qStartTs)/1000;
+      
+      let correct = false; 
+      let realAnsDisplay = cur.ans;
+      
+      if (activeConfig.check) { 
+        const checkResult = activeConfig.check(n, cur.ans); 
+        correct = checkResult.ok; 
+        realAnsDisplay = checkResult.display; 
+      } else { 
+        correct = (parseInt(input) === cur.ans); 
+      }
+      
+      if(mode === 'train'){ 
+        if(correct){ 
+          const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); 
+          this.trainLog = log; 
+          this._nextQuestion(); 
+        } else { 
+          this.trainWrong++; 
+          this.curWrongTries++; 
+          this.input = ''; 
+          this.uiHint = `错误！答案是：${realAnsDisplay}`; 
+        } 
+        return; 
+      }
+      
+      // >>>>>> 新增：计算误差率逻辑 >>>>>>
+      let extraInfo = {};
+      const estimateModes = ['tripleDiv', 'divSpecA', 'divSpecB', 'divSpecC'];
+      
+      if (correct && estimateModes.includes(mode)) {
+          const exact = cur.dividend / cur.divisor;
+          const error = Math.abs(n - exact) / exact;
+          // 若为整数显示整数，否则保留1位小数
+          const exactStr = Number.isInteger(exact) ? String(exact) : exact.toFixed(1);
+          
+          extraInfo = {
+              exactAns: exactStr,
+              errorRate: (error * 100).toFixed(2) + '%'
+          };
+      }
+      // <<<<<< 新增结束 <<<<<<
+      
+      const results = this.results.concat([{ 
+        q: `${cur.dividend}${cur.symbol}${cur.divisor}`, 
+        ok: correct, 
+        yourAns: input, 
+        realAns: realAnsDisplay, 
+        usedStr: used.toFixed(1) + 's',
+        ...extraInfo // 合并误差信息
+      }]); 
+      
+      this.results = results; 
+      this._nextQuestion();
     },
+
     _finish(){ if(this.timer) clearInterval(this.timer); this.totalSec = (this.now() - this.totalStartTs)/1000; let recordSummary = ''; let detailLog = []; if(this.currentModeKey === 'train'){ recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = this.trainLog; } else { const correctCount = this.results.filter(x=>x.ok).length; const totalCount = this.results.length; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = this.results; } this.viewState = 'result'; this.isHistoryReview = false; this._saveRecord({ totalSec: this.totalSec }, recordSummary, detailLog); },
     _saveRecord(meta, summary, detailLog){ const modeName = (this.currentModeKey === 'firstSpec') ? `商首位(除${this.selectedDivisor})` : (GAME_MODES[this.currentModeKey]?.name || '未知模式'); const record = { ts: this.now(), timeStr: this.formatTime(this.now()), mode: this.currentModeKey, modeName: modeName, duration: meta.totalSec.toFixed(1) + 's', summary: summary, detail: detailLog }; let history = this.historyList; history.unshift(record); if(history.length > 5000) history = history.slice(0, 5000); this.historyList = history; localStorage.setItem('calc_history', JSON.stringify(history)); },
     msToMMSS(ms){ const totalSec = ms / 1000; const m = Math.floor(totalSec / 60); const s = (totalSec % 60).toFixed(1); return `${m}:${s < 10 ? '0' + s : s}`; },
@@ -477,7 +541,7 @@ export default {
       this.updateSlicePlane();
     },
 
-    // 设置正交视图 (关键：targetY 偏移)
+    // 设置正交视图
     setCameraView(type) {
       if (!this.threeApp.camera || !this.threeApp.controls) return;
       const { camera, controls } = this.threeApp;
@@ -849,4 +913,3 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 </style>
-
