@@ -11,43 +11,57 @@
     </div>
 
     <div v-if="viewState==='home'" class="wrap homeWrap">
+      
       <div class="header-area">
         <div class="title">计算助手</div>
         <div class="subtitle">专项练习：进位加、退位减、大九九除法</div>
       </div>
 
-      <div class="card glass-panel">
-        <template v-for="(group, groupKey) in modeGroups" :key="groupKey">
-          <div class="rowLabel" v-if="group.label">{{ group.label }}</div>
-          
-          <div v-if="groupKey === 'divSelect'" style="margin-bottom: 10px;">
-              <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
-              进入除数选择模式
-            </button>
-          </div>
+      <div class="menu-area-fixed">
+        <div class="card glass-panel full-menu-card">
+          <div class="menu-scroll-container">
+            <template v-for="(group, groupKey) in modeGroups" :key="groupKey">
+              <div class="rowLabel" v-if="group.label">{{ group.label }}</div>
+              
+              <div v-if="groupKey === 'divSelect'" style="margin-bottom: 10px;">
+                  <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
+                  进入除数选择模式
+                </button>
+              </div>
 
-          <div class="modeRow" v-else>
-            <div 
-              v-for="modeKey in group.modes" 
-              :key="modeKey"
-              :class="['modeItem', currentModeKey === modeKey ? 'active' : '']" 
-              @click="setMode(modeKey)"
-            >
-              <span class="modeTitle">{{ getModeConfig(modeKey).name }}</span>
+              <div class="modeRow" v-else>
+                <div 
+                  v-for="modeKey in group.modes" 
+                  :key="modeKey"
+                  :class="['modeItem', currentModeKey === modeKey ? 'active' : '']" 
+                  @click="setMode(modeKey)"
+                >
+                  <span class="modeTitle">{{ getModeConfig(modeKey).name }}</span>
+                </div>
+              </div>
+            </template>
+            
+            <div class="rowLabel">空间思维专项 (公考行测)</div>
+            <div class="modeRow">
+               <div class="modeItem" style="flex: 1 0 45%; background: rgba(0,122,255,0.08); border-color: rgba(0,122,255,0.2);" @click="startCubicMode('block')">
+                  <span class="modeTitle" style="color: #007aff;">🧱 立体拼合</span>
+               </div>
+               <div class="modeItem" style="flex: 1 0 45%; background: rgba(88,86,214,0.1); border-color: rgba(88,86,214,0.2);" @click="startCubicMode('section')">
+                  <span class="modeTitle" style="color: #5856d6;">🔪 立体截面</span>
+               </div>
             </div>
+            <div style="height: 20px;"></div>
           </div>
-        </template>
-        
-        <div class="rowLabel">空间思维专项</div>
-        <div class="modeRow">
-           <div class="modeItem" style="flex: 1 0 100%; background: rgba(88, 86, 214, 0.1); border-color: rgba(88, 86, 214, 0.2);" @click="startCubicMode">
-              <span class="modeTitle" style="color: #5856d6;">🧊 立体拼合 / 积木训练</span>
-           </div>
-        </div>
 
-        <button class="btnPrimary glass-primary main-action-btn homeStartBtn" @click="startGame">开始练习</button>
-        <button class="btnHistory glass-btn main-action-btn" @click="openHistory">历史记录</button>
+          <div class="card-bottom-actions">
+            <div class="separator-line"></div>
+            <button class="btnPrimary main-action-btn" @click="startGame">开始练习</button>
+            <button class="btnHistory main-action-btn" @click="openHistory">历史记录</button>
+          </div>
+
+        </div>
       </div>
+
     </div>
 
     <div v-if="viewState==='selectDivisor'" class="wrap homeWrap">
@@ -55,11 +69,9 @@
         <div class="title">选择除数</div>
         <div class="subtitle">点击下方数字开始练习商首位</div>
       </div>
-      <div class="card glass-panel">
+      <div class="card glass-panel" style="flex:1; overflow-y:auto;">
         <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">
-          <button v-for="item in divisorList" :key="item" 
-                  class="k glass-key" style="font-size:20px; height:50px; line-height:50px;" 
-                  @click="selectDivisorAndStart(item)">{{item}}</button>
+          <button v-for="item in divisorList" :key="item" class="k glass-key" style="font-size:20px; height:50px; line-height:50px;" @click="selectDivisorAndStart(item)">{{item}}</button>
         </div>
         <button class="btnGhost glass-btn main-action-btn" style="margin-top: 20px;" @click="goHome">返回主页</button>
       </div>
@@ -73,17 +85,14 @@
           <div class="stat glass-pill timer">⏱ {{totalText}}</div>
         </div>
       </div>
-      
       <div class="gameMain">
         <div class="card qCard glass-panel">
           <div :class="['qText', isSmallFont ? 'qText-small' : '']">{{qText}}</div>
-          
           <div class="qNote">{{activeConfig.hintNote || activeConfig.hint || '精确到整数'}}</div>
           <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
           <div class="hint">{{uiHint}}</div>
         </div>
       </div>
-      
       <div class="keypad card glass-panel">
         <div class="fnRow">
           <button class="kFn style-skip" @click="leftAction">{{leftText}}</button>
@@ -99,84 +108,21 @@
       </div>
     </div>
 
-    <div v-if="viewState==='cubic'" class="wrap full-height" style="padding:0; overflow:hidden;">
-      <div id="three-container" style="width:100%; height:100%; display:block; outline:none; touch-action: none;"></div>
-
-      <div class="cubic-ui safe-top">
-        <div class="glass-panel" style="padding: 8px 12px; display: flex; gap: 8px; align-items: center; border-radius: 24px; max-width: 95%;">
-          <button class="btnBack glass-btn small-btn" @click="quitCubicMode">🔙</button>
-          <div class="divider"></div>
-          
-          <div style="display:flex; gap:8px;">
-            <div 
-              v-for="c in colors" 
-              :key="c" 
-              :style="{backgroundColor: c, border: c === '#ffffff' ? '1px solid #ccc' : 'none'}"
-              :class="['color-dot', selectedColor === c && !isDeleteMode ? 'active' : '']"
-              @click="switchColor(c)"
-            ></div>
-          </div>
-
-          <div class="divider"></div>
-
-          <button :class="['btnIcon', isDeleteMode ? 'active' : '']" @click="toggleDeleteMode">🗑️</button>
-          <button :class="['btnIcon', isSliceMode ? 'active' : '']" @click="toggleSliceMode">🔪</button>
-          <button class="btnIcon" @click="clearCubes">🔄</button>
-        </div>
-
-        <div class="view-selector glass-panel">
-          <button class="view-btn" @click="setCameraView('front')">正</button>
-          <button class="view-btn" @click="setCameraView('back')">后</button>
-          <button class="view-btn" @click="setCameraView('left')">左</button>
-          <button class="view-btn" @click="setCameraView('right')">右</button>
-          <button class="view-btn" @click="setCameraView('top')">俯</button>
-          <button class="view-btn active-view" @click="setCameraView('iso')">轴</button>
-        </div>
-
-        <div v-if="isSliceMode" class="glass-panel slice-panel">
-          <div class="slice-row">
-            <span class="slice-label">位置</span>
-            <input type="range" min="-10" max="15" step="0.1" v-model.number="sliceConfig.constant" @input="updateSlicePlane" class="slice-slider">
-          </div>
-          <div class="slice-row">
-            <span class="slice-label">X轴倾斜</span>
-            <input type="range" min="-1" max="1" step="0.1" v-model.number="sliceConfig.x" @input="updateSlicePlane" class="slice-slider">
-          </div>
-          <div class="slice-row">
-            <span class="slice-label">Y轴倾斜</span>
-            <input type="range" min="-1" max="1" step="0.1" v-model.number="sliceConfig.y" @input="updateSlicePlane" class="slice-slider">
-          </div>
-          <div class="slice-row">
-            <span class="slice-label">Z轴倾斜</span>
-            <input type="range" min="-1" max="1" step="0.1" v-model.number="sliceConfig.z" @input="updateSlicePlane" class="slice-slider">
-          </div>
-          <div style="text-align:center; margin-top:5px;">
-             <button class="btnGhost small-btn" style="height:28px; line-height:28px; font-size:12px;" @click="resetSlice">重置切面</button>
-          </div>
-        </div>
-
-        <div class="tip-toast" v-if="!isSliceMode">点击地面放置，点击方块叠加</div>
-      </div>
-    </div>
-
     <div v-if="viewState==='result'" class="wrap full-height">
       <div class="header-area safe-header">
         <div class="title">{{resultTitle}}</div>
         <div class="subtitle">{{resultMeta}}</div>
       </div>
-      
       <div class="card full-flex glass-panel">
         <div class="resultScroll">
           <template v-if="currentModeKey==='train'">
             <div v-for="(item, index) in trainLog" :key="index" class="row">
               <span class="rowLeft">{{index+1}}. {{item.q}}</span>
               <span class="rowRight">
-                <span :style="{ color: parseFloat(item.usedStr) > 2 ? '#ff3b30' : 'inherit' }">{{item.usedStr}}</span> 
-                / 错{{item.wrong}}{{item.skipped?'(跳)':''}}
+                <span :style="{ color: parseFloat(item.usedStr) > 2 ? '#ff3b30' : 'inherit' }">{{item.usedStr}}</span> / 错{{item.wrong}}{{item.skipped?'(跳)':''}}
               </span>
             </div>
           </template>
-          
           <template v-else>
             <div v-for="(item, index) in results" :key="index" class="row">
               <span class="rowLeft">{{index+1}}. {{item.q}} = {{item.yourAns}}</span>
@@ -186,7 +132,6 @@
                       <span>{{item.ok ? '✅' : '❌'}}</span>
                       <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
                   </div>
-                  
                   <div v-if="item.ok && item.exactAns" style="font-size:11px; color:#007aff; margin-top:2px; font-weight:500;">
                       准:{{ item.exactAns }} 误:{{ item.errorRate }}
                   </div>
@@ -211,37 +156,22 @@
         <div class="title">历史记录</div>
         <div class="subtitle">仅保留最近5000条训练数据</div>
       </div>
-      
       <div class="card full-flex glass-panel">
         <div v-if="showChart" class="chart-container glass-inner">
            <div class="chart-tabs">
-             <div 
-               v-for="m in availableModes" 
-               :key="m"
-               :class="['chart-tab-item', chartTab === m ? 'active' : '']"
-               @click="switchChartTab(m)"
-             >
-               {{ m }}
-             </div>
+             <div v-for="m in availableModes" :key="m" :class="['chart-tab-item', chartTab === m ? 'active' : '']" @click="switchChartTab(m)">{{ m }}</div>
            </div>
            <div id="accChart" style="width: 100%; height: 220px;"></div>
            <button class="btnGhost small" style="margin-top:5px; font-size:13px;" @click="closeChart">收起图表</button>
         </div>
         <div v-else>
-           <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#007aff;" @click="initChart">
-             📊 按模块分析趋势
-           </button>
+           <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#007aff;" @click="initChart">📊 按模块分析趋势</button>
         </div>
-
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:0 8px; font-weight:700; color:#8e8e93; font-size:13px;">
-           <span>时间 / 模式</span>
-           <span>成绩 / 耗时</span>
+           <span>时间 / 模式</span><span>成绩 / 耗时</span>
         </div>
-        
         <div class="resultScroll">
-          <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; color:rgba(0,0,0,0.4);">
-            暂无记录，快去练习吧！
-          </div>
+          <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; color:rgba(0,0,0,0.4);">暂无记录，快去练习吧！</div>
           <div v-else>
             <div v-for="(item, index) in historyList" :key="item.ts" class="row hover-row" @click="viewHistoryDetail(index)" style="cursor:pointer;">
               <div class="rowLeft" style="display:flex; flex-direction:column;">
@@ -255,23 +185,117 @@
             </div>
           </div>
         </div>
-        
         <div style="margin-top: 15px; display:flex; flex-direction: column; gap:10px;">
-          <button 
-            v-if="historyList.length > 1000" 
-            class="btnGhost glass-btn" 
-            style="margin:0; height: 40px; font-size: 16px; color: #ff3b30; background: rgba(255,59,48,0.08); border-color: rgba(255,59,48,0.2);" 
-            @click="clearOldest"
-          >
-            🗑️ 清理最早的 1000 条
-          </button>
-
+          <button v-if="historyList.length > 1000" class="btnGhost glass-btn" style="margin:0; height: 40px; font-size: 16px; color: #ff3b30; background: rgba(255,59,48,0.08); border-color: rgba(255,59,48,0.2);" @click="clearOldest">🗑️ 清理最早的 1000 条</button>
           <div style="display:flex; gap:10px;">
             <button class="btnDanger glass-btn main-action-btn" style="margin:0; flex:1;" @click="clearHistory">清空全部</button>
             <button class="btnPrimary glass-primary main-action-btn" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
           </div>
         </div>
       </div>
+    </div>
+
+    <div v-if="viewState==='cubic'" class="wrap full-height" style="padding:0; overflow:hidden;">
+      <div id="three-container" style="width:100%; height:100%; display:block; outline:none; touch-action: none;"></div>
+
+      <div class="cubic-ui safe-top">
+        <div class="glass-panel" style="padding: 8px 12px; display: flex; gap: 8px; align-items: center; border-radius: 24px; max-width: 98%; overflow-x: auto;">
+          <button class="btnBack glass-btn small-btn" @click="quitCubicMode">🔙</button>
+          <div class="divider"></div>
+
+          <template v-if="cubicMode === 'section'">
+             <div style="position:relative;">
+                <button class="btnGhost small-btn" @click="showShapeMenu = !showShapeMenu" style="font-size:13px; color:#5856d6; font-weight:700;">
+                  📂 题库 ({{ currentShapeName }})
+                </button>
+             </div>
+             <div class="divider"></div>
+             <button class="view-btn" style="background:#000; color:#fff; border:none;" @click="lookAtSection">👀 正视切面</button>
+          </template>
+
+          <template v-else>
+            <div style="display:flex; gap:4px;">
+              <div v-for="c in colors" :key="c" 
+                :style="{backgroundColor: c, border: c === '#ffffff' ? '1px solid #ccc' : 'none'}"
+                :class="['color-dot', selectedColor === c && !isDeleteMode ? 'active' : '']"
+                @click="switchColor(c)"></div>
+            </div>
+            <div class="divider"></div>
+            <button :class="['btnIcon', isDeleteMode ? 'active' : '']" @click="toggleDeleteMode">🗑️</button>
+            <button class="btnIcon" @click="clearCubes">🔄</button>
+          </template>
+        </div>
+
+        <div class="view-selector glass-panel">
+          <button class="view-btn" @click="setCameraView('front')">正</button>
+          <button class="view-btn" @click="setCameraView('left')">左</button>
+          <button class="view-btn" @click="setCameraView('top')">俯</button>
+          <button class="view-btn" @click="setCameraView('iso')">轴</button>
+        </div>
+        
+        <div class="tip-toast" v-if="cubicMode === 'block'">点击地面放置，点击方块叠加</div>
+        <div class="tip-toast" v-if="cubicMode === 'section'" style="background:rgba(88,86,214,0.85);">请调节下方滑块观察截面变化</div>
+      </div>
+
+      <div v-if="showShapeMenu && cubicMode === 'section'" class="shape-menu-container">
+        <div class="shape-menu glass-panel">
+          <div class="shape-group-title">基础柱体/多面体</div>
+          <div class="shape-grid">
+            <div v-for="s in examShapes.basic" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
+          </div>
+          <div class="shape-group-title">曲面体 (锥/台/球)</div>
+          <div class="shape-grid">
+            <div v-for="s in examShapes.curved" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
+          </div>
+          <div class="shape-group-title">高频挖空 (修复版)</div>
+          <div class="shape-grid">
+            <div v-for="s in examShapes.hollow" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
+          </div>
+          <div class="shape-group-title">组合与拼接</div>
+          <div class="shape-grid">
+            <div v-for="s in examShapes.composite" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
+          </div>
+          <div class="shape-group-title">异形构造</div>
+          <div class="shape-grid">
+            <div v-for="s in examShapes.special" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="cubicMode === 'section'" :class="['slice-panel-container', sliceMenuCollapsed ? 'collapsed' : '']">
+        <div class="glass-panel slice-panel-content">
+            <div class="panel-header" @click="sliceMenuCollapsed = !sliceMenuCollapsed">
+              <div class="sheet-handle"></div>
+              <div class="header-row">
+                <span class="header-title">📐 切面调节</span>
+                <span class="header-toggle-text">{{ sliceMenuCollapsed ? '展开' : '收起' }}</span>
+              </div>
+            </div>
+            
+            <div v-if="!sliceMenuCollapsed" class="controls-body">
+              <div class="slice-row">
+                <span class="slice-label">位移</span>
+                <input type="range" min="-8" max="8" step="0.1" v-model.number="sliceConfig.constant" class="slice-slider">
+              </div>
+              <div class="slice-row">
+                <span class="slice-label">X旋转</span>
+                <input type="range" min="0" max="180" step="1" v-model.number="sliceConfig.rotX" class="slice-slider">
+              </div>
+              <div class="slice-row">
+                <span class="slice-label">Y旋转</span>
+                <input type="range" min="0" max="180" step="1" v-model.number="sliceConfig.rotY" class="slice-slider">
+              </div>
+              <div class="slice-row">
+                <span class="slice-label">Z旋转</span>
+                <input type="range" min="0" max="180" step="1" v-model.number="sliceConfig.rotZ" class="slice-slider">
+              </div>
+              <div style="margin-top: 12px;">
+                  <button class="btnGhost ios-reset-btn" @click="resetSlice">重置位置</button>
+              </div>
+            </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
@@ -280,10 +304,7 @@
 import * as echarts from 'echarts';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-
-// =================================================================
-// 核心逻辑层 (原 math.js 和 gameModes.js 内容整合)
-// =================================================================
+import { SUBTRACTION, Brush, Evaluator } from 'three-bvh-csg';
 
 const shuffle = (arr) => {
   for(let i=arr.length-1;i>0;i--){ 
@@ -335,6 +356,243 @@ const MODE_GROUPS = {
   spec: { label: '五除三专项 (允许3%误差)', modes: ['divSpecA', 'divSpecB', 'divSpecC'] }
 };
 
+// 1. 空心圆柱 (圆管)
+const createHollowCylinder = () => {
+  const shape = new THREE.Shape();
+  shape.absarc(0, 0, 4, 0, Math.PI * 2, false);
+  const hole = new THREE.Path();
+  hole.absarc(0, 0, 2, 0, Math.PI * 2, true);
+  shape.holes.push(hole);
+  return new THREE.ExtrudeGeometry(shape, { depth: 8, bevelEnabled: false, curveSegments: 64 });
+};
+
+// 2. 空心方柱 (方管)
+const createHollowPrism = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(-4, -4); shape.lineTo(4, -4); shape.lineTo(4, 4); shape.lineTo(-4, 4); shape.lineTo(-4, -4);
+  const hole = new THREE.Path();
+  hole.moveTo(-2, -2); hole.lineTo(-2, 2); hole.lineTo(2, 2); hole.lineTo(2, -2); hole.lineTo(-2, -2);
+  shape.holes.push(hole);
+  return new THREE.ExtrudeGeometry(shape, { depth: 8, bevelEnabled: false });
+};
+
+// 3. 回字型 (Frame / 框体)
+const createFrameShape = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(-4, -4); shape.lineTo(4, -4); shape.lineTo(4, 4); shape.lineTo(-4, 4); shape.lineTo(-4, -4);
+  const hole = new THREE.Path();
+  hole.moveTo(-3, -3); hole.lineTo(-3, 3); hole.lineTo(3, 3); hole.lineTo(3, -3); hole.lineTo(-3, -3);
+  shape.holes.push(hole);
+  return new THREE.ExtrudeGeometry(shape, { depth: 2, bevelEnabled: false });
+};
+
+// 4. 凹型体 (U型槽)
+const createUShape = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(-3, -3);
+  shape.lineTo(3, -3);
+  shape.lineTo(3, 3);
+  shape.lineTo(1, 3);
+  shape.lineTo(1, -1); 
+  shape.lineTo(-1, -1);
+  shape.lineTo(-1, 3);
+  shape.lineTo(-3, 3);
+  shape.lineTo(-3, -3);
+  return new THREE.ExtrudeGeometry(shape, { depth: 6, bevelEnabled: false });
+};
+
+// 5. L型体
+const createLShape = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0);
+  shape.lineTo(4, 0);
+  shape.lineTo(4, 2);
+  shape.lineTo(2, 2);
+  shape.lineTo(2, 6);
+  shape.lineTo(0, 6);
+  shape.lineTo(0, 0);
+  return new THREE.ExtrudeGeometry(shape, { depth: 4, bevelEnabled: false });
+};
+
+// 6. 十字体
+const createCrossShape = () => {
+  const shape = new THREE.Shape();
+  const w = 2, l = 6;
+  shape.moveTo(-w/2, -l/2);
+  shape.lineTo(w/2, -l/2);
+  shape.lineTo(w/2, -w/2);
+  shape.lineTo(l/2, -w/2);
+  shape.lineTo(l/2, w/2);
+  shape.lineTo(w/2, w/2);
+  shape.lineTo(w/2, l/2);
+  shape.lineTo(-w/2, l/2);
+  shape.lineTo(-w/2, w/2);
+  shape.lineTo(-l/2, w/2);
+  shape.lineTo(-l/2, -w/2);
+  shape.lineTo(-w/2, -w/2);
+  return new THREE.ExtrudeGeometry(shape, { depth: 2, bevelEnabled: false });
+};
+
+// 7. 缺角正方体
+const createNotchedCube = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(-3, -3);
+  shape.lineTo(3, -3);
+  shape.lineTo(3, 1);
+  shape.lineTo(1, 3); 
+  shape.lineTo(-3, 3);
+  return new THREE.ExtrudeGeometry(shape, { depth: 6, bevelEnabled: false });
+};
+
+// 8. T型体
+const createTShape = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(-1.5, -4);
+  shape.lineTo(1.5, -4);
+  shape.lineTo(1.5, 2);
+  shape.lineTo(4, 2);
+  shape.lineTo(4, 4);
+  shape.lineTo(-4, 4);
+  shape.lineTo(-4, 2);
+  shape.lineTo(-1.5, 2);
+  shape.lineTo(-1.5, -4);
+  return new THREE.ExtrudeGeometry(shape, { depth: 3, bevelEnabled: false });
+};
+
+// 9. 正方体挖圆孔
+const createCubeWithHole = () => {
+   const shape = new THREE.Shape();
+   shape.moveTo(-3,-3); shape.lineTo(3,-3); shape.lineTo(3,3); shape.lineTo(-3,3);
+   const hole = new THREE.Path();
+   hole.absarc(0,0,2,0,Math.PI*2,true);
+   shape.holes.push(hole);
+   return new THREE.ExtrudeGeometry(shape, { depth: 6, bevelEnabled: false, curveSegments: 64 });
+};
+
+// 10. 圆柱挖方孔
+const createCylinderWithRectHole = () => {
+  const shape = new THREE.Shape();
+  shape.absarc(0, 0, 4, 0, Math.PI * 2, false); 
+  const hole = new THREE.Path();
+  hole.moveTo(-1.5, -1.5);
+  hole.lineTo(-1.5, 1.5);
+  hole.lineTo(1.5, 1.5);
+  hole.lineTo(1.5, -1.5);
+  hole.lineTo(-1.5, -1.5);
+  shape.holes.push(hole);
+  return new THREE.ExtrudeGeometry(shape, { depth: 8, bevelEnabled: false, curveSegments: 64 });
+};
+
+// 11. 拱门造型
+const createArchShape = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(-3, 0);
+  shape.lineTo(3, 0);
+  shape.lineTo(3, 4);
+  shape.absarc(0, 4, 3, 0, Math.PI, false); 
+  shape.lineTo(-3, 4);
+  const hole = new THREE.Path();
+  hole.moveTo(-1.5, 0);
+  hole.lineTo(-1.5, 3);
+  hole.absarc(0, 3, 1.5, Math.PI, 0, true);
+  hole.lineTo(1.5, 0);
+  hole.lineTo(-1.5, 0);
+  shape.holes.push(hole);
+  return new THREE.ExtrudeGeometry(shape, { depth: 2, bevelEnabled: false, curveSegments: 32 });
+};
+
+// 12. 梯形柱
+const createTrapezoidPrism = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(-4, -2);
+  shape.lineTo(4, -2);
+  shape.lineTo(2, 2);
+  shape.lineTo(-2, 2);
+  shape.lineTo(-4, -2);
+  return new THREE.ExtrudeGeometry(shape, { depth: 8, bevelEnabled: false });
+};
+
+// 13. 半圆柱
+const createSemiCylinder = () => {
+  const shape = new THREE.Shape();
+  shape.absarc(0, 0, 4, 0, Math.PI, false); 
+  shape.lineTo(-4, 0);
+  return new THREE.ExtrudeGeometry(shape, { depth: 8, bevelEnabled: false, curveSegments: 32 });
+};
+
+// 14. 扇形柱
+const createSectorPrism = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0);
+  shape.lineTo(4, 0);
+  shape.absarc(0, 0, 4, 0, Math.PI / 2, false); 
+  shape.lineTo(0, 0);
+  return new THREE.ExtrudeGeometry(shape, { depth: 6, bevelEnabled: false, curveSegments: 32 });
+};
+
+// 15. 双孔砖
+const createTwoHoleBrick = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(-4, -2); shape.lineTo(4, -2); shape.lineTo(4, 2); shape.lineTo(-4, 2); shape.lineTo(-4, -2);
+  const h1 = new THREE.Path(); // CW
+  h1.absarc(-2, 0, 1, 0, Math.PI*2, true);
+  shape.holes.push(h1);
+  const h2 = new THREE.Path(); // CW
+  h2.absarc(2, 0, 1, 0, Math.PI*2, true);
+  shape.holes.push(h2);
+  return new THREE.ExtrudeGeometry(shape, { depth: 4, bevelEnabled: false, curveSegments: 32 });
+};
+
+const EXAM_SHAPES = {
+  basic: [
+    { name: '正方体', create: () => new THREE.BoxGeometry(6, 6, 6) },
+    { name: '长方体(扁)', create: () => new THREE.BoxGeometry(4, 8, 2) },
+    { name: '圆柱', create: () => new THREE.CylinderGeometry(4, 4, 8, 32) },
+    { name: '三棱柱', create: () => new THREE.CylinderGeometry(4, 4, 8, 3) },
+    { name: '六棱柱', create: () => new THREE.CylinderGeometry(4, 4, 8, 6) },
+    { name: '梯形柱', create: createTrapezoidPrism },
+    { name: '半圆柱', create: createSemiCylinder },
+    { name: '正四面体', create: () => new THREE.TetrahedronGeometry(6) },
+    { name: '正八面体', create: () => new THREE.OctahedronGeometry(5) },
+  ],
+  curved: [
+    { name: '圆锥', create: () => new THREE.CylinderGeometry(0, 4, 8, 64) },
+    { name: '圆台', create: () => new THREE.CylinderGeometry(2, 4, 6, 64) },
+    { name: '球体', create: () => new THREE.SphereGeometry(4, 64, 64) },
+    { name: '半球', create: () => new THREE.SphereGeometry(4, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2) },
+    { name: '扇形柱(1/4圆)', create: createSectorPrism },
+  ],
+  hollow: [
+    { name: '空心圆柱(圆管)', create: createHollowCylinder },
+    { name: '空心方柱(方管)', create: createHollowPrism },
+    { name: '回字型(框体)', create: createFrameShape },
+    { name: '正方体挖圆孔', create: createCubeWithHole },
+    { name: '圆柱挖方孔', create: createCylinderWithRectHole },
+    { name: '双孔砖', create: createTwoHoleBrick },
+  ],
+  composite: [
+    { name: 'T型体', create: createTShape },
+    { name: 'L型体', create: createLShape },
+    { name: '十字体', create: createCrossShape },
+    { name: '凹型体(U型)', create: createUShape },
+    { name: '拱门造型', create: createArchShape },
+  ],
+  special: [
+    { name: '缺角正方体', create: createNotchedCube },
+    { name: '台阶(阶梯)', create: () => {
+        const shape = new THREE.Shape();
+        shape.moveTo(-3, -3);
+        shape.lineTo(3, -3); shape.lineTo(3, -1);
+        shape.lineTo(1, -1); shape.lineTo(1, 1);
+        shape.lineTo(-1, 1); shape.lineTo(-1, 3);
+        shape.lineTo(-3, 3);
+        return new THREE.ExtrudeGeometry(shape, { depth: 4, bevelEnabled: false });
+    }},
+    { name: '三角楔形', create: () => new THREE.CylinderGeometry(0, 4, 6, 3, 1, false, 0, Math.PI) },
+    { name: '四棱锥', create: () => new THREE.CylinderGeometry(0, 5, 6, 4) },
+  ]
+};
+
 export default {
   data() {
     return {
@@ -346,17 +604,21 @@ export default {
       modeGroups: MODE_GROUPS, divisorList: [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],
       
       // 3D 模式状态
+      cubicMode: 'block',
       isDeleteMode: false,
-      isSliceMode: false, // 切面模式
+      showShapeMenu: false, 
+      sliceMenuCollapsed: false, 
+      currentShapeName: '正方体',
       colors: ['#007aff', '#ff9500', '#333333', '#ffffff'], 
       selectedColor: '#007aff',
+      examShapes: EXAM_SHAPES,
       
       // 切面配置
       sliceConfig: {
-        constant: 5,
-        x: 0,
-        y: -1, 
-        z: 0
+        constant: 0,
+        rotX: 90, 
+        rotY: 0,
+        rotZ: 0
       }
     }
   },
@@ -389,7 +651,18 @@ export default {
     this.cleanup3D(); 
   },
   created() {
-    this.threeApp = { scene: null, camera: null, renderer: null, controls: null, raycaster: null, pointer: null, objects: [], animationId: null, clippingPlane: null, planeHelper: null };
+    this.threeApp = { 
+      scene: null, camera: null, renderer: null, controls: null, 
+      raycaster: null, pointer: null, objects: [], animationId: null, 
+      examGroup: null, gridHelper: null,
+      csg: null, sliceHelper: null
+    };
+  },
+  watch: {
+    sliceConfig: {
+       handler() { this.updateSlicePlane(); },
+       deep: true
+    }
   },
   methods: {
     now() { return Date.now(); },
@@ -398,8 +671,6 @@ export default {
     toSelectDivisor(){ this.viewState = 'selectDivisor'; },
     selectDivisorAndStart(d){ this.currentModeKey = 'firstSpec'; this.selectedDivisor = d; this.startGame(); },
     showToast(title) { this.toast.title = title; this.toast.show = true; setTimeout(() => { this.toast.show = false; }, 1500); },
-    
-    // --- 游戏核心逻辑 ---
     startGame(){
       const config = this.activeConfig;
       if (!config.gen) return;
@@ -418,17 +689,13 @@ export default {
     clearInput(){ this.input = ''; },
     backspace(){ this.input = (this.input || '').slice(0, -1); },
     leftAction(){ if(this.currentModeKey !== 'train'){ this.startGame(); return; } const cur = this.current; const used = (this.now() - this.qStartTs)/1000; const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: true }]); this.trainSkip++; this.trainLog = log; this._nextQuestion(); },
-    
-    // ================== 修改重点：确认答案逻辑 ==================
     confirmAnswer(){
       const { current: cur, input, currentModeKey: mode, activeConfig } = this; 
       if(!input) return; 
       const n = parseFloat(input); 
       const used = (this.now() - this.qStartTs)/1000;
-      
       let correct = false; 
       let realAnsDisplay = cur.ans;
-      
       if (activeConfig.check) { 
         const checkResult = activeConfig.check(n, cur.ans); 
         correct = checkResult.ok; 
@@ -436,7 +703,6 @@ export default {
       } else { 
         correct = (parseInt(input) === cur.ans); 
       }
-      
       if(mode === 'train'){ 
         if(correct){ 
           const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: false }]); 
@@ -450,37 +716,20 @@ export default {
         } 
         return; 
       }
-      
-      // >>>>>> 新增：计算误差率逻辑 >>>>>>
       let extraInfo = {};
       const estimateModes = ['tripleDiv', 'divSpecA', 'divSpecB', 'divSpecC'];
-      
       if (correct && estimateModes.includes(mode)) {
           const exact = cur.dividend / cur.divisor;
           const error = Math.abs(n - exact) / exact;
-          // 若为整数显示整数，否则保留1位小数
           const exactStr = Number.isInteger(exact) ? String(exact) : exact.toFixed(1);
-          
-          extraInfo = {
-              exactAns: exactStr,
-              errorRate: (error * 100).toFixed(2) + '%'
-          };
+          extraInfo = { exactAns: exactStr, errorRate: (error * 100).toFixed(2) + '%' };
       }
-      // <<<<<< 新增结束 <<<<<<
-      
       const results = this.results.concat([{ 
-        q: `${cur.dividend}${cur.symbol}${cur.divisor}`, 
-        ok: correct, 
-        yourAns: input, 
-        realAns: realAnsDisplay, 
-        usedStr: used.toFixed(1) + 's',
-        ...extraInfo // 合并误差信息
+        q: `${cur.dividend}${cur.symbol}${cur.divisor}`, ok: correct, yourAns: input, realAns: realAnsDisplay, usedStr: used.toFixed(1) + 's', ...extraInfo
       }]); 
-      
       this.results = results; 
       this._nextQuestion();
     },
-
     _finish(){ if(this.timer) clearInterval(this.timer); this.totalSec = (this.now() - this.totalStartTs)/1000; let recordSummary = ''; let detailLog = []; if(this.currentModeKey === 'train'){ recordSummary = `错${this.trainWrong}/跳${this.trainSkip}`; detailLog = this.trainLog; } else { const correctCount = this.results.filter(x=>x.ok).length; const totalCount = this.results.length; recordSummary = `正确率 ${Math.round(correctCount/totalCount*100)}%`; detailLog = this.results; } this.viewState = 'result'; this.isHistoryReview = false; this._saveRecord({ totalSec: this.totalSec }, recordSummary, detailLog); },
     _saveRecord(meta, summary, detailLog){ const modeName = (this.currentModeKey === 'firstSpec') ? `商首位(除${this.selectedDivisor})` : (GAME_MODES[this.currentModeKey]?.name || '未知模式'); const record = { ts: this.now(), timeStr: this.formatTime(this.now()), mode: this.currentModeKey, modeName: modeName, duration: meta.totalSec.toFixed(1) + 's', summary: summary, detail: detailLog }; let history = this.historyList; history.unshift(record); if(history.length > 5000) history = history.slice(0, 5000); this.historyList = history; localStorage.setItem('calc_history', JSON.stringify(history)); },
     msToMMSS(ms){ const totalSec = ms / 1000; const m = Math.floor(totalSec / 60); const s = (totalSec % 60).toFixed(1); return `${m}:${s < 10 ? '0' + s : s}`; },
@@ -497,59 +746,107 @@ export default {
     renderChart(targetModeName) { const chartDom = document.getElementById('accChart'); if(!chartDom) return; if(this.chartInstance) this.chartInstance.dispose(); this.chartInstance = echarts.init(chartDom); const allData = JSON.parse(JSON.stringify(this.historyList)).reverse(); const filteredData = allData.filter(item => item.modeName === targetModeName); const dateList = []; const accuracyList = []; const timeList = []; filteredData.forEach(item => { let accuracy = 0; if(item.mode === 'train') { let wrong = 0; if(item.detail && item.detail.length > 0) { wrong = item.detail.filter(x => x.wrong > 0).length; } else { const match = item.summary.match(/错(\d+)/); if(match) wrong = parseInt(match[1]); } accuracy = ((81 - wrong) / 81) * 100; } else { if(item.detail && item.detail.length > 0) { const correctCount = item.detail.filter(x => x.ok).length; accuracy = (correctCount / item.detail.length) * 100; } else { const match = item.summary.match(/(\d+)%/); if(match) accuracy = parseInt(match[1]); } } let duration = 0; if(item.duration) { duration = parseFloat(item.duration.replace('s', '')); } dateList.push(item.timeStr); accuracyList.push(accuracy.toFixed(0)); timeList.push(duration.toFixed(1)); }); if(dateList.length === 0) { this.chartInstance.setOption({ title: { text: '该模式暂无数据', left: 'center', top: 'center', textStyle: { color: '#999' } } }); return; } const option = { grid: { top: 30, bottom: 20, left: 30, right: 30, containLabel: true }, tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: dateList, axisLabel: { color: '#333', fontSize: 10, interval: 'auto', hideOverlap: true } }, yAxis: [ { type: 'value', min: 0, max: 100, position: 'left', splitLine: { show:true, lineStyle: { type: 'dashed', opacity: 0.1 } }, axisLabel: {color: '#007aff', formatter: '{value}%'} }, { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: {color: '#ff3b30', formatter: '{value}s'} } ], series: [ { name: '正确率', type: 'line', yAxisIndex: 0, smooth: true, lineStyle: { color: '#007aff', width: 3 }, itemStyle: { color: '#007aff' }, data: accuracyList }, { name: '耗时', type: 'line', yAxisIndex: 1, smooth: true, lineStyle: { color: '#ff3b30', width: 2, type: 'dashed' }, itemStyle: { color: '#ff3b30' }, data: timeList } ] }; this.chartInstance.setOption(option); },
     closeChart() { this.showChart = false; if(this.chartInstance) { this.chartInstance.dispose(); this.chartInstance = null; } },
 
-    // =================================================================
-    // 3D 模块逻辑 (增强：正交相机、下沉视图、任意切面)
-    // =================================================================
-    startCubicMode() { this.viewState = 'cubic'; this.$nextTick(() => { this.initThree(); }); },
-    quitCubicMode() { this.cleanup3D(); this.viewState = 'home'; this.isSliceMode = false; },
-    switchColor(c) { 
-      this.selectedColor = c; 
+    // 3D 模块
+    startCubicMode(mode = 'block') {
+      this.cubicMode = mode;
+      this.viewState = 'cubic'; 
+      this.sliceMenuCollapsed = false;
+      this.resetSlice();
+      this.$nextTick(() => { 
+        this.initThree(); 
+        if(mode === 'section') {
+          this.loadExamShape(this.examShapes.basic[0]);
+        }
+        if(this.threeApp.gridHelper) {
+          this.threeApp.gridHelper.visible = (mode === 'block');
+        }
+      }); 
+    },
+    quitCubicMode() { 
+      this.cleanup3D(); 
+      this.viewState = 'home'; 
       this.isDeleteMode = false; 
+      this.showShapeMenu = false; 
     },
-    toggleDeleteMode() {
-      this.isDeleteMode = !this.isDeleteMode;
-      if(this.isDeleteMode) this.isSliceMode = false;
-    },
+    switchColor(c) { this.selectedColor = c; this.isDeleteMode = false; },
+    toggleDeleteMode() { this.isDeleteMode = !this.isDeleteMode; },
     
-    // 切换切面模式
-    toggleSliceMode() {
-      this.isSliceMode = !this.isSliceMode;
-      if (this.isSliceMode) {
-        this.isDeleteMode = false;
-        if(this.threeApp.planeHelper) this.threeApp.planeHelper.visible = true;
-        this.threeApp.renderer.localClippingEnabled = true;
-      } else {
-        if(this.threeApp.planeHelper) this.threeApp.planeHelper.visible = false;
-        this.threeApp.renderer.localClippingEnabled = false;
-      }
-    },
-    
-    // 更新切面参数
     updateSlicePlane() {
-      if (!this.threeApp.clippingPlane) return;
-      const { x, y, z, constant } = this.sliceConfig;
-      // 更新法向量
-      const normal = new THREE.Vector3(x, y, z).normalize();
-      if (normal.length() === 0) normal.set(0, -1, 0); // 防止全0
+      if (!this.threeApp.csg || !this.threeApp.scene) return;
+      const { baseBrush, cutterBrush, evaluator } = this.threeApp.csg;
+      const { constant, rotX, rotY, rotZ } = this.sliceConfig;
+
+      cutterBrush.position.set(0, 0, 0);
+      cutterBrush.rotation.set(0, 0, 0);
+      cutterBrush.updateMatrixWorld();
+
+      const euler = new THREE.Euler(
+        THREE.MathUtils.degToRad(rotX), 
+        THREE.MathUtils.degToRad(rotY), 
+        THREE.MathUtils.degToRad(rotZ)
+      );
+      const normal = new THREE.Vector3(0, -1, 0).applyEuler(euler).normalize();
+      const cutterSize = 25; 
+      const offset = normal.clone().multiplyScalar(constant - cutterSize);
       
-      this.threeApp.clippingPlane.normal.copy(normal);
-      this.threeApp.clippingPlane.constant = constant;
+      cutterBrush.position.copy(offset);
+      cutterBrush.lookAt(offset.clone().add(normal)); 
+      cutterBrush.updateMatrixWorld();
+      
+      baseBrush.updateMatrixWorld();
+
+      const resultMesh = evaluator.evaluate(baseBrush, cutterBrush, SUBTRACTION);
+      
+      resultMesh.material = [
+          baseBrush.material,
+          cutterBrush.material 
+      ];
+
+      if (this.threeApp.examGroup) {
+          this.threeApp.scene.remove(this.threeApp.examGroup);
+          if (this.threeApp.examGroup.geometry) this.threeApp.examGroup.geometry.dispose();
+      }
+      
+      this.threeApp.examGroup = resultMesh;
+      this.threeApp.scene.add(resultMesh);
+
+      if (this.threeApp.sliceHelper) {
+         const h = this.threeApp.sliceHelper;
+         h.visible = true;
+         const planePos = normal.clone().multiplyScalar(constant);
+         h.position.copy(planePos);
+         h.lookAt(planePos.clone().add(normal));
+      }
     },
 
     resetSlice() {
-      this.sliceConfig = { constant: 5, x: 0, y: -1, z: 0 };
-      this.updateSlicePlane();
+      this.sliceConfig = { constant: 0, rotX: 90, rotY: 0, rotZ: 0 };
     },
 
-    // 设置正交视图
+    lookAtSection() {
+      if (!this.threeApp.controls || !this.threeApp.camera) return;
+      const { rotX, rotY, rotZ } = this.sliceConfig;
+      const euler = new THREE.Euler(
+        THREE.MathUtils.degToRad(rotX), 
+        THREE.MathUtils.degToRad(rotY), 
+        THREE.MathUtils.degToRad(rotZ)
+      );
+      const normal = new THREE.Vector3(0, -1, 0).applyEuler(euler).normalize();
+
+      const target = this.threeApp.controls.target.clone();
+      const dist = 20; 
+      const eyePos = target.clone().add(normal.multiplyScalar(-dist));
+      
+      this.threeApp.camera.position.copy(eyePos);
+      this.threeApp.camera.lookAt(target);
+      this.threeApp.controls.update();
+    },
+
     setCameraView(type) {
       if (!this.threeApp.camera || !this.threeApp.controls) return;
       const { camera, controls } = this.threeApp;
       const dist = 20; 
-      
-      // 核心调整：将观察中心点(Target)上移，这会让物体在屏幕中下移
-      const targetY = 6; 
-      
+      const targetY = 0; 
       controls.target.set(0, targetY, 0);
 
       switch(type) {
@@ -557,10 +854,9 @@ export default {
         case 'back': camera.position.set(0, targetY, -dist); break;
         case 'left': camera.position.set(-dist, targetY, 0); break;
         case 'right': camera.position.set(dist, targetY, 0); break;
-        case 'top': camera.position.set(0, dist + targetY, 0); break;
-        case 'iso': camera.position.set(12, 12 + targetY, 12); break;
+        case 'top': camera.position.set(0, dist, 0); break; 
+        case 'iso': camera.position.set(12, 12, 12); break;
       }
-      
       camera.lookAt(0, targetY, 0);
       controls.update();
     },
@@ -573,70 +869,59 @@ export default {
 
       const scene = new THREE.Scene(); 
       scene.background = new THREE.Color('#f2f2f7'); 
-      scene.fog = new THREE.Fog('#f2f2f7', 20, 50);
+      scene.fog = new THREE.Fog('#f2f2f7', 30, 80);
 
-      // 正交相机
       const aspect = width / height;
-      const d = 18; 
-      const camera = new THREE.OrthographicCamera(
-        -d * aspect, d * aspect, 
-        d, -d,                   
-        1, 1000                  
-      );
-      
-      // 初始视角位置 (配合 Target 偏移)
-      const targetY = 6; 
-      camera.position.set(12, 12 + targetY, 12); 
-      camera.lookAt(0, targetY, 0);
+      const d = 16; 
+      const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+      camera.position.set(12, 12, 12); 
+      camera.lookAt(0, 0, 0);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
       renderer.setSize(width, height); 
       renderer.setPixelRatio(window.devicePixelRatio); 
-      renderer.localClippingEnabled = false; // 初始关闭
       container.appendChild(renderer.domElement);
 
-      // 初始化全局裁剪平面
-      const clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 5);
-      const planeHelper = new THREE.PlaneHelper(clippingPlane, 20, 0xff0000);
-      planeHelper.visible = false;
-      scene.add(planeHelper);
-      
-      this.threeApp.clippingPlane = clippingPlane;
-      this.threeApp.planeHelper = planeHelper;
-
-      // 灯光
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
       scene.add(ambientLight);
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.7); 
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); 
       dirLight.position.set(10, 20, 10); 
       scene.add(dirLight);
 
-      // 辅助网格 & 地面
-      const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xdddddd); 
+      const gridHelper = new THREE.GridHelper(20, 20, 0xcccccc, 0xe5e5e5); 
+      gridHelper.visible = (this.cubicMode === 'block'); 
       scene.add(gridHelper);
-
+      this.threeApp.gridHelper = gridHelper;
+      
       const planeGeometry = new THREE.PlaneGeometry(20, 20); 
       planeGeometry.rotateX(-Math.PI / 2);
-      const planeMaterial = new THREE.MeshBasicMaterial({ visible: true, transparent: true, opacity: 0 }); 
+      const planeMaterial = new THREE.MeshBasicMaterial({ visible: false }); 
       const plane = new THREE.Mesh(planeGeometry, planeMaterial); 
       plane.name = 'ground'; 
       scene.add(plane);
 
-      // 控制器
+      const sliceGeo = new THREE.PlaneGeometry(15, 15);
+      const sliceMat = new THREE.MeshBasicMaterial({
+         color: 0xff3b30, 
+         opacity: 0.1,    
+         transparent: true,
+         side: THREE.DoubleSide,
+         depthWrite: false,
+      });
+      const sliceHelper = new THREE.Mesh(sliceGeo, sliceMat);
+      sliceHelper.visible = false; 
+      scene.add(sliceHelper);
+      this.threeApp.sliceHelper = sliceHelper;
+
       const controls = new OrbitControls(camera, renderer.domElement); 
       controls.enableDamping = true; 
       controls.dampingFactor = 0.05;
-      // 设置控制中心偏上，使物体沉底
-      controls.target.set(0, targetY, 0);
       controls.update();
 
-      // 交互事件
       const raycaster = new THREE.Raycaster(); 
       const pointer = new THREE.Vector2();
       let downTime = 0;
-
       renderer.domElement.addEventListener('pointerdown', () => { downTime = Date.now(); });
-      
       renderer.domElement.addEventListener('pointerup', (event) => {
         if (Date.now() - downTime < 200) {
           const rect = renderer.domElement.getBoundingClientRect(); 
@@ -651,11 +936,40 @@ export default {
       this.threeApp.renderer = renderer;
       this.threeApp.controls = controls;
       this.threeApp.objects = [plane]; 
-      
-      // 初始化已保存的切面配置
-      this.updateSlicePlane();
 
       this.animate3D();
+    },
+
+    loadExamShape(shapeConf) {
+       this.clearCubes(); 
+       this.showShapeMenu = false;
+       this.currentShapeName = shapeConf.name;
+       this.resetSlice();
+
+       const baseGeometry = shapeConf.create();
+       baseGeometry.computeBoundingBox();
+       baseGeometry.center();
+       
+       const baseMaterial = new THREE.MeshStandardMaterial({
+           color: 0xFFFFFF,
+           metalness: 0.1,
+           roughness: 0.75,
+           side: THREE.DoubleSide
+       });
+       
+       const baseBrush = new Brush(baseGeometry, baseMaterial);
+       const cutterGeometry = new THREE.BoxGeometry(50, 50, 50); 
+       const cutterMaterial = new THREE.MeshBasicMaterial({ color: 0x111111 }); 
+       const cutterBrush = new Brush(cutterGeometry, cutterMaterial);
+
+       this.threeApp.csg = {
+           baseBrush: baseBrush,
+           cutterBrush: cutterBrush,
+           evaluator: new Evaluator()
+       };
+       this.threeApp.csg.evaluator.useGroups = true; 
+
+       this.updateSlicePlane();
     },
 
     animate3D() { 
@@ -667,6 +981,8 @@ export default {
     },
 
     handle3DClick(raycaster, pointer, scene, camera, plane) {
+      if (this.cubicMode === 'section') return; 
+
       raycaster.setFromCamera(pointer, camera); 
       const intersects = raycaster.intersectObjects(this.threeApp.objects, false);
 
@@ -682,10 +998,8 @@ export default {
              intersect.object.material.dispose();
           }
         } else {
-          // 放置逻辑
           const voxelPos = new THREE.Vector3().copy(intersect.point).addScaledVector(intersect.face.normal, 0.5);
           voxelPos.divideScalar(1).floor().multiplyScalar(1).addScalar(0.5);
-          
           if (voxelPos.y < 0) return;
           this.addCubeAt(scene, voxelPos);
         }
@@ -694,28 +1008,13 @@ export default {
 
     addCubeAt(scene, position) {
       const geometry = new THREE.BoxGeometry(1, 1, 1); 
-      
-      // 材质加入 clippingPlanes
-      const material = new THREE.MeshLambertMaterial({ 
-        color: this.selectedColor,
-        polygonOffset: true,
-        polygonOffsetFactor: 1, 
-        polygonOffsetUnits: 1,
-        clippingPlanes: [this.threeApp.clippingPlane] 
-      }); 
+      const material = new THREE.MeshLambertMaterial({ color: this.selectedColor }); 
       
       const cube = new THREE.Mesh(geometry, material); 
       cube.position.copy(position);
       
-      const isDarkBlock = (this.selectedColor === '#333333');
-      const edgeColor = isDarkBlock ? 0xffffff : 0x000000;
-      
       const edges = new THREE.EdgesGeometry(geometry); 
-      // 边线材质也需要裁剪
-      const lineMaterial = new THREE.LineBasicMaterial({ 
-        color: edgeColor,
-        clippingPlanes: [this.threeApp.clippingPlane] 
-      });
+      const lineMaterial = new THREE.LineBasicMaterial({ color: (this.selectedColor === '#333333') ? 0xffffff : 0x000000 });
       const line = new THREE.LineSegments(edges, lineMaterial); 
       cube.add(line);
 
@@ -733,7 +1032,14 @@ export default {
           obj.material.dispose(); 
           objects.splice(i, 1); 
         } 
-      } 
+      }
+      if(this.threeApp.examGroup) {
+         scene.remove(this.threeApp.examGroup);
+         this.threeApp.examGroup = null;
+      }
+      if (this.threeApp.sliceHelper) {
+         this.threeApp.sliceHelper.visible = false;
+      }
     },
     cleanup3D() { 
       if (this.threeApp.animationId) { cancelAnimationFrame(this.threeApp.animationId); } 
@@ -749,8 +1055,62 @@ export default {
 </script>
 
 <style scoped>
+.shape-menu-container {
+  position: absolute;
+  top: 60px;
+  left: 10px;
+  z-index: 50; 
+  pointer-events: auto; 
+}
+
+/* 修改：添加圆角和隐藏滚动条 */
+.shape-menu {
+  width: 260px; 
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  border-radius: 24px;
+  scrollbar-width: none; 
+}
+.shape-menu::-webkit-scrollbar { display: none; }
+
+.shape-group-title {
+  font-size: 12px;
+  color: #8e8e93;
+  font-weight: 700;
+  margin-top: 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding-bottom: 2px;
+}
+.shape-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.shape-item {
+  background: rgba(240,240,245,0.8);
+  padding: 8px 4px;
+  font-size: 13px;
+  text-align: center;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  border: 1px solid rgba(0,0,0,0.05);
+  transition: all 0.2s;
+}
+.shape-item:active {
+  background: #007aff;
+  color: white;
+  transform: scale(0.95);
+}
+
 .homeStartBtn{ margin-top: 14px; }
-.page { height: 100vh; min-height: 100vh; background: radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(260,100%,94%,1) 0, transparent 50%), radial-gradient(at 100% 100%, hsla(300,100%,94%,1) 0, transparent 50%), radial-gradient(at 0% 100%, hsla(180,100%,94%,1) 0, transparent 50%); background-color: #f2f2f7; color: #1c1c1e; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,0.08); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; position: relative; overflow: hidden; }
+.page { height: 100vh; height: 100dvh; min-height: 100vh; background: radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(260,100%,94%,1) 0, transparent 50%), radial-gradient(at 100% 100%, hsla(300,100%,94%,1) 0, transparent 50%), radial-gradient(at 0% 100%, hsla(180,100%,94%,1) 0, transparent 50%); background-color: #f2f2f7; color: #1c1c1e; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,0.08); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; position: relative; overflow: hidden; }
 .mesh-bg { position: absolute; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
 .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.7; animation: float 10s infinite alternate ease-in-out; }
 .orb-1 { width: 350px; height: 350px; background: #a2d2ff; top: -100px; left: -100px; }
@@ -760,11 +1120,96 @@ export default {
 .toast-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; z-index: 999; pointer-events: none; }
 .toast-content { background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); color: #fff; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
 .wrap { padding: 20px 16px 24px; box-sizing: border-box; position: relative; z-index: 1; }
-.homeWrap { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-top: max(60px, env(safe-area-inset-top)); padding-bottom: 40px; scrollbar-width: none; }
-.homeWrap::-webkit-scrollbar { display: none; }
+
+.homeWrap { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: flex-start; 
+  overflow: hidden; 
+  padding-top: max(60px, env(safe-area-inset-top)); 
+  padding-bottom: 0; /* 贴底 */
+  position: relative;
+}
+
+.header-area { 
+  margin-bottom: 10px; 
+  text-align: center; 
+  flex-shrink: 0; 
+}
+
+/* 修改：去除 overflow 以修复阴影问题，增加 margin-bottom 拉大间距 */
+.menu-area-fixed {
+  flex: 1;
+  overflow: hidden; 
+  padding: 0 16px; 
+  margin-bottom: 0; /* 移除底部间距，让卡片可以延伸到底部 */
+  display: flex;
+  flex-direction: column;
+  /* 增加底部 padding，确保在非全面屏手机上也不会贴到底边框 */
+  padding-bottom: 12px;
+}
+
+.full-menu-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 防止圆角溢出 */
+  border-radius: 24px; /* 保持大圆角 */
+  margin-bottom: 0 !important; 
+  padding: 0 !important; /* 清除默认 padding，由内部容器控制 */
+}
+
+.menu-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 16px 0 16px; /* 顶部左右保留间距，底部由 spacing div 控制 */
+  scrollbar-width: none;
+}
+.menu-scroll-container::-webkit-scrollbar { display: none; }
+
+.card-bottom-actions {
+  flex-shrink: 0; /* 禁止被压缩 */
+  padding: 16px;
+  /* 核心：底部适配 iPhone 安全区，因为现在按钮在卡片里了 */
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.0); /* 透明背景，共用父级毛玻璃 */
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.separator-line {
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.fixed-bottom {
+  position: absolute; /* 修改：从 flex 布局改为绝对定位 */
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 16px; 
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  z-index: 20; /* 确保浮在滚动列表之上 */
+  pointer-events: none; /* 让点击穿透容器边缘 */
+}
+
+.bottom-panel {
+  padding: 16px;
+  border-radius: 24px !important; 
+  pointer-events: auto; /* 恢复按钮区域的点击 */
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.1) !important;
+}
+
 .full-height { flex: 1; display: flex; flex-direction: column; height: 100vh; }
 .full-flex { flex: 1; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 20px; }
-.header-area { margin-bottom: 20px; text-align: center; flex-shrink: 0; }
 .title { font-size: 34px; font-weight: 900; margin: 0 0 6px; color: #000; letter-spacing: -0.5px; }
 .subtitle { font-size: 15px; color: #8e8e93; font-weight: 500; }
 .glass-panel { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(50px) saturate(200%); -webkit-backdrop-filter: blur(50px) saturate(200%); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.5); }
@@ -830,86 +1275,158 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .btnIcon.active { background: #007aff; color: white; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
 .divider { width: 1px; height: 20px; background: rgba(0,0,0,0.1); margin: 0 5px; }
 .tip-toast { margin-top: 10px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; backdrop-filter: blur(4px); }
-
-/* Color Dot */
-.color-dot {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.5);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-  cursor: pointer;
-}
+.color-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
 .color-dot:active { transform: scale(0.9); }
-.color-dot.active {
-  transform: scale(1.1);
-  border-color: #fff;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.1), inset 0 0 0 2px rgba(255,255,255,0.8);
+.color-dot.active { transform: scale(1.1); border-color: #fff; box-shadow: 0 0 0 2px rgba(0,0,0,0.1), inset 0 0 0 2px rgba(255,255,255,0.8); }
+.view-selector { margin-top: 8px; padding: 6px; display: flex; gap: 6px; border-radius: 20px; flex-wrap: wrap; justify-content: center; }
+.view-btn { background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: #333; }
+.view-btn:active, .view-btn.active-view { background: #007aff; color: white; }
+
+/* ==============================================
+   iOS 16 风格切面面板样式优化
+   ============================================== */
+
+.slice-panel-container {
+  position: absolute;
+  bottom: 24px; /* 稍微离底部远一点，更有悬浮感 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92%; /* 宽度稍微加宽 */
+  max-width: 380px;
+  transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1); /* iOS 物理缓动曲线 */
+  z-index: 100;
 }
 
-/* View Selector Styles */
-.view-selector {
-  margin-top: 8px;
-  padding: 6px;
-  display: flex; 
-  gap: 6px;
-  border-radius: 20px;
-  flex-wrap: wrap; 
-  justify-content: center;
-}
-.view-btn {
-  background: rgba(255,255,255,0.5);
-  border: 1px solid rgba(0,0,0,0.05);
-  border-radius: 12px;
-  padding: 6px 14px; 
-  font-size: 13px;
-  font-weight: 600;
-  color: #333;
-}
-.view-btn:active, .view-btn.active-view {
-  background: #007aff;
-  color: white;
+.slice-panel-container.collapsed {
+  transform: translateX(-50%) translateY(calc(100% - 60px)); /* 只露出头部 */
 }
 
-/* Slice Panel Styles */
-.slice-panel {
-  margin-top: 8px;
-  padding: 12px;
-  border-radius: 16px;
+.slice-panel-content {
+  pointer-events: auto;
+  padding: 0;
+  overflow: hidden;
+  /* 核心：iOS 风格的高级毛玻璃 */
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(30px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border-radius: 28px !important; /* 大圆角 */
+}
+
+/* 头部样式重构 */
+.panel-header {
+  padding: 10px 20px 16px; /* 调整内边距 */
+  background: transparent; /* 去掉灰色背景 */
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 90%;
-  max-width: 300px;
+  align-items: center;
 }
+
+/* 那个灰色小横条 (Handle) */
+.sheet-handle {
+  width: 36px;
+  height: 5px;
+  background: rgba(60, 60, 67, 0.3); /* iOS 标准抓手颜色 */
+  border-radius: 3px;
+  margin-bottom: 12px;
+}
+
+.header-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1c1c1e;
+  letter-spacing: -0.4px;
+}
+
+.header-toggle-text {
+  font-size: 13px;
+  color: #007aff;
+  font-weight: 600;
+  background: rgba(0, 122, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+/* 内容区域 */
+.controls-body {
+  padding: 0 20px 24px 20px; /* 左右留白，底部多留一点 */
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* 增加行间距 */
+}
+
 .slice-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #333;
+  gap: 12px;
 }
+
 .slice-label {
-  width: 50px;
+  width: 48px;
   text-align: right;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8e8e93; /* 次级文字颜色 */
 }
+
+/* 滑块样式优化 */
 .slice-slider {
   flex: 1;
   -webkit-appearance: none;
-  height: 4px;
-  background: rgba(0,0,0,0.1);
-  border-radius: 2px;
+  height: 24px;
+  background: transparent;
   outline: none;
 }
+
+.slice-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px; /* 轨道稍微加粗 */
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 3px;
+}
+
 .slice-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
+  height: 24px;
+  width: 24px;
   border-radius: 50%;
-  background: #007aff;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 0 0 0.5px rgba(0,0,0,0.04); /* 增加投影立体感 */
+  margin-top: -9px; /* 居中对齐 */
   cursor: pointer;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.1s;
+}
+
+.slice-slider::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+}
+
+/* 重置按钮优化 */
+.ios-reset-btn {
+  width: 100%;
+  height: 44px;
+  line-height: 44px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  color: #007aff;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.ios-reset-btn:active {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(0.98);
 }
 </style>
