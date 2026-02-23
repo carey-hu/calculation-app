@@ -149,6 +149,7 @@
                   </div>
                   <div v-if="item.exactAns" :style="{ fontSize:'11px', color: item.ok ? '#007aff' : '#ff3b30', marginTop:'2px', fontWeight:500 }">
                       准:{{ item.exactAns }} 误:{{ item.errorRate }}
+                      <span v-if="item.exactDividend" style="margin-left:4px;">准被除数:{{ item.exactDividend }}</span>
                   </div>
               </span>
             </div>
@@ -361,13 +362,12 @@ const GAME_MODES = {
   'divSpecB': { name: '平移法', title: '平移法完成！', hintNote: '商90-111 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; let c=0; while(c<n){ const dr=Math.floor(Math.random()*900)+100;const tq=Math.floor(Math.random()*(111-90+1))+90;const dd=dr*tq+Math.floor(Math.random()*dr); if(dd>=10000&&dd<=99999){ p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'}); c++;} } return p;} },
   'divSpecC': { name: '任意五除三', title: '任意五除三完成！', hintNote: '五位数除以三位数 (误差3%内)', check:(v,t)=>{const r=Math.abs(v-t)/t; return {ok:r<=0.03,display:Math.round(t)};}, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const dr=Math.floor(Math.random()*900)+100;const dd=Math.floor(Math.random()*(99999-10000+1))+10000; p.push({dividend:dd,divisor:dr,ans:dd/dr,symbol:'÷'});} return p;} },
   
-  // 新增模式：放缩被除数
+  // 放缩被除数 - 判定逻辑升级
   'divScale': { 
     name: '放缩被除数', 
     title: '放缩被除数完成！', 
     hintNote: '估算并连续输入三位数和一位数', 
     check: (v, t, inputStr) => {
-        // 要求输入必须满4位（前3位是被除数，最后1位是除数）
         if (!inputStr || inputStr.length < 4) {
             return { ok: false, display: '需填满三位数和一位数', exactAns: t.toFixed(2), errorRate: '格式错' };
         }
@@ -380,15 +380,21 @@ const GAME_MODES = {
 
         const userVal = a / b;
         let ratio = userVal / t;
+        
+        // 抹平数量级，把实际答案的小数点跟用户的答案对齐
         let p10 = Math.round(Math.log10(ratio));
         let adjustedExact = t * Math.pow(10, p10);
         
         const r = Math.abs(userVal - adjustedExact) / adjustedExact;
 
+        // 根据用户估出的除数b，推算准确的被除数应该是多少 (b * adjustedExact)
+        const exactDividend = (b * adjustedExact).toFixed(1);
+
         return { 
             ok: r <= 0.03, 
             display: t.toFixed(2),
             exactAns: t.toFixed(2),
+            exactDividend: exactDividend,
             errorRate: (r * 100).toFixed(2) + '%' 
         };
     }, 
@@ -742,17 +748,14 @@ export default {
     _setQuestion(q, shownIdx){ this.current = q; this.qStartTs = this.now(); this.input = ''; this.curWrongTries = 0; this.qText = `${q.dividend}${q.symbol}${q.divisor}`; this.progressText = `${shownIdx}/${this.pool.length}`; },
     _nextQuestion(){ const { idx, pool } = this; if(idx >= pool.length){ this._finish(); return; } this._setQuestion(pool[idx], idx + 1); this.idx = idx + 1; },
     
-    // 按键交互优化
     pressDigit(d){ 
         let input = this.input || ''; 
-        // 动态长度控制：放缩被除数模式最大长度为4，其它模式保留6
         const maxLen = this.currentModeKey === 'divScale' ? 4 : 6;
         if(input.length >= maxLen) return; 
         input += String(d); 
         this.input = input; 
     },
     pressDot(){ 
-        // 估算放缩模式固定输入纯数字，屏蔽小数点
         if (this.currentModeKey === 'divScale') return; 
         let input = this.input || ''; 
         if(input.length >= 6) return; 
@@ -777,7 +780,6 @@ export default {
       let extraInfo = {};
       let yourAnsStr = input;
 
-      // 特殊处理放缩被除数模式的校验和展示格式
       if (mode === 'divScale') {
           if (input.length < 4) {
               this.uiHint = '请填满三位数和一位数';
@@ -790,8 +792,13 @@ export default {
         const checkResult = activeConfig.check(n, cur.ans, input); 
         correct = checkResult.ok; 
         realAnsDisplay = checkResult.display; 
+        
+        // 解析所有扩展返回值，包含 exactDividend
         if (checkResult.exactAns !== undefined) {
             extraInfo = { exactAns: checkResult.exactAns, errorRate: checkResult.errorRate };
+            if (checkResult.exactDividend !== undefined) {
+                extraInfo.exactDividend = checkResult.exactDividend;
+            }
         }
       } else { 
         correct = (parseInt(input) === cur.ans); 
