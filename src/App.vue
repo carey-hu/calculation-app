@@ -407,11 +407,11 @@ const GAME_MODES = {
   'tripleMult': { name: '三乘一', title: '三乘一完成！', hintNote: '计算准确积', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a*b,symbol:'×'});} return p;} },
   'tripleDiv': { name: '三除一', title: '三除一完成！', hintNote: '若为小数，填相邻整数均对', check: (v, t) => { if(Number.isInteger(t)){ return {ok:v===t,display:t}; }else{ const f=Math.floor(t),c=Math.ceil(t); return {ok:(v===f||v===c),display:`${f}或${c} (${t.toFixed(2)})`}; } }, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a/b,symbol:'÷'});} return p;} },
   
-  // 新增：判进位
+  // 修正后：判进位
   'carryJudge': { 
     name: '判进位', 
     title: '判进位完成！', 
-    hintNote: '百位、十位、个位是否进位(Y/N)', 
+    hintNote: '百位、十位、个位是否接收低位进位(Y/N)', 
     check: (v, t, inputStr) => {
         if (!inputStr || inputStr.length < 3) return { ok: false, display: t };
         return { ok: inputStr.toUpperCase() === t.toUpperCase(), display: t };
@@ -421,10 +421,12 @@ const GAME_MODES = {
         for(let i=0; i<n; i++){ 
             const a = Math.floor(Math.random()*900)+100; 
             const b = Math.floor(Math.random()*900)+100; 
-            const c1 = (a%10 + b%10) >= 10;
-            const c10 = (Math.floor((a%100)/10) + Math.floor((b%100)/10) + (c1 ? 1 : 0)) >= 10;
-            const c100 = (Math.floor(a/100) + Math.floor(b/100) + (c10 ? 1 : 0)) >= 10;
-            const ansStr = `${c100 ? 'Y' : 'N'}${c10 ? 'Y' : 'N'}${c1 ? 'Y' : 'N'}`;
+            
+            const c1 = 'N';
+            const c10 = ((a % 10) + (b % 10) >= 10) ? 'Y' : 'N';
+            const c100 = ((a % 100) + (b % 100) >= 100) ? 'Y' : 'N';
+            
+            const ansStr = `${c100}${c10}${c1}`;
             p.push({dividend: a, divisor: b, ans: ansStr, symbol: '+'});
         } 
         return p;
