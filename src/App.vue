@@ -114,7 +114,7 @@
               </div>
               <div style="text-align:center;">
                 <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">个位</div>
-                <div style="width: 60px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 16px; height: 60px; line-height: 60px; font-size: 36px; color: #1c1c1e;">{{ input[2] || '_' }}</div>
+                <div style="width: 60px; background: rgba(0,0,0,0.03); border: 2px solid rgba(0,0,0,0.1); border-radius: 16px; height: 60px; line-height: 60px; font-size: 36px; color: #8e8e93;">N</div>
               </div>
             </div>
           </template>
@@ -407,14 +407,16 @@ const GAME_MODES = {
   'tripleMult': { name: '三乘一', title: '三乘一完成！', hintNote: '计算准确积', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a*b,symbol:'×'});} return p;} },
   'tripleDiv': { name: '三除一', title: '三除一完成！', hintNote: '若为小数，填相邻整数均对', check: (v, t) => { if(Number.isInteger(t)){ return {ok:v===t,display:t}; }else{ const f=Math.floor(t),c=Math.ceil(t); return {ok:(v===f||v===c),display:`${f}或${c} (${t.toFixed(2)})`}; } }, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a/b,symbol:'÷'});} return p;} },
   
-  // 修正后：判进位
+  // 修正后：判进位（只需输入前两位）
   'carryJudge': { 
     name: '判进位', 
     title: '判进位完成！', 
-    hintNote: '百位、十位、个位是否接收低位进位(Y/N)', 
+    hintNote: '百位、十位是否接收低位进位(Y/N)', 
     check: (v, t, inputStr) => {
-        if (!inputStr || inputStr.length < 3) return { ok: false, display: t };
-        return { ok: inputStr.toUpperCase() === t.toUpperCase(), display: t };
+        // 修改：用户只输入2个字符，系统自动补N对比
+        if (!inputStr || inputStr.length < 2) return { ok: false, display: t };
+        const finalInput = inputStr.toUpperCase() + 'N';
+        return { ok: finalInput === t.toUpperCase(), display: t };
     },
     gen: (n) => { 
         const p = []; 
@@ -433,7 +435,7 @@ const GAME_MODES = {
     } 
   },
   
-  // 新增：确本位
+  // 确本位
   'digitDetermine': { 
     name: '确本位', 
     title: '确本位完成！', 
@@ -687,7 +689,8 @@ export default {
         let input = this.input || ''; 
         let maxLen = 6;
         if (this.currentModeKey === 'divScale') maxLen = 4;
-        if (this.currentModeKey === 'carryJudge') maxLen = 3;
+        // 修改：判进位由于个位写死为N，只需要让用户输入百位和十位，所以长度限制为 2
+        if (this.currentModeKey === 'carryJudge') maxLen = 2;
         if (this.currentModeKey === 'digitDetermine') maxLen = 4;
 
         if(input.length >= maxLen) return; 
@@ -741,11 +744,12 @@ export default {
       // 解析分步耗时并放入 extraInfo
       let detailTimesStr = '';
       if (mode === 'carryJudge') {
-          if (input.length < 3) { this.uiHint = '请填满三个选项'; return; }
+          // 判进位这里只校验是否填满了前两位
+          if (input.length < 2) { this.uiHint = '请填满百位和十位选项'; return; }
           const t1 = (this.boxTimes[0] || 0) / 1000;
           const t2 = (this.boxTimes[1] || 0) / 1000;
-          const t3 = (this.boxTimes[2] || 0) / 1000;
-          detailTimesStr = `百:${t1.toFixed(1)}s 十:${t2.toFixed(1)}s 个:${t3.toFixed(1)}s`;
+          detailTimesStr = `百:${t1.toFixed(1)}s 十:${t2.toFixed(1)}s (个位默认N)`;
+          yourAnsStr = input + 'N'; // 把显示在记录里的用户答案自动补上N
       } else if (mode === 'digitDetermine') {
           let tH = 0, tT = 0, tO = 0;
           if (this.input.length === 4) {
