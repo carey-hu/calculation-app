@@ -102,19 +102,19 @@
             </div>
           </template>
           
-          <template v-else-if="currentModeKey === 'carryJudge'">
+          <template v-else-if="['carryJudge', 'borrowJudge'].includes(currentModeKey)">
             <div class="ansBox glass-input" style="display: flex; justify-content: center; align-items: center; gap: 15px; padding: 12px; background: transparent; border: none; box-shadow: none;">
               <div style="text-align:center;">
                 <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">百位</div>
-                <div style="width: 60px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 16px; height: 60px; line-height: 60px; font-size: 36px; color: #1c1c1e;">{{ input[0] || '_' }}</div>
+                <div style="width: 60px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 16px; height: 60px; line-height: 60px; font-size: 30px; color: #1c1c1e;">{{ inputArray[0] !== undefined ? inputArray[0] : '_' }}</div>
               </div>
               <div style="text-align:center;">
                 <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">十位</div>
-                <div style="width: 60px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 16px; height: 60px; line-height: 60px; font-size: 36px; color: #1c1c1e;">{{ input[1] || '_' }}</div>
+                <div style="width: 60px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 16px; height: 60px; line-height: 60px; font-size: 30px; color: #1c1c1e;">{{ inputArray[1] !== undefined ? inputArray[1] : '_' }}</div>
               </div>
               <div style="text-align:center;">
                 <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">个位</div>
-                <div style="width: 60px; background: rgba(0,0,0,0.03); border: 2px solid rgba(0,0,0,0.1); border-radius: 16px; height: 60px; line-height: 60px; font-size: 36px; color: #8e8e93;">N</div>
+                <div style="width: 60px; background: rgba(0,0,0,0.03); border: 2px solid rgba(0,0,0,0.1); border-radius: 16px; height: 60px; line-height: 60px; font-size: 30px; color: #8e8e93;">0</div>
               </div>
             </div>
           </template>
@@ -154,8 +154,14 @@
         </div>
         
         <div class="grid" v-if="currentModeKey === 'carryJudge'" style="grid-template-columns: 1fr 1fr;">
-          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #34c759;" @click="pressDigit('Y')">Y<span style="font-size:16px; display:block;">(进位)</span></button>
-          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #ff3b30;" @click="pressDigit('N')">N<span style="font-size:16px; display:block;">(不进)</span></button>
+          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #34c759;" @click="pressDigit('1')">1<span style="font-size:16px; display:block;">(进位)</span></button>
+          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #ff3b30;" @click="pressDigit('0')">0<span style="font-size:16px; display:block;">(不进)</span></button>
+          <button class="k confirm glass-key-confirm" style="grid-column: 1 / 3;" @click="confirmAnswer">确认</button>
+        </div>
+
+        <div class="grid" v-else-if="currentModeKey === 'borrowJudge'" style="grid-template-columns: 1fr 1fr;">
+          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #ff3b30;" @click="pressDigit('-1')">-1<span style="font-size:16px; display:block;">(退位)</span></button>
+          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #34c759;" @click="pressDigit('0')">0<span style="font-size:16px; display:block;">(不退)</span></button>
           <button class="k confirm glass-key-confirm" style="grid-column: 1 / 3;" @click="confirmAnswer">确认</button>
         </div>
         
@@ -407,16 +413,14 @@ const GAME_MODES = {
   'tripleMult': { name: '三乘一', title: '三乘一完成！', hintNote: '计算准确积', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a*b,symbol:'×'});} return p;} },
   'tripleDiv': { name: '三除一', title: '三除一完成！', hintNote: '若为小数，填相邻整数均对', check: (v, t) => { if(Number.isInteger(t)){ return {ok:v===t,display:t}; }else{ const f=Math.floor(t),c=Math.ceil(t); return {ok:(v===f||v===c),display:`${f}或${c} (${t.toFixed(2)})`}; } }, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a/b,symbol:'÷'});} return p;} },
   
-  // 修正后：判进位（只需输入前两位）
+  // 修正后：判进位
   'carryJudge': { 
     name: '判进位', 
     title: '判进位完成！', 
-    hintNote: '百位、十位是否接收低位进位(Y/N)', 
-    check: (v, t, inputStr) => {
-        // 修改：用户只输入2个字符，系统自动补N对比
-        if (!inputStr || inputStr.length < 2) return { ok: false, display: t };
-        const finalInput = inputStr.toUpperCase() + 'N';
-        return { ok: finalInput === t.toUpperCase(), display: t };
+    hintNote: '百位、十位是否接收低位进位(1/0)', 
+    check: (v, t, inputStr, inputArray) => {
+        if (!inputArray || inputArray.length < 2) return { ok: false, display: t.replace(',', ' ') + ' 0' };
+        return { ok: inputArray.join(',') === t, display: t.replace(',', ' ') + ' 0' };
     },
     gen: (n) => { 
         const p = []; 
@@ -424,12 +428,35 @@ const GAME_MODES = {
             const a = Math.floor(Math.random()*900)+100; 
             const b = Math.floor(Math.random()*900)+100; 
             
-            const c1 = 'N';
-            const c10 = ((a % 10) + (b % 10) >= 10) ? 'Y' : 'N';
-            const c100 = ((a % 100) + (b % 100) >= 100) ? 'Y' : 'N';
+            const c10 = ((a % 10) + (b % 10) >= 10) ? '1' : '0';
+            const c100 = ((a % 100) + (b % 100) >= 100) ? '1' : '0';
             
-            const ansStr = `${c100}${c10}${c1}`;
-            p.push({dividend: a, divisor: b, ans: ansStr, symbol: '+'});
+            p.push({dividend: a, divisor: b, ans: `${c100},${c10}`, symbol: '+'});
+        } 
+        return p;
+    } 
+  },
+
+  // 新增：判退位
+  'borrowJudge': { 
+    name: '判退位', 
+    title: '判退位完成！', 
+    hintNote: '百位、十位是否向低位提供借位(-1/0)', 
+    check: (v, t, inputStr, inputArray) => {
+        if (!inputArray || inputArray.length < 2) return { ok: false, display: t.replace(',', ' ') + ' 0' };
+        return { ok: inputArray.join(',') === t, display: t.replace(',', ' ') + ' 0' };
+    },
+    gen: (n) => { 
+        const p = []; 
+        for(let i=0; i<n; i++){ 
+            let a = Math.floor(Math.random()*900)+100; 
+            let b = Math.floor(Math.random()*900)+100; 
+            if (a < b) [a, b] = [b, a]; // 保证大减小，结果为正数
+            
+            const c10 = (a % 10 < b % 10) ? '-1' : '0';
+            const c100 = (a % 100 < b % 100) ? '-1' : '0';
+            
+            p.push({dividend: a, divisor: b, ans: `${c100},${c10}`, symbol: '-'});
         } 
         return p;
     } 
@@ -509,7 +536,7 @@ const MODE_GROUPS = {
   divSelect: { label: '商首位专项', modes: [] }, 
   single: { label: '一位数专项 (仅填尾数)', modes: ['plus', 'minus'] },
   double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum'] },
-  triple: { label: '三位数专项 (完整答案)', modes: ['carryJudge', 'digitDetermine', 'triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus', 'tripleMix', 'tripleMult', 'tripleDiv'] },
+  triple: { label: '三位数专项 (完整答案)', modes: ['carryJudge', 'borrowJudge', 'digitDetermine', 'triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus', 'tripleMix', 'tripleMult', 'tripleDiv'] },
   spec: { label: '五除三专项 (允许3%误差)', modes: ['divSpecA', 'divSpecB', 'divSpecC', 'divScale'] }
 };
 
@@ -593,6 +620,7 @@ export default {
       // 分段计时逻辑状态
       boxTimes: [],
       lastInputTs: 0,
+      inputArray: [], // 专门用于存储 1/0 或 -1/0 这种独立按键的数据结构
 
       // 3D 模式状态
       cubicMode: 'block',
@@ -668,7 +696,7 @@ export default {
       this.pool = config.gen(10, { divisor: this.selectedDivisor });
       if(this.timer) clearInterval(this.timer);
       const totalStartTs = this.now();
-      this.viewState = 'game'; this.idx = 0; this.input = ''; this.uiHint = '请输入答案'; this.leftText = (this.currentModeKey === 'train' ? '跳过' : '重开');
+      this.viewState = 'game'; this.idx = 0; this.input = ''; this.inputArray = []; this.uiHint = '请输入答案'; this.leftText = (this.currentModeKey === 'train' ? '跳过' : '重开');
       this.totalStartTs = totalStartTs; this.qStartTs = 0; this.trainWrong = 0; this.trainSkip = 0; this.curWrongTries = 0; this.trainLog = []; this.results = []; this.isHistoryReview = false;
       this.$nextTick(() => { this._nextQuestion(); this.timer = setInterval(()=> this._tick(), 100); });
     },
@@ -679,6 +707,7 @@ export default {
        this.lastInputTs = this.now(); 
        this.boxTimes = [];
        this.input = ''; 
+       this.inputArray = [];
        this.curWrongTries = 0; 
        this.qText = `${q.dividend}${q.symbol}${q.divisor}`; 
        this.progressText = `${shownIdx}/${this.pool.length}`; 
@@ -686,16 +715,26 @@ export default {
     _nextQuestion(){ const { idx, pool } = this; if(idx >= pool.length){ this._finish(); return; } this._setQuestion(pool[idx], idx + 1); this.idx = idx + 1; },
     
     pressDigit(d){ 
+        // 支持单独的数组式记录（专门处理占用双字符的-1）
+        if (['carryJudge', 'borrowJudge'].includes(this.currentModeKey)) {
+            if (this.inputArray.length >= 2) return; 
+            const now = this.now();
+            this.boxTimes.push(now - this.lastInputTs);
+            this.lastInputTs = now;
+            
+            this.inputArray.push(String(d));
+            this.input = this.inputArray.join(','); 
+            return;
+        }
+
         let input = this.input || ''; 
         let maxLen = 6;
         if (this.currentModeKey === 'divScale') maxLen = 4;
-        // 修改：判进位由于个位写死为N，只需要让用户输入百位和十位，所以长度限制为 2
-        if (this.currentModeKey === 'carryJudge') maxLen = 2;
         if (this.currentModeKey === 'digitDetermine') maxLen = 4;
 
         if(input.length >= maxLen) return; 
         
-        if (['carryJudge', 'digitDetermine'].includes(this.currentModeKey)) {
+        if (['digitDetermine'].includes(this.currentModeKey)) {
             const now = this.now();
             this.boxTimes.push(now - this.lastInputTs);
             this.lastInputTs = now;
@@ -705,7 +744,7 @@ export default {
         this.input = input; 
     },
     pressDot(){ 
-        if (['divScale', 'carryJudge', 'digitDetermine'].includes(this.currentModeKey)) return; 
+        if (['divScale', 'carryJudge', 'borrowJudge', 'digitDetermine'].includes(this.currentModeKey)) return; 
         let input = this.input || ''; 
         if(input.length >= 6) return; 
         if(input.includes('.')) return; 
@@ -716,23 +755,38 @@ export default {
 
     clearInput(){ 
         this.input = ''; 
-        if (['carryJudge', 'digitDetermine'].includes(this.currentModeKey)) {
+        this.inputArray = [];
+        if (['carryJudge', 'borrowJudge', 'digitDetermine'].includes(this.currentModeKey)) {
             this.boxTimes = [];
             this.lastInputTs = this.now();
         }
     },
     backspace(){ 
-        if (['carryJudge', 'digitDetermine'].includes(this.currentModeKey) && (this.input || '').length > 0) {
-            this.boxTimes.pop(); 
-            this.lastInputTs = this.now(); 
+        if (['carryJudge', 'borrowJudge', 'digitDetermine'].includes(this.currentModeKey)) {
+            if (['carryJudge', 'borrowJudge'].includes(this.currentModeKey)) {
+                if (this.inputArray.length > 0) {
+                    this.inputArray.pop();
+                    this.input = this.inputArray.join(',');
+                    this.boxTimes.pop();
+                    this.lastInputTs = this.now();
+                }
+            } else {
+                if ((this.input || '').length > 0) {
+                    this.boxTimes.pop(); 
+                    this.lastInputTs = this.now(); 
+                    this.input = (this.input || '').slice(0, -1);
+                }
+            }
+        } else {
+            this.input = (this.input || '').slice(0, -1); 
         }
-        this.input = (this.input || '').slice(0, -1); 
     },
     leftAction(){ if(this.currentModeKey !== 'train'){ this.startGame(); return; } const cur = this.current; const used = (this.now() - this.qStartTs)/1000; const log = this.trainLog.concat([{ q: `${cur.dividend}${cur.symbol}${cur.divisor}`, usedStr: used.toFixed(1) + 's', wrong: this.curWrongTries, skipped: true }]); this.trainSkip++; this.trainLog = log; this._nextQuestion(); },
     
     confirmAnswer(){
       const { current: cur, input, currentModeKey: mode, activeConfig } = this; 
-      if(!input) return; 
+      if(!input && !['carryJudge', 'borrowJudge'].includes(mode)) return; 
+      if(['carryJudge', 'borrowJudge'].includes(mode) && this.inputArray.length === 0) return;
       
       const n = parseFloat(input); 
       const used = (this.now() - this.qStartTs)/1000;
@@ -741,15 +795,13 @@ export default {
       let extraInfo = {};
       let yourAnsStr = input;
 
-      // 解析分步耗时并放入 extraInfo
       let detailTimesStr = '';
-      if (mode === 'carryJudge') {
-          // 判进位这里只校验是否填满了前两位
-          if (input.length < 2) { this.uiHint = '请填满百位和十位选项'; return; }
+      if (['carryJudge', 'borrowJudge'].includes(mode)) {
+          if (this.inputArray.length < 2) { this.uiHint = '请填满百位和十位选项'; return; }
           const t1 = (this.boxTimes[0] || 0) / 1000;
           const t2 = (this.boxTimes[1] || 0) / 1000;
-          detailTimesStr = `百:${t1.toFixed(1)}s 十:${t2.toFixed(1)}s (个位默认N)`;
-          yourAnsStr = input + 'N'; // 把显示在记录里的用户答案自动补上N
+          detailTimesStr = `百:${t1.toFixed(1)}s 十:${t2.toFixed(1)}s (个位默认0)`;
+          yourAnsStr = this.inputArray.join(' ') + ' 0'; // 显示记录时拼成好看的格式
       } else if (mode === 'digitDetermine') {
           let tH = 0, tT = 0, tO = 0;
           if (this.input.length === 4) {
@@ -774,7 +826,7 @@ export default {
       }
 
       if (activeConfig.check) { 
-        const checkResult = activeConfig.check(n, cur.ans, input); 
+        const checkResult = activeConfig.check(n, cur.ans, input, this.inputArray); 
         correct = checkResult.ok; 
         realAnsDisplay = checkResult.display; 
         
@@ -797,7 +849,8 @@ export default {
           this.trainWrong++; 
           this.curWrongTries++; 
           this.input = ''; 
-          if (mode === 'carryJudge') this.boxTimes = [];
+          this.inputArray = [];
+          if (['carryJudge', 'borrowJudge'].includes(mode)) this.boxTimes = [];
           this.uiHint = `错误！答案是：${realAnsDisplay}`; 
         } 
         return; 
