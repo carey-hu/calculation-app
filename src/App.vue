@@ -140,22 +140,22 @@
           </template>
 
           <template v-else-if="currentModeKey === 'decompAdd'">
-            <div class="ansBox glass-input" style="display: flex; flex-direction: column; gap: 10px; padding: 16px; background: transparent; border: none; box-shadow: none;">
+            <div class="ansBox glass-input" style="display: flex; flex-direction: column; gap: 8px; padding: 10px; background: transparent; border: none; box-shadow: none;">
               <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="font-size:16px; color:#8e8e93; width: 80px; text-align: left;">十位之和</div>
-                <div :style="{ flex: 1, height: '46px', lineHeight: '46px', background: decompStep === 0 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 0 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '24px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
+                <div style="font-size:15px; color:#8e8e93; width: 75px; text-align: left;">十位之和</div>
+                <div :style="{ flex: 1, height: '40px', lineHeight: '40px', background: decompStep === 0 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 0 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '22px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
                   {{ decompStep === 0 ? (input || '_') : (inputArray[0] !== undefined ? inputArray[0] : '') }}
                 </div>
               </div>
               <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="font-size:16px; color:#8e8e93; width: 80px; text-align: left;">个位之和</div>
-                <div :style="{ flex: 1, height: '46px', lineHeight: '46px', background: decompStep === 1 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 1 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '24px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
+                <div style="font-size:15px; color:#8e8e93; width: 75px; text-align: left;">个位之和</div>
+                <div :style="{ flex: 1, height: '40px', lineHeight: '40px', background: decompStep === 1 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 1 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '22px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
                   {{ decompStep === 1 ? (input || '_') : (inputArray[1] !== undefined ? inputArray[1] : '') }}
                 </div>
               </div>
               <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="font-size:16px; color:#8e8e93; width: 80px; text-align: left;">总和</div>
-                <div :style="{ flex: 1, height: '46px', lineHeight: '46px', background: decompStep === 2 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 2 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '24px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
+                <div style="font-size:15px; color:#8e8e93; width: 75px; text-align: left;">总和</div>
+                <div :style="{ flex: 1, height: '40px', lineHeight: '40px', background: decompStep === 2 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 2 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '22px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
                   {{ decompStep === 2 ? (input || '_') : (inputArray[2] !== undefined ? inputArray[2] : '') }}
                 </div>
               </div>
@@ -166,7 +166,7 @@
             <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
           </template>
 
-          <div class="hint">{{uiHint}}</div>
+          <div class="hint" v-if="uiHint">{{uiHint}}</div>
         </div>
       </div>
       <div class="keypad card glass-panel">
@@ -177,14 +177,14 @@
         </div>
         
         <div class="grid" v-if="currentModeKey === 'carryJudge'" style="grid-template-columns: 1fr 1fr;">
-          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #34c759;" @click="pressDigit('1')">1<span style="font-size:16px; display:block;">(进位)</span></button>
-          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #ff3b30;" @click="pressDigit('0')">0<span style="font-size:16px; display:block;">(不进)</span></button>
+          <button class="k glass-key" style="height: 140px; font-size: 48px; color: #34c759;" @click="pressDigit('1')">1<span style="font-size:16px; display:block;">(进位)</span></button>
+          <button class="k glass-key" style="height: 140px; font-size: 48px; color: #ff3b30;" @click="pressDigit('0')">0<span style="font-size:16px; display:block;">(不进)</span></button>
           <button class="k confirm glass-key-confirm" style="grid-column: 1 / 3;" @click="confirmAnswer">确认</button>
         </div>
 
         <div class="grid" v-else-if="currentModeKey === 'borrowJudge'" style="grid-template-columns: 1fr 1fr;">
-          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #ff3b30;" @click="pressDigit('-1')">-1<span style="font-size:16px; display:block;">(退位)</span></button>
-          <button class="k glass-key" style="height: 180px; font-size: 48px; color: #34c759;" @click="pressDigit('0')">0<span style="font-size:16px; display:block;">(不退)</span></button>
+          <button class="k glass-key" style="height: 140px; font-size: 48px; color: #ff3b30;" @click="pressDigit('-1')">-1<span style="font-size:16px; display:block;">(退位)</span></button>
+          <button class="k glass-key" style="height: 140px; font-size: 48px; color: #34c759;" @click="pressDigit('0')">0<span style="font-size:16px; display:block;">(不退)</span></button>
           <button class="k confirm glass-key-confirm" style="grid-column: 1 / 3;" @click="confirmAnswer">确认</button>
         </div>
         
@@ -429,7 +429,7 @@ const GAME_MODES = {
   'doubleMinus': { name: '双退位减', title: '双退位减完成！', hintNote: '个位退，十位不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(!(a2<b2&&a1-1>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
   'fourSum': { name: '四数相加', title: '四数相加完成！', hintNote: '计算准确和', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*90)+10;const b=Math.floor(Math.random()*90)+10;const c=Math.floor(Math.random()*90)+10;const d=Math.floor(Math.random()*90)+10; p.push({dividend:`${a}+${b}+${c}`,divisor:d,ans:a+b+c+d,symbol:'+'});} return p;} },
   
-  // 新增：拆解连加
+  // 拆解连加
   'decompAdd': { 
     name: '拆解连加', 
     title: '拆解连加完成！', 
@@ -587,7 +587,7 @@ const MODE_GROUPS = {
   basic: { label: '大九九/除法', modes: ['train', 'speed', 'first'] },
   divSelect: { label: '商首位专项', modes: [] }, 
   single: { label: '一位数专项 (仅填尾数)', modes: ['plus', 'minus'] },
-  double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum', 'decompAdd'] }, // 加入了 decompAdd
+  double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum', 'decompAdd'] },
   triple: { label: '三位数专项 (完整答案)', modes: ['carryJudge', 'borrowJudge', 'digitDetermine', 'triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus', 'tripleMix', 'tripleMult', 'tripleDiv'] },
   spec: { label: '五除三专项 (允许3%误差)', modes: ['divSpecA', 'divSpecB', 'divSpecC', 'divScale'] }
 };
@@ -663,7 +663,7 @@ export default {
   data() {
     return {
       viewState: 'home', currentModeKey: 'train', selectedDivisor: 0,
-      pool: [], idx: 0, current: null, input: '', uiHint: 'Ready?', totalText: '0:00.0', progressText: '1/81', qText: '—', leftText: '跳过', 
+      pool: [], idx: 0, current: null, input: '', uiHint: '', totalText: '0:00.0', progressText: '1/81', qText: '—', leftText: '跳过', 
       totalStartTs: 0, qStartTs: 0, trainWrong: 0, trainSkip: 0, curWrongTries: 0, trainLog: [], results: [], 
       historyList: [], showChart: false, chartInstance: null, chartTab: '', availableModes: [], isHistoryReview: false,
       toast: { show: false, title: '' },
@@ -673,7 +673,7 @@ export default {
       boxTimes: [],
       lastInputTs: 0,
       inputArray: [], 
-      decompStep: 0, // 新增：用于记录拆解连加当前处于第几个输入步骤
+      decompStep: 0, 
 
       // 3D 模式状态
       cubicMode: 'block',
@@ -749,7 +749,7 @@ export default {
       this.pool = config.gen(10, { divisor: this.selectedDivisor });
       if(this.timer) clearInterval(this.timer);
       const totalStartTs = this.now();
-      this.viewState = 'game'; this.idx = 0; this.input = ''; this.inputArray = []; this.uiHint = '请输入答案'; this.leftText = (this.currentModeKey === 'train' ? '跳过' : '重开');
+      this.viewState = 'game'; this.idx = 0; this.input = ''; this.inputArray = []; this.uiHint = ''; this.leftText = (this.currentModeKey === 'train' ? '跳过' : '重开');
       this.totalStartTs = totalStartTs; this.qStartTs = 0; this.trainWrong = 0; this.trainSkip = 0; this.curWrongTries = 0; this.trainLog = []; this.results = []; this.isHistoryReview = false;
       this.$nextTick(() => { this._nextQuestion(); this.timer = setInterval(()=> this._tick(), 100); });
     },
@@ -761,8 +761,9 @@ export default {
        this.boxTimes = [];
        this.input = ''; 
        this.inputArray = [];
-       this.decompStep = 0; // 重置步骤
+       this.decompStep = 0; 
        this.curWrongTries = 0; 
+       this.uiHint = ''; 
        this.qText = `${q.dividend}${q.symbol}${q.divisor}`; 
        this.progressText = `${shownIdx}/${this.pool.length}`; 
     },
@@ -813,7 +814,7 @@ export default {
             this.boxTimes = [];
             this.lastInputTs = this.now();
         } else if (this.currentModeKey === 'decompAdd') {
-            this.lastInputTs = this.now(); // 仅清空当前步骤的时间记录起算点，保留之前的数组
+            this.lastInputTs = this.now(); 
         }
     },
     backspace(){ 
@@ -829,7 +830,6 @@ export default {
                 if ((this.input || '').length > 0) {
                     this.input = (this.input || '').slice(0, -1);
                 } else if (this.decompStep > 0) {
-                    // 如果当前框为空，按退格可以退回上一步
                     this.decompStep--;
                     this.input = this.inputArray.pop();
                     this.boxTimes.pop();
@@ -851,18 +851,17 @@ export default {
     confirmAnswer(){
       const { current: cur, input, currentModeKey: mode, activeConfig } = this; 
 
-      // --- 拆解连加的多步拦截 ---
       if (mode === 'decompAdd') {
-        if (!input) return; // 为空不提交
+        if (!input) return; 
         const now = this.now();
-        this.boxTimes.push(now - this.lastInputTs); // 记录单步耗时
+        this.boxTimes.push(now - this.lastInputTs); 
         this.lastInputTs = now;
         this.inputArray.push(input);
         this.input = '';
 
         if (this.decompStep < 2) {
           this.decompStep++;
-          return; // 拦截确认动作，进入下一步输入
+          return; 
         }
       }
       
@@ -896,7 +895,6 @@ export default {
           }
           detailTimesStr = `千百:${tH.toFixed(1)}s 十:${tT.toFixed(1)}s 个:${tO.toFixed(1)}s`;
       } else if (mode === 'decompAdd') {
-          // 提取拆解连加的三步耗时
           const t1 = (this.boxTimes[0] || 0) / 1000;
           const t2 = (this.boxTimes[1] || 0) / 1000;
           const t3 = (this.boxTimes[2] || 0) / 1000;
@@ -943,7 +941,7 @@ export default {
               this.boxTimes = [];
               this.lastInputTs = this.now();
           }
-          if (mode === 'decompAdd') this.decompStep = 0; // 错误后退回第一步重做
+          if (mode === 'decompAdd') this.decompStep = 0; 
           this.uiHint = `错误！答案是：${realAnsDisplay}`; 
         } 
         return; 
