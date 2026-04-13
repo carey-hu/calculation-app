@@ -206,7 +206,7 @@
         <div class="resultScroll">
           <template v-if="currentModeKey==='train'">
             <div v-for="(item, index) in trainLog" :key="index" class="row">
-              <span class="rowLeft">{{index+1}}. {{item.q}}</span>
+              <span class="rowLeft" style="white-space: normal; word-break: break-all; overflow: visible; line-height: 1.4;">{{index+1}}. {{item.q}}</span>
               <span class="rowRight">
                 <span :style="{ color: parseFloat(item.usedStr) > 2 ? '#ff3b30' : 'inherit' }">{{item.usedStr}}</span> / 错{{item.wrong}}{{item.skipped?'(跳)':''}}
               </span>
@@ -214,7 +214,7 @@
           </template>
           <template v-else>
             <div v-for="(item, index) in results" :key="index" class="row">
-              <span class="rowLeft">{{index+1}}. {{item.q}} = {{item.yourAns}}</span>
+              <span class="rowLeft" style="white-space: normal; word-break: break-all; overflow: visible; line-height: 1.4;">{{index+1}}. {{item.q}} = {{item.yourAns}}</span>
               <span class="rowRight" style="display:flex; flex-direction:column; align-items:flex-end;">
                   <div>
                       <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
