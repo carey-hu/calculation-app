@@ -425,6 +425,26 @@ const GAME_MODES = {
   'firstSpec': { name: '商首位专项', title: '商首位专项完成！', gen: (n, ex) => { const d=ex.divisor||12; const pool=[]; for(let i=0;i<n;i++){ const dd=Math.floor(Math.random()*(999-d+1))+d; const fq=Math.floor(dd/d); const fd=parseInt(String(fq)[0],10); pool.push({dividend:dd,divisor:d,ans:fd,symbol:'÷'}); } return pool; } },
   'plus': { name: '进位加', title: '一位数进位加完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;let a1=a%10;let b1=b%10;}while(a+b<10); p.push({dividend:a,divisor:b,ans:(a+b)%10,symbol:'+'});} return p;} },
   'minus': { name: '退位减', title: '一位数退位减完成！', hintNote: '只填个位尾数', gen: (n) => { const p=[]; for(let i=0;i<n;i++){ let a,b; do{a=Math.floor(Math.random()*9)+1;b=Math.floor(Math.random()*9)+1;}while(a>=b); p.push({dividend:a,divisor:b,ans:(10+a-b),symbol:'-'});} return p;} },
+  
+  // 新增：四数连加（一位数）
+  'fourSingleSum': { 
+    name: '四数连加', 
+    title: '四数连加(一位)完成！', 
+    hintNote: '计算准确和', 
+    isSmallFont: true, 
+    gen: (n) => { 
+      const p = []; 
+      for(let i=0; i<n; i++){ 
+        const a = Math.floor(Math.random()*9)+1;
+        const b = Math.floor(Math.random()*9)+1;
+        const c = Math.floor(Math.random()*9)+1;
+        const d = Math.floor(Math.random()*9)+1;
+        p.push({dividend: `${a}+${b}+${c}`, divisor: d, ans: a+b+c+d, symbol: '+'});
+      } 
+      return p;
+    } 
+  },
+
   'doublePlus': { name: '双进位加', title: '双进位加完成！', hintNote: '个位十位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
   'doubleMinus': { name: '双退位减', title: '双退位减完成！', hintNote: '个位退，十位不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(!(a2<b2&&a1-1>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
   'fourSum': { name: '四数相加', title: '四数相加完成！', hintNote: '计算准确和', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*90)+10;const b=Math.floor(Math.random()*90)+10;const c=Math.floor(Math.random()*90)+10;const d=Math.floor(Math.random()*90)+10; p.push({dividend:`${a}+${b}+${c}`,divisor:d,ans:a+b+c+d,symbol:'+'});} return p;} },
@@ -586,7 +606,7 @@ const GAME_MODES = {
 const MODE_GROUPS = {
   basic: { label: '大九九/除法', modes: ['train', 'speed', 'first'] },
   divSelect: { label: '商首位专项', modes: [] }, 
-  single: { label: '一位数专项 (仅填尾数)', modes: ['plus', 'minus'] },
+  single: { label: '一位数专项', modes: ['plus', 'minus', 'fourSingleSum'] }, // 更新了标题，加入了新模式
   double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum', 'decompAdd'] },
   triple: { label: '三位数专项 (完整答案)', modes: ['carryJudge', 'borrowJudge', 'digitDetermine', 'triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus', 'tripleMix', 'tripleMult', 'tripleDiv'] },
   spec: { label: '五除三专项 (允许3%误差)', modes: ['divSpecA', 'divSpecB', 'divSpecC', 'divScale'] }
@@ -712,7 +732,7 @@ export default {
          return `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`;
        }
     },
-    isSmallFont() { return this.activeConfig.isSmallFont || (this.currentModeKey === 'fourSum' || this.currentModeKey === 'tripleMix' || this.currentModeKey === 'decompAdd'); }
+    isSmallFont() { return this.activeConfig.isSmallFont || (this.currentModeKey === 'fourSum' || this.currentModeKey === 'fourSingleSum' || this.currentModeKey === 'tripleMix' || this.currentModeKey === 'decompAdd'); }
   },
   mounted() {
     const history = localStorage.getItem('calc_history');
