@@ -139,6 +139,29 @@
             </div>
           </template>
 
+          <template v-else-if="currentModeKey === 'decompAdd'">
+            <div class="ansBox glass-input" style="display: flex; flex-direction: column; gap: 10px; padding: 16px; background: transparent; border: none; box-shadow: none;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="font-size:16px; color:#8e8e93; width: 80px; text-align: left;">十位之和</div>
+                <div :style="{ flex: 1, height: '46px', lineHeight: '46px', background: decompStep === 0 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 0 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '24px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
+                  {{ decompStep === 0 ? (input || '_') : (inputArray[0] !== undefined ? inputArray[0] : '') }}
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="font-size:16px; color:#8e8e93; width: 80px; text-align: left;">个位之和</div>
+                <div :style="{ flex: 1, height: '46px', lineHeight: '46px', background: decompStep === 1 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 1 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '24px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
+                  {{ decompStep === 1 ? (input || '_') : (inputArray[1] !== undefined ? inputArray[1] : '') }}
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="font-size:16px; color:#8e8e93; width: 80px; text-align: left;">总和</div>
+                <div :style="{ flex: 1, height: '46px', lineHeight: '46px', background: decompStep === 2 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 2 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '24px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
+                  {{ decompStep === 2 ? (input || '_') : (inputArray[2] !== undefined ? inputArray[2] : '') }}
+                </div>
+              </div>
+            </div>
+          </template>
+
           <template v-else>
             <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
           </template>
@@ -405,6 +428,42 @@ const GAME_MODES = {
   'doublePlus': { name: '双进位加', title: '双进位加完成！', hintNote: '个位十位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
   'doubleMinus': { name: '双退位减', title: '双退位减完成！', hintNote: '个位退，十位不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,b1,b2; do{a=Math.floor(Math.random()*90)+10;b=Math.floor(Math.random()*90)+10;a1=Math.floor(a/10);a2=a%10;b1=Math.floor(b/10);b2=b%10;}while(!(a2<b2&&a1-1>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
   'fourSum': { name: '四数相加', title: '四数相加完成！', hintNote: '计算准确和', isSmallFont:true, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*90)+10;const b=Math.floor(Math.random()*90)+10;const c=Math.floor(Math.random()*90)+10;const d=Math.floor(Math.random()*90)+10; p.push({dividend:`${a}+${b}+${c}`,divisor:d,ans:a+b+c+d,symbol:'+'});} return p;} },
+  
+  // 新增：拆解连加
+  'decompAdd': { 
+    name: '拆解连加', 
+    title: '拆解连加完成！', 
+    hintNote: '依次输入: 十位之和、个位之和、总和', 
+    isSmallFont: true,
+    check: (v, t, inputStr, inputArray) => {
+        if (!inputArray || inputArray.length < 3) return { ok: false, display: `十位:${t.tens} 个位:${t.units} 总:${t.total}` };
+        const ok = parseInt(inputArray[0]) === t.tens &&
+                   parseInt(inputArray[1]) === t.units &&
+                   parseInt(inputArray[2]) === t.total;
+        return { ok: ok, display: `十:${t.tens} 个:${t.units} 总:${t.total}` };
+    },
+    gen: (n) => { 
+        const p = []; 
+        for(let i=0; i<n; i++){ 
+            const a = Math.floor(Math.random()*90)+10;
+            const b = Math.floor(Math.random()*90)+10;
+            const c = Math.floor(Math.random()*90)+10;
+            const d = Math.floor(Math.random()*90)+10;
+            const tensSum = (Math.floor(a/10) + Math.floor(b/10) + Math.floor(c/10) + Math.floor(d/10)) * 10;
+            const unitsSum = (a%10) + (b%10) + (c%10) + (d%10);
+            const total = a + b + c + d;
+            
+            p.push({
+              dividend: `${a}+${b}+${c}+${d}`, 
+              divisor: '', 
+              ans: { tens: tensSum, units: unitsSum, total: total }, 
+              symbol: '' 
+            });
+        } 
+        return p;
+    } 
+  },
+
   'triplePlus': { name: '三进位加', title: '三进位加完成！', hintNote: '个位十位百位均需进位', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(a3+b3<10||a2+b2<10||a1+b1<10); p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
   'tripleMinus': { name: '三退位减', title: '三退位减完成！', hintNote: '个十退，百不退', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ let a,b,a1,a2,a3,b1,b2,b3; do{a=Math.floor(Math.random()*900)+100;b=Math.floor(Math.random()*900)+100;a1=Math.floor(a/100);a2=Math.floor((a%100)/10);a3=a%10;b1=Math.floor(b/100);b2=Math.floor((b%100)/10);b3=b%10;}while(!(a3<b3&&(a2-1)<b2&&(a1-1)>=b1)); p.push({dividend:a,divisor:b,ans:a-b,symbol:'-'});} return p;} },
   'tripleAnyPlus': { name: '任意加', title: '任意三数加完成！', hintNote: '任意三位数加法', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*900)+100; p.push({dividend:a,divisor:b,ans:a+b,symbol:'+'});} return p;} },
@@ -413,7 +472,6 @@ const GAME_MODES = {
   'tripleMult': { name: '三乘一', title: '三乘一完成！', hintNote: '计算准确积', gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a*b,symbol:'×'});} return p;} },
   'tripleDiv': { name: '三除一', title: '三除一完成！', hintNote: '若为小数，填相邻整数均对', check: (v, t) => { if(Number.isInteger(t)){ return {ok:v===t,display:t}; }else{ const f=Math.floor(t),c=Math.ceil(t); return {ok:(v===f||v===c),display:`${f}或${c} (${t.toFixed(2)})`}; } }, gen: (n)=>{ const p=[]; for(let i=0;i<n;i++){ const a=Math.floor(Math.random()*900)+100;const b=Math.floor(Math.random()*8)+2; p.push({dividend:a,divisor:b,ans:a/b,symbol:'÷'});} return p;} },
   
-  // 修正后：判进位
   'carryJudge': { 
     name: '判进位', 
     title: '判进位完成！', 
@@ -427,17 +485,14 @@ const GAME_MODES = {
         for(let i=0; i<n; i++){ 
             const a = Math.floor(Math.random()*900)+100; 
             const b = Math.floor(Math.random()*900)+100; 
-            
             const c10 = ((a % 10) + (b % 10) >= 10) ? '1' : '0';
             const c100 = ((a % 100) + (b % 100) >= 100) ? '1' : '0';
-            
             p.push({dividend: a, divisor: b, ans: `${c100},${c10}`, symbol: '+'});
         } 
         return p;
     } 
   },
 
-  // 新增：判退位
   'borrowJudge': { 
     name: '判退位', 
     title: '判退位完成！', 
@@ -451,18 +506,15 @@ const GAME_MODES = {
         for(let i=0; i<n; i++){ 
             let a = Math.floor(Math.random()*900)+100; 
             let b = Math.floor(Math.random()*900)+100; 
-            if (a < b) [a, b] = [b, a]; // 保证大减小，结果为正数
-            
+            if (a < b) [a, b] = [b, a]; 
             const c10 = (a % 10 < b % 10) ? '-1' : '0';
             const c100 = (a % 100 < b % 100) ? '-1' : '0';
-            
             p.push({dividend: a, divisor: b, ans: `${c100},${c10}`, symbol: '-'});
         } 
         return p;
     } 
   },
   
-  // 确本位
   'digitDetermine': { 
     name: '确本位', 
     title: '确本位完成！', 
@@ -535,7 +587,7 @@ const MODE_GROUPS = {
   basic: { label: '大九九/除法', modes: ['train', 'speed', 'first'] },
   divSelect: { label: '商首位专项', modes: [] }, 
   single: { label: '一位数专项 (仅填尾数)', modes: ['plus', 'minus'] },
-  double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum'] },
+  double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum', 'decompAdd'] }, // 加入了 decompAdd
   triple: { label: '三位数专项 (完整答案)', modes: ['carryJudge', 'borrowJudge', 'digitDetermine', 'triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus', 'tripleMix', 'tripleMult', 'tripleDiv'] },
   spec: { label: '五除三专项 (允许3%误差)', modes: ['divSpecA', 'divSpecB', 'divSpecC', 'divScale'] }
 };
@@ -620,7 +672,8 @@ export default {
       // 分段计时逻辑状态
       boxTimes: [],
       lastInputTs: 0,
-      inputArray: [], // 专门用于存储 1/0 或 -1/0 这种独立按键的数据结构
+      inputArray: [], 
+      decompStep: 0, // 新增：用于记录拆解连加当前处于第几个输入步骤
 
       // 3D 模式状态
       cubicMode: 'block',
@@ -659,7 +712,7 @@ export default {
          return `正确：${correctCount}/${totalCount}｜总用时：${totalSec.toFixed(1)}s`;
        }
     },
-    isSmallFont() { return this.activeConfig.isSmallFont || (this.currentModeKey === 'fourSum' || this.currentModeKey === 'tripleMix'); }
+    isSmallFont() { return this.activeConfig.isSmallFont || (this.currentModeKey === 'fourSum' || this.currentModeKey === 'tripleMix' || this.currentModeKey === 'decompAdd'); }
   },
   mounted() {
     const history = localStorage.getItem('calc_history');
@@ -708,6 +761,7 @@ export default {
        this.boxTimes = [];
        this.input = ''; 
        this.inputArray = [];
+       this.decompStep = 0; // 重置步骤
        this.curWrongTries = 0; 
        this.qText = `${q.dividend}${q.symbol}${q.divisor}`; 
        this.progressText = `${shownIdx}/${this.pool.length}`; 
@@ -715,7 +769,6 @@ export default {
     _nextQuestion(){ const { idx, pool } = this; if(idx >= pool.length){ this._finish(); return; } this._setQuestion(pool[idx], idx + 1); this.idx = idx + 1; },
     
     pressDigit(d){ 
-        // 支持单独的数组式记录（专门处理占用双字符的-1）
         if (['carryJudge', 'borrowJudge'].includes(this.currentModeKey)) {
             if (this.inputArray.length >= 2) return; 
             const now = this.now();
@@ -744,7 +797,7 @@ export default {
         this.input = input; 
     },
     pressDot(){ 
-        if (['divScale', 'carryJudge', 'borrowJudge', 'digitDetermine'].includes(this.currentModeKey)) return; 
+        if (['divScale', 'carryJudge', 'borrowJudge', 'digitDetermine', 'decompAdd'].includes(this.currentModeKey)) return; 
         let input = this.input || ''; 
         if(input.length >= 6) return; 
         if(input.includes('.')) return; 
@@ -755,18 +808,30 @@ export default {
 
     clearInput(){ 
         this.input = ''; 
-        this.inputArray = [];
         if (['carryJudge', 'borrowJudge', 'digitDetermine'].includes(this.currentModeKey)) {
+            this.inputArray = [];
             this.boxTimes = [];
             this.lastInputTs = this.now();
+        } else if (this.currentModeKey === 'decompAdd') {
+            this.lastInputTs = this.now(); // 仅清空当前步骤的时间记录起算点，保留之前的数组
         }
     },
     backspace(){ 
-        if (['carryJudge', 'borrowJudge', 'digitDetermine'].includes(this.currentModeKey)) {
+        if (['carryJudge', 'borrowJudge', 'digitDetermine', 'decompAdd'].includes(this.currentModeKey)) {
             if (['carryJudge', 'borrowJudge'].includes(this.currentModeKey)) {
                 if (this.inputArray.length > 0) {
                     this.inputArray.pop();
                     this.input = this.inputArray.join(',');
+                    this.boxTimes.pop();
+                    this.lastInputTs = this.now();
+                }
+            } else if (this.currentModeKey === 'decompAdd') {
+                if ((this.input || '').length > 0) {
+                    this.input = (this.input || '').slice(0, -1);
+                } else if (this.decompStep > 0) {
+                    // 如果当前框为空，按退格可以退回上一步
+                    this.decompStep--;
+                    this.input = this.inputArray.pop();
                     this.boxTimes.pop();
                     this.lastInputTs = this.now();
                 }
@@ -785,10 +850,26 @@ export default {
     
     confirmAnswer(){
       const { current: cur, input, currentModeKey: mode, activeConfig } = this; 
-      if(!input && !['carryJudge', 'borrowJudge'].includes(mode)) return; 
+
+      // --- 拆解连加的多步拦截 ---
+      if (mode === 'decompAdd') {
+        if (!input) return; // 为空不提交
+        const now = this.now();
+        this.boxTimes.push(now - this.lastInputTs); // 记录单步耗时
+        this.lastInputTs = now;
+        this.inputArray.push(input);
+        this.input = '';
+
+        if (this.decompStep < 2) {
+          this.decompStep++;
+          return; // 拦截确认动作，进入下一步输入
+        }
+      }
+      
+      if(!input && !['carryJudge', 'borrowJudge', 'decompAdd'].includes(mode)) return; 
       if(['carryJudge', 'borrowJudge'].includes(mode) && this.inputArray.length === 0) return;
       
-      const n = parseFloat(input); 
+      const n = (mode === 'decompAdd') ? 0 : parseFloat(input); 
       const used = (this.now() - this.qStartTs)/1000;
       let correct = false; 
       let realAnsDisplay = cur.ans;
@@ -801,7 +882,7 @@ export default {
           const t1 = (this.boxTimes[0] || 0) / 1000;
           const t2 = (this.boxTimes[1] || 0) / 1000;
           detailTimesStr = `百:${t1.toFixed(1)}s 十:${t2.toFixed(1)}s (个位默认0)`;
-          yourAnsStr = this.inputArray.join(' ') + ' 0'; // 显示记录时拼成好看的格式
+          yourAnsStr = this.inputArray.join(' ') + ' 0';
       } else if (mode === 'digitDetermine') {
           let tH = 0, tT = 0, tO = 0;
           if (this.input.length === 4) {
@@ -814,7 +895,15 @@ export default {
               tO = (this.boxTimes[2]||0) / 1000;
           }
           detailTimesStr = `千百:${tH.toFixed(1)}s 十:${tT.toFixed(1)}s 个:${tO.toFixed(1)}s`;
+      } else if (mode === 'decompAdd') {
+          // 提取拆解连加的三步耗时
+          const t1 = (this.boxTimes[0] || 0) / 1000;
+          const t2 = (this.boxTimes[1] || 0) / 1000;
+          const t3 = (this.boxTimes[2] || 0) / 1000;
+          detailTimesStr = `十位:${t1.toFixed(1)}s 个位:${t2.toFixed(1)}s 总和:${t3.toFixed(1)}s`;
+          yourAnsStr = `${this.inputArray[0]}, ${this.inputArray[1]}, ${this.inputArray[2]}`;
       }
+
       if (detailTimesStr) extraInfo.detailTimes = detailTimesStr;
 
       if (mode === 'divScale') {
@@ -850,7 +939,11 @@ export default {
           this.curWrongTries++; 
           this.input = ''; 
           this.inputArray = [];
-          if (['carryJudge', 'borrowJudge'].includes(mode)) this.boxTimes = [];
+          if (['carryJudge', 'borrowJudge', 'decompAdd'].includes(mode)) {
+              this.boxTimes = [];
+              this.lastInputTs = this.now();
+          }
+          if (mode === 'decompAdd') this.decompStep = 0; // 错误后退回第一步重做
           this.uiHint = `错误！答案是：${realAnsDisplay}`; 
         } 
         return; 
