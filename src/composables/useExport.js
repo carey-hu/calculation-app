@@ -1,10 +1,15 @@
 import { ref, computed } from 'vue';
 import {
   filterByDateRange,
-  buildWorkbookXml,
-  downloadExcelFile,
+  buildCsv,
+  downloadCsvFile,
   buildExportFilename,
 } from '../lib/export-excel';
+import {
+  buildTextReport,
+  buildTextFilename,
+  downloadTextFile,
+} from '../lib/export-text';
 
 const todayStr = () => {
   const d = new Date();
@@ -21,6 +26,8 @@ const daysAgoStr = (n) => {
 
 export function useExport({ historyListRef, showToast }) {
   const showExport = ref(false);
+  // 'csv' = full data sheet; 'text' = readable daily summary.
+  const exportFormat = ref('csv');
   const exportStart = ref(daysAgoStr(7));
   const exportEnd = ref(todayStr());
 
@@ -34,30 +41,45 @@ export function useExport({ historyListRef, showToast }) {
 
   const openExport = () => { showExport.value = true; };
   const closeExport = () => { showExport.value = false; };
+  const setExportFormat = (f) => { exportFormat.value = f; };
 
-  const doExport = () => {
+  const _validateAndCollect = () => {
     if (exportStart.value && exportEnd.value && exportStart.value > exportEnd.value) {
       showToast && showToast('起始日期不能晚于结束日期');
-      return;
+      return null;
     }
     const records = filteredRecords.value;
     if (records.length === 0) {
       showToast && showToast('所选时间段无记录');
-      return;
+      return null;
     }
-    const xml = buildWorkbookXml(records);
-    const filename = buildExportFilename(exportStart.value, exportEnd.value);
-    downloadExcelFile(filename, xml);
+    return records;
+  };
+
+  const doExport = () => {
+    const records = _validateAndCollect();
+    if (!records) return;
+    if (exportFormat.value === 'text') {
+      const text = buildTextReport(records, exportStart.value, exportEnd.value);
+      const filename = buildTextFilename(exportStart.value, exportEnd.value);
+      downloadTextFile(filename, text);
+    } else {
+      const csv = buildCsv(records);
+      const filename = buildExportFilename(exportStart.value, exportEnd.value);
+      downloadCsvFile(filename, csv);
+    }
     showToast && showToast(`已导出 ${records.length} 条`);
   };
 
   return {
     showExport,
+    exportFormat,
     exportStart,
     exportEnd,
     filteredCount,
     openExport,
     closeExport,
+    setExportFormat,
     doExport,
   };
 }

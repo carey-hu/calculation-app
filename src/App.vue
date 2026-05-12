@@ -261,20 +261,32 @@
            <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#007aff;" @click="initChart">📊 按模块分析趋势</button>
         </div>
         <div v-if="showExport" class="chart-container glass-inner">
-           <div style="font-weight:700; color:#1d1d1f; font-size:14px; margin-bottom:10px;">📥 导出区间数据到 Excel</div>
+           <div style="font-weight:700; color:#1d1d1f; font-size:14px; margin-bottom:10px;">📥 导出区间数据</div>
+           <div class="export-tabs">
+             <div :class="['export-tab', exportFormat === 'csv' ? 'active' : '']" @click="setExportFormat('csv')">数据表格 (CSV)</div>
+             <div :class="['export-tab', exportFormat === 'text' ? 'active' : '']" @click="setExportFormat('text')">练习统计 (文本)</div>
+           </div>
            <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
              <input type="date" v-model="exportStart" class="export-date-input" />
              <span style="font-size:13px; color:#8e8e93;">至</span>
              <input type="date" v-model="exportEnd" class="export-date-input" />
            </div>
-           <div style="font-size:12px; color:#8e8e93; margin-bottom:10px;">所选区间共 {{filteredCount}} 条记录</div>
+           <div style="font-size:12px; color:#8e8e93; margin-bottom:6px;">所选区间共 {{filteredCount}} 条记录</div>
+           <div v-if="exportFormat === 'csv'" style="font-size:11px; color:#8e8e93; margin-bottom:10px; line-height:1.5;">
+             CSV 通用格式，手机可直接预览，电脑用 Excel/WPS/Numbers 打开。
+           </div>
+           <div v-else style="font-size:11px; color:#8e8e93; margin-bottom:10px; line-height:1.5;">
+             文本报告，按日汇总练习时间、组数和各模式正确率。
+           </div>
            <div style="display:flex; gap:8px;">
              <button class="btnGhost small" style="font-size:13px; flex:1; height:40px; line-height:40px;" @click="closeExport">收起</button>
-             <button class="btnPrimary" style="height:40px; line-height:40px; font-size:14px; flex:2; box-shadow:none;" @click="doExport">导出 .xls</button>
+             <button class="btnPrimary" style="height:40px; line-height:40px; font-size:14px; flex:2; box-shadow:none;" @click="doExport">
+               {{ exportFormat === 'text' ? '导出 .txt' : '导出 .csv' }}
+             </button>
            </div>
         </div>
         <div v-else>
-           <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#34c759;" @click="openExport">📥 导出区间数据到 Excel</button>
+           <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#34c759;" @click="openExport">📥 导出区间数据 (表格 / 文本)</button>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:0 8px; font-weight:700; color:#8e8e93; font-size:13px;">
            <span>时间 / 模式</span><span>成绩 / 耗时</span>
@@ -448,10 +460,10 @@ const {
   switchChartTab, closeChart, initChart,
 } = chart;
 
-// Export to Excel
+// Export to CSV / Text report
 const {
-  showExport, exportStart, exportEnd, filteredCount,
-  openExport, closeExport, doExport,
+  showExport, exportFormat, exportStart, exportEnd, filteredCount,
+  openExport, closeExport, setExportFormat, doExport,
 } = exportTool;
 
 // 3D mode
@@ -885,5 +897,31 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
 .export-date-input:focus {
   border-color: rgba(0, 122, 255, 0.4);
   background: rgba(255, 255, 255, 0.85);
+}
+
+.export-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 10px;
+  background: rgba(118, 118, 128, 0.12);
+  border-radius: 12px;
+}
+.export-tab {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  padding: 7px 6px;
+  border-radius: 8px;
+  color: #666;
+  cursor: pointer;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s;
+}
+.export-tab.active {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
 }
 </style>

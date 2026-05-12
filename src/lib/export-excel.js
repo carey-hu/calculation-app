@@ -1,32 +1,19 @@
-// Pure-JS Excel exporter: builds a SpreadsheetML 2003 XML workbook (.xls)
-// that opens natively in Microsoft Excel, WPS Office, Numbers, and most
-// mobile spreadsheet apps. Avoids any extra npm dependency.
+// Pure-JS CSV exporter. Writes a UTF-8 BOM so Chinese characters render
+// correctly when opened in Excel on Windows. CSV previews natively in iOS
+// Files, Android, WeChat, Numbers, WPS, and most email/cloud clients.
 
-const xmlEscape = (val) => {
-  if (val === null || val === undefined) return '';
-  return String(val)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+const UTF8_BOM = '﻿';
+
+const parseDuration = (s) => {
+  const n = parseFloat(String(s || '').replace(/s$/i, ''));
+  return Number.isFinite(n) ? n : 0;
 };
-
-const cellNumber = (n) => `<Cell><Data ss:Type="Number">${n}</Data></Cell>`;
-const cellString = (s) => `<Cell><Data ss:Type="String">${xmlEscape(s)}</Data></Cell>`;
-
-const buildRow = (cells) => `<Row>${cells.join('')}</Row>`;
 
 const fullTimeStr = (ts) => {
   const d = new Date(ts);
   const pad = (n) => (n < 10 ? '0' + n : '' + n);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} `
     + `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-};
-
-const parseDuration = (s) => {
-  const n = parseFloat(String(s || '').replace(/s$/i, ''));
-  return Number.isFinite(n) ? n : 0;
 };
 
 const dateBoundary = (dateStr, endOfDay) => {
@@ -49,91 +36,83 @@ export const filterByDateRange = (records, startDate, endDate) => {
   });
 };
 
-const buildSummarySheet = (records) => {
-  const header = buildRow([
-    cellString('时间'),
-    cellString('模式'),
-    cellString('成绩'),
-    cellString('用时(秒)'),
-    cellString('题目数'),
-  ]);
-  const rows = records.map((r) => {
-    const detailLen = Array.isArray(r.detail) ? r.detail.length : 0;
-    return buildRow([
-      cellString(fullTimeStr(r.ts)),
-      cellString(r.modeName || r.mode || ''),
-      cellString(r.summary || ''),
-      cellNumber(parseDuration(r.duration).toFixed(1)),
-      cellNumber(detailLen),
-    ]);
-  });
-  return `<Worksheet ss:Name="训练汇总"><Table>${header}${rows.join('')}</Table></Worksheet>`;
+// RFC 4180: wrap a field in quotes if it contains comma, quote, CR, or LF.
+// Inside quotes, escape " as "". A leading = / + / - / @ gets a leading
+// apostrophe to neutralise Excel formula injection.
+const csvField = (val) => {
+  if (val === null || val === undefined) return '';
+  let s = String(val);
+  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  if (/[",\r\n]/.test(s)) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
 };
 
-const buildDetailSheet = (records) => {
-  const header = buildRow([
-    cellString('时间'),
-    cellString('模式'),
-    cellString('题号'),
-    cellString('题目'),
-    cellString('你的答案'),
-    cellString('是否正确'),
-    cellString('正确答案'),
-    cellString('单题用时'),
-    cellString('错误次数'),
-    cellString('是否跳过'),
-    cellString('分步用时'),
-  ]);
+const csvRow = (cells) => cells.map(csvField).join(',');
 
-  const rows = [];
+const buildSummaryLines = (records) => {
+  const lines = [];
+  lines.push(csvRow(['【训练汇总】']));
+  lines.push(csvRow(['时间', '模式', '成绩', '用时(秒)', '题目数']));
+  records.forEach((r) => {
+    const detailLen = Array.isArray(r.detail) ? r.detail.length : 0;
+    lines.push(csvRow([
+      fullTimeStr(r.ts),
+      r.modeName || r.mode || '',
+      r.summary || '',
+      parseDuration(r.duration).toFixed(1),
+      detailLen,
+    ]));
+  });
+  return lines;
+};
+
+const buildDetailLines = (records) => {
+  const lines = [];
+  lines.push(csvRow(['【题目详情】']));
+  lines.push(csvRow([
+    '时间', '模式', '题号', '题目', '你的答案', '是否正确',
+    '正确答案', '单题用时', '错误次数', '是否跳过', '分步用时',
+  ]));
   records.forEach((r) => {
     const details = Array.isArray(r.detail) ? r.detail : [];
     if (details.length === 0) {
-      rows.push(buildRow([
-        cellString(fullTimeStr(r.ts)),
-        cellString(r.modeName || r.mode || ''),
-        cellString(''),
-        cellString('(无明细)'),
-        cellString(''), cellString(''), cellString(''),
-        cellString(''), cellString(''), cellString(''), cellString(''),
+      lines.push(csvRow([
+        fullTimeStr(r.ts), r.modeName || r.mode || '',
+        '', '(无明细)', '', '', '', '', '', '', '',
       ]));
       return;
     }
     details.forEach((d, i) => {
       const okStr = d.ok === undefined ? '' : (d.ok ? '✓' : '✗');
-      rows.push(buildRow([
-        cellString(fullTimeStr(r.ts)),
-        cellString(r.modeName || r.mode || ''),
-        cellNumber(i + 1),
-        cellString(d.q || ''),
-        cellString(d.yourAns !== undefined ? d.yourAns : ''),
-        cellString(okStr),
-        cellString(d.realAns !== undefined ? d.realAns : ''),
-        cellString(d.usedStr || ''),
-        cellString(d.wrong !== undefined ? d.wrong : ''),
-        cellString(d.skipped ? '是' : ''),
-        cellString(d.detailTimes || ''),
+      lines.push(csvRow([
+        fullTimeStr(r.ts), r.modeName || r.mode || '',
+        i + 1, d.q || '',
+        d.yourAns !== undefined ? d.yourAns : '',
+        okStr,
+        d.realAns !== undefined ? d.realAns : '',
+        d.usedStr || '',
+        d.wrong !== undefined ? d.wrong : '',
+        d.skipped ? '是' : '',
+        d.detailTimes || '',
       ]));
     });
   });
-
-  return `<Worksheet ss:Name="题目详情"><Table>${header}${rows.join('')}</Table></Worksheet>`;
+  return lines;
 };
 
-export const buildWorkbookXml = (records) => {
-  const head = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    + '<?mso-application progid="Excel.Sheet"?>\n'
-    + '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n'
-    + ' xmlns:o="urn:schemas-microsoft-com:office:office"\n'
-    + ' xmlns:x="urn:schemas-microsoft-com:office:excel"\n'
-    + ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"\n'
-    + ' xmlns:html="http://www.w3.org/TR/REC-html40">';
-  const tail = '</Workbook>';
-  return head + buildSummarySheet(records) + buildDetailSheet(records) + tail;
+export const buildCsv = (records) => {
+  const lines = [
+    ...buildSummaryLines(records),
+    '',
+    ...buildDetailLines(records),
+  ];
+  return UTF8_BOM + lines.join('\r\n');
 };
 
-export const downloadExcelFile = (filename, xmlContent) => {
-  const blob = new Blob([xmlContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
+export const downloadCsvFile = (filename, csvContent) => {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -150,5 +129,5 @@ export const downloadExcelFile = (filename, xmlContent) => {
 
 export const buildExportFilename = (startDate, endDate) => {
   const fmt = (s) => (s ? s.replace(/-/g, '') : 'all');
-  return `历史记录_${fmt(startDate)}_${fmt(endDate)}.xls`;
+  return `历史记录_${fmt(startDate)}_${fmt(endDate)}.csv`;
 };
