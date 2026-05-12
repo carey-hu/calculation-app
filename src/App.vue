@@ -266,12 +266,15 @@
              <div :class="['export-tab', exportFormat === 'csv' ? 'active' : '']" @click="setExportFormat('csv')">数据表格 (CSV)</div>
              <div :class="['export-tab', exportFormat === 'text' ? 'active' : '']" @click="setExportFormat('text')">练习统计 (文本)</div>
            </div>
-           <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+           <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
              <input type="date" v-model="exportStart" class="export-date-input" />
              <span style="font-size:13px; color:#8e8e93;">至</span>
              <input type="date" v-model="exportEnd" class="export-date-input" />
+             <button class="export-quick-btn" @click="selectAllRange">全部</button>
            </div>
-           <div style="font-size:12px; color:#8e8e93; margin-bottom:6px;">所选区间共 {{filteredCount}} 条记录</div>
+           <div style="font-size:12px; color:#8e8e93; margin-bottom:6px;">
+             所选区间共 <span style="color:#1d1d1f; font-weight:700;">{{filteredCount}}</span> 条 / 全部 {{totalCount}} 条
+           </div>
            <div v-if="exportFormat === 'csv'" style="font-size:11px; color:#8e8e93; margin-bottom:10px; line-height:1.5;">
              CSV 通用格式，手机可直接预览，电脑用 Excel/WPS/Numbers 打开。
            </div>
@@ -462,8 +465,8 @@ const {
 
 // Export to CSV / Text report
 const {
-  showExport, exportFormat, exportStart, exportEnd, filteredCount,
-  openExport, closeExport, setExportFormat, doExport,
+  showExport, exportFormat, exportStart, exportEnd, filteredCount, totalCount,
+  openExport, closeExport, setExportFormat, selectAllRange, doExport,
 } = exportTool;
 
 // 3D mode
@@ -923,5 +926,22 @@ button { border: none; outline: none; cursor: pointer; font-family: inherit; }
   background: #fff;
   color: #000;
   box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.export-quick-btn {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 122, 255, 0.25);
+  background: rgba(0, 122, 255, 0.08);
+  color: #007aff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.export-quick-btn:active {
+  background: rgba(0, 122, 255, 0.18);
 }
 </style>

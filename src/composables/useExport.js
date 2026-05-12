@@ -24,11 +24,43 @@ const daysAgoStr = (n) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
+const tsToDateStr = (ts) => {
+  const d = new Date(ts);
+  const pad = (x) => (x < 10 ? '0' + x : '' + x);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+// Some old records may store ts as a numeric string; coerce defensively.
+const recordTs = (r) => {
+  if (typeof r.ts === 'number' && Number.isFinite(r.ts)) return r.ts;
+  if (typeof r.ts === 'string') {
+    const n = Number(r.ts);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+};
+
+const oldestRecordTs = (records) => {
+  let oldest = null;
+  for (const r of records) {
+    const ts = recordTs(r);
+    if (ts === null) continue;
+    if (oldest === null || ts < oldest) oldest = ts;
+  }
+  return oldest;
+};
+
+const oldestRecordDateStr = (records) => {
+  const oldest = oldestRecordTs(records);
+  return oldest !== null ? tsToDateStr(oldest) : daysAgoStr(7);
+};
+
 export function useExport({ historyListRef, showToast }) {
   const showExport = ref(false);
-  // 'csv' = full data sheet; 'text' = readable daily summary.
   const exportFormat = ref('csv');
-  const exportStart = ref(daysAgoStr(7));
+  // Default range spans every existing record so old data is visible without
+  // the user having to widen the picker manually.
+  const exportStart = ref(oldestRecordDateStr(historyListRef.value));
   const exportEnd = ref(todayStr());
 
   const filteredRecords = computed(() => filterByDateRange(
@@ -38,10 +70,16 @@ export function useExport({ historyListRef, showToast }) {
   ));
 
   const filteredCount = computed(() => filteredRecords.value.length);
+  const totalCount = computed(() => historyListRef.value.length);
 
   const openExport = () => { showExport.value = true; };
   const closeExport = () => { showExport.value = false; };
   const setExportFormat = (f) => { exportFormat.value = f; };
+
+  const selectAllRange = () => {
+    exportStart.value = oldestRecordDateStr(historyListRef.value);
+    exportEnd.value = todayStr();
+  };
 
   const _validateAndCollect = () => {
     if (exportStart.value && exportEnd.value && exportStart.value > exportEnd.value) {
@@ -77,9 +115,11 @@ export function useExport({ historyListRef, showToast }) {
     exportStart,
     exportEnd,
     filteredCount,
+    totalCount,
     openExport,
     closeExport,
     setExportFormat,
+    selectAllRange,
     doExport,
   };
 }

@@ -25,13 +25,24 @@ const dateBoundary = (dateStr, endOfDay) => {
     : new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
 };
 
+// Tolerate older records that may have stored ts as a numeric string.
+const recordTs = (r) => {
+  if (typeof r.ts === 'number' && Number.isFinite(r.ts)) return r.ts;
+  if (typeof r.ts === 'string') {
+    const n = Number(r.ts);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+};
+
 export const filterByDateRange = (records, startDate, endDate) => {
   const startTs = dateBoundary(startDate, false);
   const endTs = dateBoundary(endDate, true);
   return records.filter((r) => {
-    if (typeof r.ts !== 'number') return false;
-    if (startTs !== null && r.ts < startTs) return false;
-    if (endTs !== null && r.ts > endTs) return false;
+    const ts = recordTs(r);
+    if (ts === null) return false;
+    if (startTs !== null && ts < startTs) return false;
+    if (endTs !== null && ts > endTs) return false;
     return true;
   });
 };
