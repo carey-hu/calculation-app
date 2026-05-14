@@ -1,14 +1,16 @@
 import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import * as echarts from 'echarts';
+import type { EChartsType } from 'echarts';
+import type { HistoryRecord } from '../types';
 import { aggregateChartData, buildChartOption } from '../lib/chart';
 
-export function useChart(historyListRef) {
+export function useChart(historyListRef: { value: HistoryRecord[] }) {
   const showChart = ref(false);
   const chartTab = ref('');
-  const availableModes = ref([]);
-  let chartInstance = null;
+  const availableModes = ref<string[]>([]);
+  let chartInstance: EChartsType | null = null;
 
-  const renderChart = (modeName) => {
+  const renderChart = (modeName: string) => {
     const dom = document.getElementById('accChart');
     if (!dom) return;
     if (chartInstance) chartInstance.dispose();
@@ -29,7 +31,7 @@ export function useChart(historyListRef) {
     nextTick(() => renderChart(chartTab.value));
   };
 
-  const switchChartTab = (modeName) => {
+  const switchChartTab = (modeName: string) => {
     chartTab.value = modeName;
     renderChart(modeName);
   };

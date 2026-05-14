@@ -1,8 +1,10 @@
 import * as THREE from 'three';
+import type { ExamShapeDef } from '../types';
 
-const extrude = (shape, opts) => new THREE.ExtrudeGeometry(shape, { bevelEnabled: false, ...opts });
+const extrude = (shape: THREE.Shape, opts: Record<string, unknown>): THREE.ExtrudeGeometry =>
+  new THREE.ExtrudeGeometry(shape, { bevelEnabled: false, ...opts });
 
-const createHollowCylinder = () => {
+const createHollowCylinder = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.absarc(0, 0, 4, 0, Math.PI * 2, false);
   const hole = new THREE.Path();
@@ -11,7 +13,7 @@ const createHollowCylinder = () => {
   return extrude(shape, { depth: 8, curveSegments: 64 });
 };
 
-const createHollowPrism = () => {
+const createHollowPrism = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-4, -4);
   shape.lineTo(4, -4); shape.lineTo(4, 4); shape.lineTo(-4, 4); shape.lineTo(-4, -4);
@@ -21,7 +23,7 @@ const createHollowPrism = () => {
   return extrude(shape, { depth: 8 });
 };
 
-const createFrameShape = () => {
+const createFrameShape = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-4, -4); shape.lineTo(4, -4); shape.lineTo(4, 4); shape.lineTo(-4, 4); shape.lineTo(-4, -4);
   const hole = new THREE.Path();
@@ -30,7 +32,7 @@ const createFrameShape = () => {
   return extrude(shape, { depth: 2 });
 };
 
-const createUShape = () => {
+const createUShape = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-3, -3); shape.lineTo(3, -3); shape.lineTo(3, 3);
   shape.lineTo(1, 3); shape.lineTo(1, -1); shape.lineTo(-1, -1);
@@ -38,14 +40,14 @@ const createUShape = () => {
   return extrude(shape, { depth: 6 });
 };
 
-const createLShape = () => {
+const createLShape = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(0, 0); shape.lineTo(4, 0); shape.lineTo(4, 2);
   shape.lineTo(2, 2); shape.lineTo(2, 6); shape.lineTo(0, 6); shape.lineTo(0, 0);
   return extrude(shape, { depth: 4 });
 };
 
-const createCrossShape = () => {
+const createCrossShape = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   const w = 2;
   const l = 6;
@@ -59,14 +61,14 @@ const createCrossShape = () => {
   return extrude(shape, { depth: 2 });
 };
 
-const createNotchedCube = () => {
+const createNotchedCube = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-3, -3); shape.lineTo(3, -3); shape.lineTo(3, 1);
   shape.lineTo(1, 3); shape.lineTo(-3, 3);
   return extrude(shape, { depth: 6 });
 };
 
-const createTShape = () => {
+const createTShape = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-1.5, -4); shape.lineTo(1.5, -4); shape.lineTo(1.5, 2);
   shape.lineTo(4, 2); shape.lineTo(4, 4); shape.lineTo(-4, 4);
@@ -74,7 +76,7 @@ const createTShape = () => {
   return extrude(shape, { depth: 3 });
 };
 
-const createCubeWithHole = () => {
+const createCubeWithHole = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-3, -3); shape.lineTo(3, -3); shape.lineTo(3, 3); shape.lineTo(-3, 3);
   const hole = new THREE.Path();
@@ -83,7 +85,7 @@ const createCubeWithHole = () => {
   return extrude(shape, { depth: 6, curveSegments: 64 });
 };
 
-const createCylinderWithRectHole = () => {
+const createCylinderWithRectHole = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.absarc(0, 0, 4, 0, Math.PI * 2, false);
   const hole = new THREE.Path();
@@ -93,7 +95,7 @@ const createCylinderWithRectHole = () => {
   return extrude(shape, { depth: 8, curveSegments: 64 });
 };
 
-const createArchShape = () => {
+const createArchShape = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-3, 0); shape.lineTo(3, 0); shape.lineTo(3, 4);
   shape.absarc(0, 4, 3, 0, Math.PI, false);
@@ -106,21 +108,21 @@ const createArchShape = () => {
   return extrude(shape, { depth: 2, curveSegments: 32 });
 };
 
-const createTrapezoidPrism = () => {
+const createTrapezoidPrism = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-4, -2); shape.lineTo(4, -2); shape.lineTo(2, 2);
   shape.lineTo(-2, 2); shape.lineTo(-4, -2);
   return extrude(shape, { depth: 8 });
 };
 
-const createSemiCylinder = () => {
+const createSemiCylinder = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.absarc(0, 0, 4, 0, Math.PI, false);
   shape.lineTo(-4, 0);
   return extrude(shape, { depth: 8, curveSegments: 32 });
 };
 
-const createSectorPrism = () => {
+const createSectorPrism = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(0, 0); shape.lineTo(4, 0);
   shape.absarc(0, 0, 4, 0, Math.PI / 2, false);
@@ -128,7 +130,7 @@ const createSectorPrism = () => {
   return extrude(shape, { depth: 6, curveSegments: 32 });
 };
 
-const createTwoHoleBrick = () => {
+const createTwoHoleBrick = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-4, -2); shape.lineTo(4, -2); shape.lineTo(4, 2);
   shape.lineTo(-4, 2); shape.lineTo(-4, -2);
@@ -141,7 +143,7 @@ const createTwoHoleBrick = () => {
   return extrude(shape, { depth: 4, curveSegments: 32 });
 };
 
-const createStaircase = () => {
+const createStaircase = (): THREE.ExtrudeGeometry => {
   const shape = new THREE.Shape();
   shape.moveTo(-3, -3);
   shape.lineTo(3, -3); shape.lineTo(3, -1);
@@ -151,7 +153,7 @@ const createStaircase = () => {
   return extrude(shape, { depth: 4 });
 };
 
-export const EXAM_SHAPES = {
+export const EXAM_SHAPES: Record<string, ExamShapeDef[]> = {
   basic: [
     { name: '正方体', create: () => new THREE.BoxGeometry(6, 6, 6) },
     { name: '长方体(扁)', create: () => new THREE.BoxGeometry(4, 8, 2) },

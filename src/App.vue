@@ -10,421 +10,117 @@
       <div class="toast-content">{{ toast.title }}</div>
     </div>
 
-    <div v-if="viewState==='home'" class="wrap homeWrap">
+    <HomeView
+      v-if="viewState === 'home'"
+      :modeGroups="modeGroups"
+      :currentModeKey="currentModeKey"
+      @setMode="setMode"
+      @toSelectDivisor="toSelectDivisor"
+      @startGame="startGame"
+      @openHistory="openHistory"
+      @startCubicMode="startCubicMode"
+    />
 
-      <div class="header-area">
-        <div class="title">计算助手</div>
-        <div class="subtitle">专项练习：进位加、退位减、大九九除法</div>
-      </div>
+    <SelectDivisorView
+      v-if="viewState === 'selectDivisor'"
+      :divisorList="divisorList"
+      @selectDivisorAndStart="selectDivisorAndStart"
+      @goHome="goHome"
+    />
 
-      <div class="menu-area-fixed">
-        <div class="card glass-panel full-menu-card">
-          <div class="menu-scroll-container">
-            <template v-for="(group, groupKey) in modeGroups" :key="groupKey">
-              <div class="rowLabel" v-if="group.label">{{ group.label }}</div>
+    <GameView
+      v-if="viewState === 'game'"
+      :currentModeKey="currentModeKey"
+      :input="input"
+      :inputArray="inputArray"
+      :decompStep="decompStep"
+      :uiHint="uiHint"
+      :totalText="totalText"
+      :progressText="progressText"
+      :qText="qText"
+      :leftText="leftText"
+      :activeConfig="activeConfig"
+      :isSmallFont="isSmallFont"
+      @goHome="goHome"
+      @pressDigit="pressDigit"
+      @pressDot="pressDot"
+      @clearInput="clearInput"
+      @backspace="backspace"
+      @leftAction="leftAction"
+      @confirmAnswer="confirmAnswer"
+    />
 
-              <div v-if="groupKey === 'divSelect'" style="margin-bottom: 10px;">
-                  <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="toSelectDivisor">
-                  进入除数选择模式
-                </button>
-              </div>
+    <ResultView
+      v-if="viewState === 'result'"
+      :currentModeKey="currentModeKey"
+      :resultTitle="resultTitle"
+      :resultMeta="resultMeta"
+      :trainLog="trainLog"
+      :results="results"
+      :isHistoryReview="isHistoryReview"
+      @goHome="goHome"
+      @startGame="startGame"
+      @backToHistory="backToHistory"
+    />
 
-              <div class="modeRow" v-else>
-                <div
-                  v-for="modeKey in group.modes"
-                  :key="modeKey"
-                  :class="['modeItem', currentModeKey === modeKey ? 'active' : '']"
-                  @click="setMode(modeKey)"
-                >
-                  <span class="modeTitle">{{ getModeConfig(modeKey).name }}</span>
-                </div>
-              </div>
-            </template>
+    <HistoryView
+      v-if="viewState === 'history'"
+      :historyList="historyList"
+      :showChart="showChart"
+      :chartTab="chartTab"
+      :availableModes="availableModes"
+      :showExport="showExport"
+      :exportFormat="exportFormat"
+      :exportStart="exportStart"
+      :exportEnd="exportEnd"
+      :filteredCount="filteredCount"
+      :totalCount="totalCount"
+      @switchChartTab="switchChartTab"
+      @closeChart="closeChart"
+      @initChart="initChart"
+      @openExport="openExport"
+      @closeExport="closeExport"
+      @setExportFormat="setExportFormat"
+      @selectAllRange="selectAllRange"
+      @doExport="doExport"
+      @viewHistoryDetail="viewHistoryDetail"
+      @clearOldest="clearOldest"
+      @clearHistory="clearHistory"
+      @closeHistory="closeHistory"
+      @update:exportStart="exportStart = $event"
+      @update:exportEnd="exportEnd = $event"
+    />
 
-            <div class="rowLabel">空间思维专项 (公考行测)</div>
-            <div class="modeRow">
-               <div class="modeItem" style="flex: 1 0 45%; background: rgba(0,122,255,0.08); border-color: rgba(0,122,255,0.2);" @click="startCubicMode('block')">
-                  <span class="modeTitle" style="color: #007aff;">🧱 立体拼合</span>
-               </div>
-               <div class="modeItem" style="flex: 1 0 45%; background: rgba(88,86,214,0.1); border-color: rgba(88,86,214,0.2);" @click="startCubicMode('section')">
-                  <span class="modeTitle" style="color: #5856d6;">🔪 立体截面</span>
-               </div>
-            </div>
-            <div style="height: 20px;"></div>
-          </div>
-
-          <div class="card-bottom-actions">
-            <div class="separator-line"></div>
-            <button class="btnPrimary main-action-btn" @click="startGame">开始练习</button>
-            <button class="btnHistory main-action-btn" @click="openHistory">历史记录</button>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-
-    <div v-if="viewState==='selectDivisor'" class="wrap homeWrap">
-      <div class="header-area">
-        <div class="title">选择除数</div>
-        <div class="subtitle">点击下方数字开始练习商首位</div>
-      </div>
-      <div class="card glass-panel" style="flex:1; overflow-y:auto;">
-        <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">
-          <button v-for="item in divisorList" :key="item" class="k glass-key" style="font-size:20px; height:50px; line-height:50px;" @click="selectDivisorAndStart(item)">{{item}}</button>
-        </div>
-        <button class="btnGhost glass-btn main-action-btn" style="margin-top: 20px;" @click="goHome">返回主页</button>
-      </div>
-    </div>
-
-    <div v-if="viewState==='game'" class="wrap gameRoot">
-      <div class="topbar safe-top">
-        <button class="btnBack glass-btn" @click="goHome">返回</button>
-        <div class="topStats">
-          <div class="stat glass-pill">{{progressText}}</div>
-          <div class="stat glass-pill timer">⏱ {{totalText}}</div>
-        </div>
-      </div>
-      <div class="gameMain">
-        <div class="card qCard glass-panel">
-          <div :class="['qText', isSmallFont ? 'qText-small' : '']">{{qText}}</div>
-          <div class="qNote">{{activeConfig.hintNote || activeConfig.hint || '精确到整数'}}</div>
-
-          <template v-if="currentModeKey === 'divScale'">
-            <div class="ansBox glass-input" style="display: flex; justify-content: center; align-items: center; gap: 12px; padding: 12px;">
-              <div style="flex: 1; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 16px; height: 54px; line-height: 54px; font-size: 36px;">
-                {{ input.slice(0, 3) }}<span v-if="input.length < 3" style="color: #ccc;">_</span>
-              </div>
-              <div style="font-size: 32px; color: #1c1c1e;">÷</div>
-              <div style="width: 70px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 16px; height: 54px; line-height: 54px; font-size: 36px;">
-                {{ input.slice(3, 4) || '_' }}
-              </div>
-            </div>
-          </template>
-
-          <template v-else-if="['carryJudge', 'borrowJudge'].includes(currentModeKey)">
-            <div class="ansBox glass-input" style="display: flex; justify-content: center; align-items: center; gap: 15px; padding: 12px; background: transparent; border: none; box-shadow: none;">
-              <div style="text-align:center;">
-                <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">百位</div>
-                <div style="width: 60px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 16px; height: 60px; line-height: 60px; font-size: 30px; color: #1c1c1e;">{{ inputArray[0] !== undefined ? inputArray[0] : '_' }}</div>
-              </div>
-              <div style="text-align:center;">
-                <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">十位</div>
-                <div style="width: 60px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 16px; height: 60px; line-height: 60px; font-size: 30px; color: #1c1c1e;">{{ inputArray[1] !== undefined ? inputArray[1] : '_' }}</div>
-              </div>
-              <div style="text-align:center;">
-                <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">个位</div>
-                <div style="width: 60px; background: rgba(0,0,0,0.03); border: 2px solid rgba(0,0,0,0.1); border-radius: 16px; height: 60px; line-height: 60px; font-size: 30px; color: #8e8e93;">0</div>
-              </div>
-            </div>
-          </template>
-
-          <template v-else-if="currentModeKey === 'digitDetermine'">
-            <div class="ansBox glass-input" style="display: flex; justify-content: center; align-items: center; gap: 12px; padding: 12px; background: transparent; border: none; box-shadow: none;">
-              <div style="text-align:center;">
-                <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">千/百位</div>
-                <div style="display:flex; gap: 6px;">
-                  <div style="width: 45px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 14px; height: 60px; line-height: 60px; font-size: 36px; color: #1c1c1e;">{{ input[0] || '_' }}</div>
-                  <div style="width: 45px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 14px; height: 60px; line-height: 60px; font-size: 36px; color: #1c1c1e;">{{ input[1] || '_' }}</div>
-                </div>
-              </div>
-              <div style="text-align:center;">
-                <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">十位</div>
-                <div style="width: 45px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 14px; height: 60px; line-height: 60px; font-size: 36px; color: #1c1c1e;">{{ input[2] || '_' }}</div>
-              </div>
-              <div style="text-align:center;">
-                <div style="font-size:14px; color:#8e8e93; margin-bottom:6px;">个位</div>
-                <div style="width: 45px; background: rgba(0,122,255,0.08); border: 2px solid rgba(0,122,255,0.2); border-radius: 14px; height: 60px; line-height: 60px; font-size: 36px; color: #1c1c1e;">{{ input[3] || '_' }}</div>
-              </div>
-            </div>
-          </template>
-
-          <template v-else-if="currentModeKey === 'decompAdd'">
-            <div class="ansBox glass-input" style="display: flex; flex-direction: column; gap: 8px; padding: 10px; background: transparent; border: none; box-shadow: none;">
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="font-size:15px; color:#8e8e93; width: 75px; text-align: left;">十位之和</div>
-                <div :style="{ flex: 1, height: '40px', lineHeight: '40px', background: decompStep === 0 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 0 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '22px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
-                  {{ decompStep === 0 ? (input || '_') : (inputArray[0] !== undefined ? inputArray[0] : '') }}
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="font-size:15px; color:#8e8e93; width: 75px; text-align: left;">个位之和</div>
-                <div :style="{ flex: 1, height: '40px', lineHeight: '40px', background: decompStep === 1 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 1 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '22px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
-                  {{ decompStep === 1 ? (input || '_') : (inputArray[1] !== undefined ? inputArray[1] : '') }}
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="font-size:15px; color:#8e8e93; width: 75px; text-align: left;">总和</div>
-                <div :style="{ flex: 1, height: '40px', lineHeight: '40px', background: decompStep === 2 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 2 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '22px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
-                  {{ decompStep === 2 ? (input || '_') : (inputArray[2] !== undefined ? inputArray[2] : '') }}
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <template v-else>
-            <div class="ansBox glass-input">答案：{{input ? input : '—'}}</div>
-          </template>
-
-          <div class="hint" v-if="uiHint">{{uiHint}}</div>
-        </div>
-      </div>
-      <div class="keypad card glass-panel">
-        <div class="fnRow">
-          <button class="kFn style-skip" @click="leftAction">{{leftText}}</button>
-          <button class="kFn style-clear" @click="clearInput">清空</button>
-          <button class="kFn style-del" @click="backspace">退格</button>
-        </div>
-
-        <div class="grid" v-if="currentModeKey === 'carryJudge'" style="grid-template-columns: 1fr 1fr;">
-          <button class="k glass-key" style="height: 140px; font-size: 48px; color: #34c759;" @click="pressDigit('1')">1<span style="font-size:16px; display:block;">(进位)</span></button>
-          <button class="k glass-key" style="height: 140px; font-size: 48px; color: #ff3b30;" @click="pressDigit('0')">0<span style="font-size:16px; display:block;">(不进)</span></button>
-          <button class="k confirm glass-key-confirm" style="grid-column: 1 / 3;" @click="confirmAnswer">确认</button>
-        </div>
-
-        <div class="grid" v-else-if="currentModeKey === 'borrowJudge'" style="grid-template-columns: 1fr 1fr;">
-          <button class="k glass-key" style="height: 140px; font-size: 48px; color: #ff3b30;" @click="pressDigit('-1')">-1<span style="font-size:16px; display:block;">(退位)</span></button>
-          <button class="k glass-key" style="height: 140px; font-size: 48px; color: #34c759;" @click="pressDigit('0')">0<span style="font-size:16px; display:block;">(不退)</span></button>
-          <button class="k confirm glass-key-confirm" style="grid-column: 1 / 3;" @click="confirmAnswer">确认</button>
-        </div>
-
-        <div class="grid" v-else>
-          <button v-for="item in [1,2,3,4,5,6,7,8,9]" :key="item" class="k glass-key" @click="pressDigit(item)">{{item}}</button>
-          <button class="k glass-key" @click="pressDot">.</button>
-          <button class="k glass-key" @click="pressDigit(0)">0</button>
-          <button class="k confirm glass-key-confirm" @click="confirmAnswer">确认</button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="viewState==='result'" class="wrap full-height">
-      <div class="header-area safe-header">
-        <div class="title">{{resultTitle}}</div>
-        <div class="subtitle">{{resultMeta}}</div>
-      </div>
-      <div class="card full-flex glass-panel">
-        <div class="resultScroll">
-          <template v-if="currentModeKey==='train'">
-            <div v-for="(item, index) in trainLog" :key="index" class="row">
-              <span class="rowLeft" style="white-space: normal; word-break: break-all; overflow: visible; line-height: 1.4;">{{index+1}}. {{item.q}}</span>
-              <span class="rowRight">
-                <span :style="{ color: parseFloat(item.usedStr) > 2 ? '#ff3b30' : 'inherit' }">{{item.usedStr}}</span> / 错{{item.wrong}}{{item.skipped?'(跳)':''}}
-              </span>
-            </div>
-          </template>
-          <template v-else>
-            <div v-for="(item, index) in results" :key="index" class="row">
-              <span class="rowLeft" style="white-space: normal; word-break: break-all; overflow: visible; line-height: 1.4;">{{index+1}}. {{item.q}} = {{item.yourAns}}</span>
-              <span class="rowRight" style="display:flex; flex-direction:column; align-items:flex-end;">
-                  <div>
-                      <span style="margin-right:4px; font-size:13px; color:#666;">{{item.usedStr}}</span>
-                      <span>{{item.ok ? '✅' : '❌'}}</span>
-                      <span v-if="!item.ok" style="color:#ff3b30; font-size:13px; margin-left:2px; font-weight:700;">({{item.realAns}})</span>
-                  </div>
-                  <div v-if="item.exactAns" :style="{ fontSize:'11px', color: item.ok ? '#007aff' : '#ff3b30', marginTop:'2px', fontWeight:500 }">
-                      准:{{ item.exactAns }} 误:{{ item.errorRate }}
-                      <span v-if="item.exactDividend" style="margin-left:4px;">准被除数:{{ item.exactDividend }}</span>
-                  </div>
-                  <div v-if="item.detailTimes" style="font-size:11px; color:#8e8e93; margin-top:2px;">
-                      分步用时: {{ item.detailTimes }}
-                  </div>
-              </span>
-            </div>
-          </template>
-        </div>
-        <div style="margin-top: 15px;">
-          <div v-if="isHistoryReview">
-            <button class="btnPrimary glass-primary main-action-btn" @click="backToHistory">返回列表</button>
-          </div>
-          <div v-else>
-            <button class="btnPrimary glass-primary main-action-btn" @click="goHome">返回主页</button>
-            <button class="btnGhost glass-btn main-action-btn" @click="startGame" style="margin-top:10px;">再来一局</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="viewState==='history'" class="wrap full-height">
-      <div class="header-area safe-header">
-        <div class="title">历史记录</div>
-        <div class="subtitle">仅保留最近5000条训练数据</div>
-      </div>
-      <div class="card full-flex glass-panel">
-        <div v-if="showChart" class="chart-container glass-inner">
-           <div class="chart-tabs">
-             <div v-for="m in availableModes" :key="m" :class="['chart-tab-item', chartTab === m ? 'active' : '']" @click="switchChartTab(m)">{{ m }}</div>
-           </div>
-           <div id="accChart" style="width: 100%; height: 220px;"></div>
-           <button class="btnGhost small" style="margin-top:5px; font-size:13px;" @click="closeChart">收起图表</button>
-        </div>
-        <div v-else>
-           <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#007aff;" @click="initChart">📊 按模块分析趋势</button>
-        </div>
-        <div v-if="showExport" class="chart-container glass-inner">
-           <div style="font-weight:700; color:#1d1d1f; font-size:14px; margin-bottom:10px;">📥 导出区间数据</div>
-           <div class="export-tabs">
-             <div :class="['export-tab', exportFormat === 'csv' ? 'active' : '']" @click="setExportFormat('csv')">数据表格 (CSV)</div>
-             <div :class="['export-tab', exportFormat === 'text' ? 'active' : '']" @click="setExportFormat('text')">练习统计 (文本)</div>
-           </div>
-           <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-             <input type="date" v-model="exportStart" class="export-date-input" />
-             <span style="font-size:13px; color:#8e8e93;">至</span>
-             <input type="date" v-model="exportEnd" class="export-date-input" />
-             <button class="export-quick-btn" @click="selectAllRange">全部</button>
-           </div>
-           <div style="font-size:12px; color:#8e8e93; margin-bottom:6px;">
-             所选区间共 <span style="color:#1d1d1f; font-weight:700;">{{filteredCount}}</span> 条 / 全部 {{totalCount}} 条
-           </div>
-           <div v-if="exportFormat === 'csv'" style="font-size:11px; color:#8e8e93; margin-bottom:10px; line-height:1.5;">
-             CSV 通用格式，手机可直接预览，电脑用 Excel/WPS/Numbers 打开。
-           </div>
-           <div v-else style="font-size:11px; color:#8e8e93; margin-bottom:10px; line-height:1.5;">
-             文本报告，按日汇总练习时间、组数和各模式正确率。
-           </div>
-           <div style="display:flex; gap:8px;">
-             <button class="btnGhost small" style="font-size:13px; flex:1; height:40px; line-height:40px;" @click="closeExport">收起</button>
-             <button class="btnPrimary" style="height:40px; line-height:40px; font-size:14px; flex:2; box-shadow:none;" @click="doExport">
-               {{ exportFormat === 'text' ? '导出 .txt' : '导出 .csv' }}
-             </button>
-           </div>
-        </div>
-        <div v-else>
-           <button class="btnGhost glass-btn" style="height:44px; line-height:44px; font-size:16px; margin-bottom:15px; color:#34c759;" @click="openExport">📥 导出区间数据 (表格 / 文本)</button>
-        </div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:0 8px; font-weight:700; color:#8e8e93; font-size:13px;">
-           <span>时间 / 模式</span><span>成绩 / 耗时</span>
-        </div>
-        <div class="resultScroll">
-          <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; color:rgba(0,0,0,0.4);">暂无记录，快去练习吧！</div>
-          <div v-else>
-            <div v-for="(item, index) in historyList" :key="item.ts" class="row hover-row" @click="viewHistoryDetail(index)" style="cursor:pointer;">
-              <div class="rowLeft" style="display:flex; flex-direction:column;">
-                <span style="font-size:12px; color:#8e8e93;">{{item.timeStr}}</span>
-                <span style="font-weight:700; color:#1d1d1f; font-size:15px;">{{item.modeName}}</span>
-              </div>
-              <div class="rowRight" style="display:flex; flex-direction:column; align-items:flex-end;">
-                <span style="font-size:16px; color:#007aff; font-weight:800;">{{item.summary}}</span>
-                <span style="font-size:12px; color:#8e8e93;">{{item.duration}} > </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top: 15px; display:flex; flex-direction: column; gap:10px;">
-          <button v-if="historyList.length > 1000" class="btnGhost glass-btn" style="margin:0; height: 40px; font-size: 16px; color: #ff3b30; background: rgba(255,59,48,0.08); border-color: rgba(255,59,48,0.2);" @click="clearOldest">🗑️ 清理最早的 1000 条</button>
-          <div style="display:flex; gap:10px;">
-            <button class="btnDanger glass-btn main-action-btn" style="margin:0; flex:1;" @click="clearHistory">清空全部</button>
-            <button class="btnPrimary glass-primary main-action-btn" style="margin:0; flex:1;" @click="closeHistory">返回主页</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="viewState==='cubic'" class="wrap full-height" style="padding:0; overflow:hidden;">
-      <div id="three-container" style="width:100%; height:100%; display:block; outline:none; touch-action: none;"></div>
-
-      <div class="cubic-ui safe-top">
-        <div class="glass-panel" style="padding: 8px 12px; display: flex; gap: 8px; align-items: center; border-radius: 24px; max-width: 98%; overflow-x: auto;">
-          <button class="btnBack glass-btn small-btn" @click="quitCubicMode">🔙</button>
-          <div class="divider"></div>
-
-          <template v-if="cubicMode === 'section'">
-             <div style="position:relative;">
-                <button class="btnGhost small-btn" @click="showShapeMenu = !showShapeMenu" style="font-size:13px; color:#5856d6; font-weight:700;">
-                  📂 题库 ({{ currentShapeName }})
-                </button>
-             </div>
-             <div class="divider"></div>
-             <button class="view-btn" style="background:#000; color:#fff; border:none;" @click="lookAtSection">👀 正视切面</button>
-          </template>
-
-          <template v-else>
-            <div style="display:flex; gap:4px;">
-              <div v-for="c in colors" :key="c"
-                :style="{backgroundColor: c, border: c === '#ffffff' ? '1px solid #ccc' : 'none'}"
-                :class="['color-dot', selectedColor === c && !isDeleteMode ? 'active' : '']"
-                @click="switchColor(c)"></div>
-            </div>
-            <div class="divider"></div>
-            <button :class="['btnIcon', isDeleteMode ? 'active' : '']" @click="toggleDeleteMode">🗑️</button>
-            <button class="btnIcon" @click="clearCubes">🔄</button>
-          </template>
-        </div>
-
-        <div class="view-selector glass-panel">
-          <button class="view-btn" @click="setCameraView('front')">正</button>
-          <button class="view-btn" @click="setCameraView('left')">左</button>
-          <button class="view-btn" @click="setCameraView('top')">俯</button>
-          <button class="view-btn" @click="setCameraView('iso')">轴</button>
-        </div>
-
-        <div class="tip-toast" v-if="cubicMode === 'block'">点击地面放置，点击方块叠加</div>
-        <div class="tip-toast" v-if="cubicMode === 'section'" style="background:rgba(88,86,214,0.85);">请调节下方滑块观察截面变化</div>
-      </div>
-
-      <div v-if="showShapeMenu && cubicMode === 'section'" class="shape-menu-container">
-        <div class="shape-menu glass-panel">
-          <div class="shape-group-title">基础柱体/多面体</div>
-          <div class="shape-grid">
-            <div v-for="s in examShapes.basic" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
-          </div>
-          <div class="shape-group-title">曲面体 (锥/台/球)</div>
-          <div class="shape-grid">
-            <div v-for="s in examShapes.curved" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
-          </div>
-          <div class="shape-group-title">高频挖空 (修复版)</div>
-          <div class="shape-grid">
-            <div v-for="s in examShapes.hollow" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
-          </div>
-          <div class="shape-group-title">组合与拼接</div>
-          <div class="shape-grid">
-            <div v-for="s in examShapes.composite" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
-          </div>
-          <div class="shape-group-title">异形构造</div>
-          <div class="shape-grid">
-            <div v-for="s in examShapes.special" :key="s.name" class="shape-item" @click="loadExamShape(s)">{{ s.name }}</div>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="cubicMode === 'section'" :class="['slice-panel-container', sliceMenuCollapsed ? 'collapsed' : '']">
-        <div class="glass-panel slice-panel-content">
-            <div class="panel-header" @click="sliceMenuCollapsed = !sliceMenuCollapsed">
-              <div class="sheet-handle"></div>
-              <div class="header-row">
-                <span class="header-title">📐 切面调节</span>
-                <span class="header-toggle-text">{{ sliceMenuCollapsed ? '展开' : '收起' }}</span>
-              </div>
-            </div>
-
-            <div v-if="!sliceMenuCollapsed" class="controls-body">
-              <div class="slice-row">
-                <span class="slice-label">位移</span>
-                <input type="range" min="-8" max="8" step="0.1" v-model.number="sliceConfig.constant" class="slice-slider">
-              </div>
-              <div class="slice-row">
-                <span class="slice-label">X旋转</span>
-                <input type="range" min="0" max="180" step="1" v-model.number="sliceConfig.rotX" class="slice-slider">
-              </div>
-              <div class="slice-row">
-                <span class="slice-label">Y旋转</span>
-                <input type="range" min="0" max="180" step="1" v-model.number="sliceConfig.rotY" class="slice-slider">
-              </div>
-              <div class="slice-row">
-                <span class="slice-label">Z旋转</span>
-                <input type="range" min="0" max="180" step="1" v-model.number="sliceConfig.rotZ" class="slice-slider">
-              </div>
-              <div style="margin-top: 12px;">
-                  <button class="btnGhost ios-reset-btn" @click="resetSlice">重置位置</button>
-              </div>
-            </div>
-        </div>
-      </div>
-
-    </div>
+    <CubicView
+      v-if="viewState === 'cubic'"
+      :cubicMode="cubicMode"
+      :isDeleteMode="isDeleteMode"
+      :showShapeMenu="showShapeMenu"
+      :sliceMenuCollapsed="sliceMenuCollapsed"
+      :currentShapeName="currentShapeName"
+      :colors="colors"
+      :selectedColor="selectedColor"
+      :sliceConfig="sliceConfig"
+      :examShapes="examShapes"
+      @quitCubicMode="quitCubicMode"
+      @toggleShapeMenu="showShapeMenu = !showShapeMenu"
+      @toggleSliceMenu="sliceMenuCollapsed = !sliceMenuCollapsed"
+      @switchColor="switchColor"
+      @toggleDeleteMode="toggleDeleteMode"
+      @setCameraView="setThreeCameraView"
+      @lookAtSection="lookAtSection"
+      @loadExamShape="loadExamShape"
+      @clearCubes="clearCubes"
+      @resetSlice="resetSlice"
+      @update:sliceConstant="sliceConfig.constant = $event"
+      @update:sliceRotX="sliceConfig.rotX = $event"
+      @update:sliceRotY="sliceConfig.rotY = $event"
+      @update:sliceRotZ="sliceConfig.rotZ = $event"
+    />
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onBeforeUnmount } from 'vue';
 import { MODE_GROUPS, DIVISOR_LIST, getModeConfig } from './lib/game-modes';
 import { useToast } from './composables/useToast';
@@ -433,6 +129,12 @@ import { useChart } from './composables/useChart';
 import { useGame } from './composables/useGame';
 import { useThreeScene } from './composables/useThreeScene';
 import { useExport } from './composables/useExport';
+import HomeView from './components/HomeView.vue';
+import SelectDivisorView from './components/SelectDivisorView.vue';
+import GameView from './components/GameView.vue';
+import ResultView from './components/ResultView.vue';
+import HistoryView from './components/HistoryView.vue';
+import CubicView from './components/CubicView.vue';
 
 const viewState = ref('home');
 
@@ -476,7 +178,7 @@ const {
   examShapes,
   startCubicMode, quitCubicMode,
   switchColor, toggleDeleteMode,
-  setCameraView, lookAtSection,
+  setCameraView: setThreeCameraView, lookAtSection,
   loadExamShape, clearCubes, resetSlice,
 } = three;
 
@@ -484,7 +186,7 @@ const {
 const modeGroups = MODE_GROUPS;
 const divisorList = DIVISOR_LIST;
 
-// View-orchestrating actions that wire multiple composables.
+// View-orchestrating actions
 const openHistory = () => {
   viewState.value = 'history';
   chart.reopenIfActive();
@@ -497,7 +199,7 @@ const backToHistory = () => {
 
 const closeHistory = () => { viewState.value = 'home'; };
 
-const viewHistoryDetail = (index) => {
+const viewHistoryDetail = (index: number) => {
   game.viewHistoryDetail(history.list.value[index]);
 };
 
@@ -519,7 +221,7 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped>
+<style>
 .shape-menu-container {
   position: absolute;
   top: 60px;

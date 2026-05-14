@@ -1,4 +1,7 @@
 import { ref, reactive, nextTick, watch } from 'vue';
+import type { Ref } from 'vue';
+import type { ViewState, SliceConfig, ExamShapeDef } from '../types';
+import type { ThreeHandle } from '../three/types';
 import {
   createScene, animateLoop, disposeScene,
   setCameraView as sceneSetCameraView,
@@ -7,27 +10,31 @@ import {
 import { loadShape, updateSlice, lookAtSection as csgLookAtSection } from '../three/section';
 import { EXAM_SHAPES } from '../three/shapes';
 
-const DEFAULT_SLICE = { constant: 0, rotX: 90, rotY: 0, rotZ: 0 };
+const DEFAULT_SLICE: SliceConfig = { constant: 0, rotX: 90, rotY: 0, rotZ: 0 };
 
-export function useThreeScene({ viewState }) {
-  const cubicMode = ref('block');
+interface ThreeSceneContext {
+  viewState: Ref<ViewState>;
+}
+
+export function useThreeScene({ viewState }: ThreeSceneContext) {
+  const cubicMode = ref<'block' | 'section'>('block');
   const isDeleteMode = ref(false);
   const showShapeMenu = ref(false);
   const sliceMenuCollapsed = ref(false);
   const currentShapeName = ref('正方体');
   const colors = ['#007aff', '#ff9500', '#333333', '#ffffff'];
   const selectedColor = ref('#007aff');
-  const sliceConfig = reactive({ ...DEFAULT_SLICE });
+  const sliceConfig: SliceConfig = reactive({ ...DEFAULT_SLICE });
 
   // Non-reactive Three.js state (Vue should not proxy GPU objects).
-  let handle = null;
-  let container = null;
+  let handle: ThreeHandle | null = null;
+  let container: HTMLElement | null = null;
   let downTime = 0;
 
   const handlePointerDown = () => { downTime = Date.now(); };
-  const handlePointerUp = (event) => {
+  const handlePointerUp = (event: PointerEvent) => {
     if (Date.now() - downTime >= 200) return;
-    if (cubicMode.value === 'section') return;
+    if (cubicMode.value === 'section' || !handle) return;
     handleVoxelClick(handle, event, {
       isDeleteMode: isDeleteMode.value,
       selectedColor: selectedColor.value,
@@ -38,20 +45,22 @@ export function useThreeScene({ viewState }) {
     Object.assign(sliceConfig, DEFAULT_SLICE);
   };
 
-  const loadExamShape = (shapeConf) => {
-    clearCubes();
+  const loadExamShape = (shapeConf: ExamShapeDef) => {
+    internalClearCubes();
     showShapeMenu.value = false;
     currentShapeName.value = shapeConf.name;
     resetSlice();
-    loadShape(handle, shapeConf);
-    updateSlice(handle, sliceConfig);
+    if (handle) {
+      loadShape(handle, shapeConf);
+      updateSlice(handle, sliceConfig);
+    }
   };
 
-  const clearCubes = () => {
+  const internalClearCubes = () => {
     if (handle) clearVoxels(handle);
   };
 
-  const switchColor = (c) => {
+  const switchColor = (c: string) => {
     selectedColor.value = c;
     isDeleteMode.value = false;
   };
@@ -60,12 +69,12 @@ export function useThreeScene({ viewState }) {
     isDeleteMode.value = !isDeleteMode.value;
   };
 
-  const setCameraView = (type) => {
+  const setCameraView = (type: 'front' | 'left' | 'top' | 'iso') => {
     sceneSetCameraView(handle, type);
   };
 
   const lookAtSection = () => {
-    csgLookAtSection(handle, sliceConfig);
+    if (handle) csgLookAtSection(handle, sliceConfig);
   };
 
   const cleanup = () => {
@@ -79,7 +88,7 @@ export function useThreeScene({ viewState }) {
     container = null;
   };
 
-  const startCubicMode = (mode = 'block') => {
+  const startCubicMode = (mode: 'block' | 'section' = 'block') => {
     cubicMode.value = mode;
     viewState.value = 'cubic';
     sliceMenuCollapsed.value = false;
@@ -121,7 +130,8 @@ export function useThreeScene({ viewState }) {
     startCubicMode, quitCubicMode,
     switchColor, toggleDeleteMode,
     setCameraView, lookAtSection,
-    loadExamShape, clearCubes,
+    loadExamShape,
+    clearCubes: internalClearCubes,
     resetSlice,
     cleanup,
   };

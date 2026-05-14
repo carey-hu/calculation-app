@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { SUBTRACTION, Brush, Evaluator } from 'three-bvh-csg';
+import type { ThreeHandle } from './types';
+import type { SliceConfig, ExamShapeDef } from '../types';
 
-const sliceNormal = (sliceConfig) => {
+const sliceNormal = (sliceConfig: SliceConfig): THREE.Vector3 => {
   const euler = new THREE.Euler(
     THREE.MathUtils.degToRad(sliceConfig.rotX),
     THREE.MathUtils.degToRad(sliceConfig.rotY),
@@ -10,7 +12,7 @@ const sliceNormal = (sliceConfig) => {
   return new THREE.Vector3(0, -1, 0).applyEuler(euler).normalize();
 };
 
-export const loadShape = (handle, shapeConf) => {
+export const loadShape = (handle: ThreeHandle, shapeConf: ExamShapeDef): void => {
   const baseGeometry = shapeConf.create();
   baseGeometry.computeBoundingBox();
   baseGeometry.center();
@@ -34,7 +36,7 @@ export const loadShape = (handle, shapeConf) => {
   handle.csg = { baseBrush, cutterBrush, evaluator };
 };
 
-export const updateSlice = (handle, sliceConfig) => {
+export const updateSlice = (handle: ThreeHandle, sliceConfig: SliceConfig): void => {
   if (!handle.csg || !handle.scene) return;
   const { baseBrush, cutterBrush, evaluator } = handle.csg;
   const { constant } = sliceConfig;
@@ -53,7 +55,7 @@ export const updateSlice = (handle, sliceConfig) => {
   baseBrush.updateMatrixWorld();
 
   const resultMesh = evaluator.evaluate(baseBrush, cutterBrush, SUBTRACTION);
-  resultMesh.material = [baseBrush.material, cutterBrush.material];
+  (resultMesh as THREE.Mesh).material = [baseBrush.material, cutterBrush.material] as unknown as THREE.Material;
 
   if (handle.examGroup) {
     handle.scene.remove(handle.examGroup);
@@ -71,7 +73,7 @@ export const updateSlice = (handle, sliceConfig) => {
   }
 };
 
-export const lookAtSection = (handle, sliceConfig) => {
+export const lookAtSection = (handle: ThreeHandle, sliceConfig: SliceConfig): void => {
   if (!handle.controls || !handle.camera) return;
   const normal = sliceNormal(sliceConfig);
   const target = handle.controls.target.clone();

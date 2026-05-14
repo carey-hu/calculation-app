@@ -1,10 +1,15 @@
 import { reactive } from 'vue';
 
-export function useToast() {
-  const toast = reactive({ show: false, title: '' });
-  let timer = null;
+interface ToastState {
+  show: boolean;
+  title: string;
+}
 
-  const showToast = (title, duration = 1500) => {
+export function useToast() {
+  const toast: ToastState = reactive({ show: false, title: '' });
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const showToast = (title: string, duration = 1500) => {
     toast.title = title;
     toast.show = true;
     if (timer) clearTimeout(timer);

@@ -1,21 +1,49 @@
-import { ref, computed } from 'vue';
-import { resolveActiveConfig, getModeName, GAME_MODES, ESTIMATE_MODES } from '../lib/game-modes';
+import { ref, computed, onBeforeUnmount } from 'vue';
+import type { Ref, ComputedRef } from 'vue';
+import type {
+  Question, CheckResult, ResultItem, TrainLogItem,
+  GameModeConfig, ViewState,
+} from '../types';
+import {
+  resolveActiveConfig, getModeName,
+  GAME_MODES, ESTIMATE_MODES,
+} from '../lib/game-modes';
 import { msToMMSS } from '../lib/formatters';
 
 const MULTI_BOX_MODES = ['carryJudge', 'borrowJudge'];
 const STEPPED_MODES = ['decompAdd'];
 const STAGE_TIMED_MODES = ['digitDetermine'];
 
-export function useGame({ viewState, history }) {
+interface HistoryComposable {
+  list: Ref<{ mode: string; modeName: string; duration: string; summary: string; detail: unknown[] }[]>;
+  addRecord: (payload: {
+    modeKey: string;
+    modeName: string;
+    totalSec: number;
+    summary: string;
+    detail: (ResultItem | TrainLogItem)[];
+  }) => void;
+}
+
+interface GameContext {
+  viewState: Ref<ViewState>;
+  history: HistoryComposable;
+}
+
+interface DetailTimesResult {
+  detailTimes?: string;
+}
+
+export function useGame({ viewState, history }: GameContext) {
   const currentModeKey = ref('train');
   const selectedDivisor = ref(0);
 
-  const pool = ref([]);
+  const pool = ref<Question[]>([]);
   const idx = ref(0);
-  const current = ref(null);
+  const current = ref<Question | null>(null);
 
   const input = ref('');
-  const inputArray = ref([]);
+  const inputArray = ref<string[]>([]);
   const decompStep = ref(0);
 
   const uiHint = ref('');
@@ -29,19 +57,21 @@ export function useGame({ viewState, history }) {
   const totalSec = ref(0);
 
   // Non-reactive: per-question segment timing.
-  let boxTimes = [];
+  let boxTimes: number[] = [];
   let lastInputTs = 0;
 
   const trainWrong = ref(0);
   const trainSkip = ref(0);
   const curWrongTries = ref(0);
-  const trainLog = ref([]);
-  const results = ref([]);
+  const trainLog = ref<TrainLogItem[]>([]);
+  const results = ref<ResultItem[]>([]);
   const isHistoryReview = ref(false);
 
-  let timerId = null;
+  let timerId: ReturnType<typeof setInterval> | null = null;
 
-  const activeConfig = computed(() => resolveActiveConfig(currentModeKey.value, selectedDivisor.value));
+  const activeConfig: ComputedRef<GameModeConfig> = computed(() =>
+    resolveActiveConfig(currentModeKey.value, selectedDivisor.value),
+  );
 
   const isSmallFont = computed(() => !!activeConfig.value.isSmallFont);
 
@@ -57,11 +87,11 @@ export function useGame({ viewState, history }) {
     return `正确：${correct}/${total}｜总用时：${s.toFixed(1)}s`;
   });
 
-  const setMode = (mode) => { currentModeKey.value = mode; };
+  const setMode = (mode: string) => { currentModeKey.value = mode; };
 
   const toSelectDivisor = () => { viewState.value = 'selectDivisor'; };
 
-  const selectDivisorAndStart = (d) => {
+  const selectDivisorAndStart = (d: number) => {
     currentModeKey.value = 'firstSpec';
     selectedDivisor.value = d;
     startGame();
@@ -72,7 +102,7 @@ export function useGame({ viewState, history }) {
     totalText.value = msToMMSS(diff);
   };
 
-  const _setQuestion = (q, shownIdx) => {
+  const _setQuestion = (q: Question, shownIdx: number) => {
     current.value = q;
     qStartTs.value = Date.now();
     lastInputTs = Date.now();
@@ -118,7 +148,7 @@ export function useGame({ viewState, history }) {
     timerId = setInterval(_tick, 100);
   }
 
-  const pressDigit = (d) => {
+  const pressDigit = (d: number | string) => {
     const mode = currentModeKey.value;
 
     if (MULTI_BOX_MODES.includes(mode)) {
@@ -187,7 +217,8 @@ export function useGame({ viewState, history }) {
       } else if (decompStep.value > 0) {
         decompStep.value -= 1;
         const arr = inputArray.value.slice();
-        input.value = arr.pop();
+        const popped = arr.pop();
+        input.value = popped ?? '';
         inputArray.value = arr;
         boxTimes.pop();
         lastInputTs = Date.now();
@@ -212,7 +243,7 @@ export function useGame({ viewState, history }) {
       startGame();
       return;
     }
-    const cur = current.value;
+    const cur = current.value!;
     const used = (Date.now() - qStartTs.value) / 1000;
     trainLog.value = trainLog.value.concat([{
       q: `${cur.dividend}${cur.symbol}${cur.divisor}`,
@@ -224,11 +255,11 @@ export function useGame({ viewState, history }) {
     _nextQuestion();
   };
 
-  const _buildDetailTimes = (mode) => {
+  const _buildDetailTimes = (mode: string): DetailTimesResult => {
     if (MULTI_BOX_MODES.includes(mode)) {
       const t1 = (boxTimes[0] || 0) / 1000;
       const t2 = (boxTimes[1] || 0) / 1000;
-      return `百:${t1.toFixed(1)}s 十:${t2.toFixed(1)}s (个位默认0)`;
+      return { detailTimes: `百:${t1.toFixed(1)}s 十:${t2.toFixed(1)}s (个位默认0)` };
     }
     if (mode === 'digitDetermine') {
       let tH = 0; let tT = 0; let tO = 0;
@@ -241,18 +272,18 @@ export function useGame({ viewState, history }) {
         tT = (boxTimes[1] || 0) / 1000;
         tO = (boxTimes[2] || 0) / 1000;
       }
-      return `千百:${tH.toFixed(1)}s 十:${tT.toFixed(1)}s 个:${tO.toFixed(1)}s`;
+      return { detailTimes: `千百:${tH.toFixed(1)}s 十:${tT.toFixed(1)}s 个:${tO.toFixed(1)}s` };
     }
     if (mode === 'decompAdd') {
       const t1 = (boxTimes[0] || 0) / 1000;
       const t2 = (boxTimes[1] || 0) / 1000;
       const t3 = (boxTimes[2] || 0) / 1000;
-      return `十位:${t1.toFixed(1)}s 个位:${t2.toFixed(1)}s 总和:${t3.toFixed(1)}s`;
+      return { detailTimes: `十位:${t1.toFixed(1)}s 个位:${t2.toFixed(1)}s 总和:${t3.toFixed(1)}s` };
     }
-    return '';
+    return {};
   };
 
-  const _resetCurrentInput = (mode) => {
+  const _resetCurrentInput = (mode: string) => {
     input.value = '';
     inputArray.value = [];
     if (MULTI_BOX_MODES.includes(mode) || STEPPED_MODES.includes(mode)) {
@@ -264,7 +295,7 @@ export function useGame({ viewState, history }) {
 
   const confirmAnswer = () => {
     const mode = currentModeKey.value;
-    const cur = current.value;
+    const cur = current.value!;
     const cfg = activeConfig.value;
 
     // decompAdd: collect 3 segmented inputs before grading.
@@ -287,7 +318,7 @@ export function useGame({ viewState, history }) {
     const numericInput = mode === 'decompAdd' ? 0 : parseFloat(input.value);
     const used = (Date.now() - qStartTs.value) / 1000;
     let yourAnsStr = input.value;
-    let extraInfo = {};
+    let extraInfo: Record<string, unknown> = {};
 
     if (MULTI_BOX_MODES.includes(mode) && inputArray.value.length < 2) {
       uiHint.value = '请填满百位和十位选项';
@@ -300,8 +331,8 @@ export function useGame({ viewState, history }) {
       yourAnsStr = `${inputArray.value[0]}, ${inputArray.value[1]}, ${inputArray.value[2]}`;
     }
 
-    const detailTimes = _buildDetailTimes(mode);
-    if (detailTimes) extraInfo.detailTimes = detailTimes;
+    const dtResult = _buildDetailTimes(mode);
+    if (dtResult.detailTimes) extraInfo.detailTimes = dtResult.detailTimes;
 
     if (mode === 'divScale') {
       if (input.value.length < 4) {
@@ -312,10 +343,10 @@ export function useGame({ viewState, history }) {
     }
 
     let correct = false;
-    let realAnsDisplay = cur.ans;
+    let realAnsDisplay = String(cur.ans);
 
     if (cfg.check) {
-      const checkResult = cfg.check(numericInput, cur.ans, input.value, inputArray.value);
+      const checkResult: CheckResult = cfg.check(numericInput, cur.ans, input.value, inputArray.value);
       correct = checkResult.ok;
       realAnsDisplay = checkResult.display;
       if (checkResult.exactAns !== undefined) {
@@ -325,7 +356,7 @@ export function useGame({ viewState, history }) {
         }
       }
     } else {
-      correct = parseInt(input.value) === cur.ans;
+      correct = parseInt(input.value, 10) === cur.ans;
     }
 
     if (mode === 'train') {
@@ -347,32 +378,37 @@ export function useGame({ viewState, history }) {
     }
 
     if (ESTIMATE_MODES.includes(mode)) {
-      const exact = cur.dividend / cur.divisor;
+      const exact = (cur.dividend as number) / (cur.divisor as number);
       const error = Math.abs(numericInput - exact) / exact;
       const exactStr = Number.isInteger(exact) ? String(exact) : exact.toFixed(1);
       extraInfo = { ...extraInfo, exactAns: exactStr, errorRate: (error * 100).toFixed(2) + '%' };
     }
 
-    results.value = results.value.concat([{
+    const resultItem: ResultItem = {
       q: `${cur.dividend}${cur.symbol}${cur.divisor}`,
       ok: correct,
       yourAns: yourAnsStr,
       realAns: realAnsDisplay,
       usedStr: used.toFixed(1) + 's',
-      ...extraInfo,
-    }]);
+      exactAns: extraInfo.exactAns as string | undefined,
+      errorRate: extraInfo.errorRate as string | undefined,
+      exactDividend: extraInfo.exactDividend as string | undefined,
+      detailTimes: extraInfo.detailTimes as string | undefined,
+    };
+
+    results.value = results.value.concat([resultItem]);
     _nextQuestion();
   };
 
   function _finish() {
-    if (timerId) {
+    if (timerId !== null) {
       clearInterval(timerId);
       timerId = null;
     }
     totalSec.value = (Date.now() - totalStartTs.value) / 1000;
 
-    let summary;
-    let detail;
+    let summary: string;
+    let detail: (ResultItem | TrainLogItem)[];
     if (currentModeKey.value === 'train') {
       summary = `错${trainWrong.value}/跳${trainSkip.value}`;
       detail = trainLog.value;
@@ -395,27 +431,40 @@ export function useGame({ viewState, history }) {
   }
 
   const goHome = () => {
-    if (timerId) {
+    if (timerId !== null) {
       clearInterval(timerId);
       timerId = null;
     }
     viewState.value = 'home';
   };
 
-  const viewHistoryDetail = (record) => {
+  const viewHistoryDetail = (record: {
+    mode: string;
+    modeName: string;
+    duration: string;
+    summary: string;
+    detail: (ResultItem | TrainLogItem)[];
+  }) => {
     if (!record) return;
     currentModeKey.value = record.mode;
     totalSec.value = parseFloat(record.duration.replace('s', ''));
     if (record.mode === 'train') {
-      trainLog.value = record.detail || [];
+      trainLog.value = (record.detail || []) as TrainLogItem[];
       results.value = [];
     } else {
-      results.value = record.detail || [];
+      results.value = (record.detail || []) as ResultItem[];
       trainLog.value = [];
     }
     viewState.value = 'result';
     isHistoryReview.value = true;
   };
+
+  onBeforeUnmount(() => {
+    if (timerId !== null) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+  });
 
   return {
     // state
@@ -433,6 +482,6 @@ export function useGame({ viewState, history }) {
     goHome,
     viewHistoryDetail,
     // exposed for menu rendering
-    getModeConfig: (key) => GAME_MODES[key] || { name: key },
+    getModeConfig: (key: string) => GAME_MODES[key] || { name: key },
   };
 }

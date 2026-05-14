@@ -8,14 +8,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.3.4",
     "echarts": "^5.4.3",
     "three": "^0.160.0",
     "three-bvh-csg": "^0.0.17",
-    "three-mesh-bvh": "^0.7.3"
+    "three-mesh-bvh": "^0.7.3",
+    "vue": "^3.3.4"
   },
   "devDependencies": {
+    "@types/three": "^0.184.1",
     "@vitejs/plugin-vue": "^4.2.3",
+    "typescript": "^6.0.3",
     "vite": "^4.3.9"
   }
 }
