@@ -1,4 +1,4 @@
-import type { Question, CheckResult, DecompAddAnswer, GameModeConfig, ModeGroup } from '../types';
+import type { Question, CheckResult, DecompAddAnswer, PairAnswer, GameModeConfig, ModeGroup } from '../types';
 import { shuffle, randInt, rejectSample, genN } from './random';
 
 type Ans = Question['ans'];
@@ -44,6 +44,42 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
     title: '竞速完成！',
     hintNote: '精确到整数',
     gen: () => shuffle(buildBasePool()).slice(0, 10),
+  },
+
+  pairMult: {
+    name: '大九九对子',
+    title: '大九九对子完成！',
+    hintNote: '先左后右，依次输入两个乘积',
+    isSmallFont: true,
+    check: (v, t, inputStr, inputArray): CheckResult => {
+      const target = t as PairAnswer;
+      if (!inputArray || inputArray.length < 2) {
+        return { ok: false, display: `${target.ans1}, ${target.ans2}` };
+      }
+      const ok = parseInt(inputArray[0], 10) === target.ans1
+        && parseInt(inputArray[1], 10) === target.ans2;
+      return { ok, display: `${target.ans1}, ${target.ans2}` };
+    },
+    gen: (n) => {
+      const pairs: [number, number][] = [];
+      for (let x = 2; x <= 9; x++) {
+        for (let y = x + 1; y <= 9; y++) {
+          pairs.push([x, y]);
+        }
+      }
+      const selected = shuffle(pairs).slice(0, n);
+      return selected.map(([x, y]) => {
+        const flip = Math.random() > 0.5;
+        const a = flip ? x : y;
+        const b = flip ? y : x;
+        return {
+          dividend: `${10 + a}×${b}`,
+          divisor: `${10 + b}×${a}`,
+          ans: { ans1: (10 + a) * b, ans2: (10 + b) * a } as PairAnswer,
+          symbol: '  |  ',
+        };
+      });
+    },
   },
 
   first: {
@@ -460,7 +496,7 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
 };
 
 export const MODE_GROUPS: Record<string, ModeGroup> = {
-  basic: { label: '大九九/除法', modes: ['train', 'speed', 'first'] },
+  basic: { label: '大九九/除法', modes: ['train', 'speed', 'first', 'pairMult'] },
   divSelect: { label: '商首位专项', modes: [] },
   single: { label: '一位数专项', modes: ['plus', 'minus', 'fourSingleSum'] },
   double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum', 'decompAdd'] },

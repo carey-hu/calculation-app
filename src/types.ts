@@ -13,7 +13,7 @@
 export interface Question {
   dividend: number | string;
   divisor: number | string;
-  ans: number | string | DecompAddAnswer;
+  ans: number | string | DecompAddAnswer | PairAnswer;
   symbol: string;
 }
 
@@ -21,6 +21,11 @@ export interface DecompAddAnswer {
   tens: number;
   units: number;
   total: number;
+}
+
+export interface PairAnswer {
+  ans1: number;
+  ans2: number;
 }
 
 export interface CheckResult {

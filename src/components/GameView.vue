@@ -64,6 +64,24 @@
           </div>
         </template>
 
+        <!-- pairMult: 2-step input -->
+        <template v-else-if="currentModeKey === 'pairMult'">
+          <div class="ansBox glass-input" style="display: flex; flex-direction: column; gap: 8px; padding: 10px; background: transparent; border: none; box-shadow: none;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size:15px; color:#8e8e93; width: 60px; text-align: left;">左边</div>
+              <div :style="{ flex: 1, height: '40px', lineHeight: '40px', background: decompStep === 0 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 0 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '22px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
+                {{ decompStep === 0 ? (input || '_') : (inputArray[0] !== undefined ? inputArray[0] : '') }}
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size:15px; color:#8e8e93; width: 60px; text-align: left;">右边</div>
+              <div :style="{ flex: 1, height: '40px', lineHeight: '40px', background: decompStep === 1 ? 'rgba(0,122,255,0.08)' : 'rgba(0,0,0,0.03)', border: decompStep === 1 ? '2px solid rgba(0,122,255,0.2)' : '2px solid rgba(0,0,0,0.05)', borderRadius: '12px', fontSize: '22px', color: '#1c1c1e', textAlign: 'center', fontWeight: 800 }">
+                {{ decompStep === 1 ? (input || '_') : (inputArray[1] !== undefined ? inputArray[1] : '') }}
+              </div>
+            </div>
+          </div>
+        </template>
+
         <!-- decompAdd: 3-step input -->
         <template v-else-if="currentModeKey === 'decompAdd'">
           <div class="ansBox glass-input" style="display: flex; flex-direction: column; gap: 8px; padding: 10px; background: transparent; border: none; box-shadow: none;">

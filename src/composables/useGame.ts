@@ -11,7 +11,7 @@ import {
 import { msToMMSS } from '../lib/formatters';
 
 const MULTI_BOX_MODES = ['carryJudge', 'borrowJudge'];
-const STEPPED_MODES = ['decompAdd'];
+const STEPPED_MODES = ['decompAdd', 'pairMult'];
 const STAGE_TIMED_MODES = ['digitDetermine'];
 
 interface HistoryComposable {
@@ -280,6 +280,11 @@ export function useGame({ viewState, history }: GameContext) {
       const t3 = (boxTimes[2] || 0) / 1000;
       return { detailTimes: `十位:${t1.toFixed(1)}s 个位:${t2.toFixed(1)}s 总和:${t3.toFixed(1)}s` };
     }
+    if (mode === 'pairMult') {
+      const t1 = (boxTimes[0] || 0) / 1000;
+      const t2 = (boxTimes[1] || 0) / 1000;
+      return { detailTimes: `左边:${t1.toFixed(1)}s 右边:${t2.toFixed(1)}s` };
+    }
     return {};
   };
 
@@ -290,7 +295,7 @@ export function useGame({ viewState, history }: GameContext) {
       boxTimes = [];
       lastInputTs = Date.now();
     }
-    if (mode === 'decompAdd') decompStep.value = 0;
+    if (STEPPED_MODES.includes(mode)) decompStep.value = 0;
   };
 
   const confirmAnswer = () => {
@@ -298,21 +303,22 @@ export function useGame({ viewState, history }: GameContext) {
     const cur = current.value!;
     const cfg = activeConfig.value;
 
-    // decompAdd: collect 3 segmented inputs before grading.
-    if (mode === 'decompAdd') {
+    // Stepped modes (decompAdd: 3 steps, pairMult: 2 steps): collect segmented inputs before grading.
+    if (STEPPED_MODES.includes(mode)) {
       if (!input.value) return;
       const now = Date.now();
       boxTimes.push(now - lastInputTs);
       lastInputTs = now;
       inputArray.value = [...inputArray.value, input.value];
       input.value = '';
-      if (decompStep.value < 2) {
+      const maxStep = mode === 'decompAdd' ? 2 : 1;
+      if (decompStep.value < maxStep) {
         decompStep.value += 1;
         return;
       }
     }
 
-    if (!input.value && !MULTI_BOX_MODES.includes(mode) && mode !== 'decompAdd') return;
+    if (!input.value && !MULTI_BOX_MODES.includes(mode) && !STEPPED_MODES.includes(mode)) return;
     if (MULTI_BOX_MODES.includes(mode) && inputArray.value.length === 0) return;
 
     const numericInput = mode === 'decompAdd' ? 0 : parseFloat(input.value);
@@ -329,6 +335,9 @@ export function useGame({ viewState, history }: GameContext) {
     }
     if (mode === 'decompAdd') {
       yourAnsStr = `${inputArray.value[0]}, ${inputArray.value[1]}, ${inputArray.value[2]}`;
+    }
+    if (mode === 'pairMult') {
+      yourAnsStr = `${inputArray.value[0]}, ${inputArray.value[1]}`;
     }
 
     const dtResult = _buildDetailTimes(mode);
