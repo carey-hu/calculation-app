@@ -2,7 +2,7 @@
   <div class="wrap full-height">
     <div class="header-area safe-header">
       <div class="title">历史记录</div>
-      <div class="subtitle">仅保留最近5000条训练数据</div>
+      <div class="subtitle">后端同步保存训练数据</div>
     </div>
     <div class="card full-flex glass-panel">
       <!-- Chart section -->
@@ -69,6 +69,7 @@
         </div>
       </div>
       <div style="margin-top: 15px; display:flex; flex-direction: column; gap:10px;">
+        <button v-if="lowAccuracyCount > 0" class="btnGhost glass-btn" style="margin:0; height: 40px; font-size: 15px; color: #ff9500; background: rgba(255,149,0,0.08); border-color: rgba(255,149,0,0.2);" @click="$emit('clearLowAccuracy')">清理正确率低于30%的 {{ lowAccuracyCount }} 条</button>
         <button v-if="historyList.length > 1000" class="btnGhost glass-btn" style="margin:0; height: 40px; font-size: 16px; color: #ff3b30; background: rgba(255,59,48,0.08); border-color: rgba(255,59,48,0.2);" @click="$emit('clearOldest')">🗑️ 清理最早的 1000 条</button>
         <div style="display:flex; gap:10px;">
           <button class="btnDanger glass-btn main-action-btn" style="margin:0; flex:1;" @click="$emit('clearHistory')">清空全部</button>
@@ -93,6 +94,7 @@ defineProps<{
   exportEnd: string;
   filteredCount: number;
   totalCount: number;
+  lowAccuracyCount: number;
 }>();
 
 defineEmits<{
@@ -105,6 +107,7 @@ defineEmits<{
   selectAllRange: [];
   doExport: [];
   viewHistoryDetail: [index: number];
+  clearLowAccuracy: [];
   clearOldest: [];
   clearHistory: [];
   closeHistory: [];

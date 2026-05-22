@@ -75,6 +75,7 @@
       :exportEnd="exportEnd"
       :filteredCount="filteredCount"
       :totalCount="totalCount"
+      :lowAccuracyCount="lowAccuracyCount"
       @switchChartTab="switchChartTab"
       @closeChart="closeChart"
       @initChart="initChart"
@@ -84,6 +85,7 @@
       @selectAllRange="selectAllRange"
       @doExport="doExport"
       @viewHistoryDetail="viewHistoryDetail"
+      @clearLowAccuracy="clearLowAccuracy"
       @clearOldest="clearOldest"
       @clearHistory="clearHistory"
       @closeHistory="closeHistory"
@@ -121,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount } from 'vue';
+import { computed, ref, onBeforeUnmount } from 'vue';
 import { MODE_GROUPS, DIVISOR_LIST, getModeConfig } from './lib/game-modes';
 import { useToast } from './composables/useToast';
 import { useHistory } from './composables/useHistory';
@@ -129,6 +131,7 @@ import { useChart } from './composables/useChart';
 import { useGame } from './composables/useGame';
 import { useThreeScene } from './composables/useThreeScene';
 import { useExport } from './composables/useExport';
+import { getAccuracyPercent } from './lib/history';
 import HomeView from './components/HomeView.vue';
 import SelectDivisorView from './components/SelectDivisorView.vue';
 import GameView from './components/GameView.vue';
@@ -160,6 +163,12 @@ const {
 
 // History list + chart
 const historyList = history.list;
+const lowAccuracyCount = computed(() =>
+  history.list.value.filter((record) => {
+    const accuracy = getAccuracyPercent(record);
+    return accuracy !== null && accuracy < 30;
+  }).length,
+);
 const {
   showChart, chartTab, availableModes,
   switchChartTab, closeChart, initChart,
@@ -209,6 +218,18 @@ const clearOldest = () => {
   if (!confirm(`当前共有 ${history.list.value.length} 条记录。\n确定要清除【最早的 1000 条】数据吗？`)) return;
   history.clearOldest(1000);
   showToast('清理成功');
+  if (chart.showChart.value) chart.initChart();
+};
+
+const clearLowAccuracy = () => {
+  const count = lowAccuracyCount.value;
+  if (count === 0) {
+    showToast('没有低于30%的记录');
+    return;
+  }
+  if (!confirm(`检测到 ${count} 条正确率低于 30% 的记录。\n确定要删除这些历史记录吗？\n后端数据也会同步删除。`)) return;
+  history.clearLowAccuracy();
+  showToast(`已删除 ${count} 条低正确率记录`);
   if (chart.showChart.value) chart.initChart();
 };
 

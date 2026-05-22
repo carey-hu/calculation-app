@@ -1,6 +1,5 @@
 const KV_BINDING = 'CALC_HISTORY_KV';
 const KEY_PREFIX = 'calc_history_';
-const MAX_RECORDS = 5000;
 const MAX_LIST_LIMIT = 256;
 const MAX_POST_RECORDS = 100;
 
@@ -82,15 +81,14 @@ const readRecords = async (kv) => {
   return records.sort((a, b) => b.ts - a.ts);
 };
 
-const pruneOldRecords = async (kv) => {
-  const records = await readRecords(kv);
-  if (records.length <= MAX_RECORDS) return;
+const getAccuracyPercent = (record) => {
+  const summaryMatch = record.summary.match(/正确率\s*(\d+(?:\.\d+)?)%/);
+  if (summaryMatch) return Number(summaryMatch[1]);
 
-  const overflowTs = new Set(records.slice(MAX_RECORDS).map((record) => record.ts));
-  const keys = await listKeys(kv);
-  await Promise.all(keys
-    .filter((key) => overflowTs.has(Number(key.slice(KEY_PREFIX.length, KEY_PREFIX.length + 13))))
-    .map((key) => kv.delete(key)));
+  const graded = record.detail.filter((item) => item && typeof item.ok === 'boolean');
+  if (graded.length === 0) return null;
+  const correct = graded.filter((item) => item.ok).length;
+  return (correct / graded.length) * 100;
 };
 
 export async function onRequestGet(context) {
@@ -98,7 +96,7 @@ export async function onRequestGet(context) {
   if (!kv) return json({ error: `KV binding ${KV_BINDING} is not configured` }, 500);
 
   const records = await readRecords(kv);
-  return json({ records: records.slice(0, MAX_RECORDS) });
+  return json({ records });
 }
 
 export async function onRequestPost(context) {
@@ -119,7 +117,6 @@ export async function onRequestPost(context) {
 
   const safeRecords = records.map(safeRecord);
   await Promise.all(safeRecords.map((record) => kv.put(recordKey(record), JSON.stringify(record))));
-  await pruneOldRecords(kv);
   return json({ ok: true });
 }
 
@@ -129,6 +126,7 @@ export async function onRequestDelete(context) {
 
   const url = new URL(context.request.url);
   const oldestCount = Number(url.searchParams.get('oldest') || '0');
+  const belowAccuracy = Number(url.searchParams.get('belowAccuracy') || '0');
   const records = await readRecords(kv);
   const keys = await listKeys(kv);
 
@@ -136,6 +134,19 @@ export async function onRequestDelete(context) {
     const oldestTs = new Set(records.slice(-oldestCount).map((record) => record.ts));
     await Promise.all(keys
       .filter((key) => oldestTs.has(Number(key.slice(KEY_PREFIX.length, KEY_PREFIX.length + 13))))
+      .map((key) => kv.delete(key)));
+    return json({ ok: true });
+  }
+
+  if (belowAccuracy > 0) {
+    const lowAccuracyTs = new Set(records
+      .filter((record) => {
+        const accuracy = getAccuracyPercent(record);
+        return accuracy !== null && accuracy < belowAccuracy;
+      })
+      .map((record) => record.ts));
+    await Promise.all(keys
+      .filter((key) => lowAccuracyTs.has(Number(key.slice(KEY_PREFIX.length, KEY_PREFIX.length + 13))))
       .map((key) => kv.delete(key)));
     return json({ ok: true });
   }

@@ -3,6 +3,7 @@ import type { HistoryRecord, BuildRecordPayload } from '../types';
 import {
   loadHistory, saveHistory, clearAllHistory,
   prependRecord, trimOldest, buildRecord, mergeHistory, historyRecordKey,
+  removeLowAccuracyHistory,
 } from '../lib/history';
 import {
   fetchRemoteHistory,
@@ -10,7 +11,10 @@ import {
   saveRemoteRecords,
   clearRemoteOldest,
   clearRemoteHistory,
+  clearRemoteLowAccuracy,
 } from '../lib/history-api';
+
+const LOW_ACCURACY_THRESHOLD = 30;
 
 export function useHistory() {
   const list = ref<HistoryRecord[]>(loadHistory());
@@ -71,9 +75,21 @@ export function useHistory() {
     }
   };
 
+  const clearLowAccuracy = async () => {
+    list.value = removeLowAccuracyHistory(list.value, LOW_ACCURACY_THRESHOLD);
+    saveHistory(list.value);
+    try {
+      await clearRemoteLowAccuracy(LOW_ACCURACY_THRESHOLD);
+      syncState.value = 'ok';
+    } catch (e) {
+      console.error('Failed to clear low accuracy remote history:', e);
+      syncState.value = 'error';
+    }
+  };
+
   onMounted(() => {
     void refreshRemote();
   });
 
-  return { list, syncState, refreshRemote, addRecord, clearOldest, clearAll };
+  return { list, syncState, refreshRemote, addRecord, clearOldest, clearAll, clearLowAccuracy };
 }

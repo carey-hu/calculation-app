@@ -52,3 +52,9 @@ export const clearRemoteHistory = async (): Promise<void> => {
     method: 'DELETE',
   });
 };
+
+export const clearRemoteLowAccuracy = async (thresholdPercent: number): Promise<void> => {
+  await requestJson<{ ok: boolean }>(`${API_URL}?belowAccuracy=${encodeURIComponent(String(thresholdPercent))}`, {
+    method: 'DELETE',
+  });
+};
