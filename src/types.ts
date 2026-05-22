@@ -122,7 +122,7 @@ import type * as THREE from 'three';
 
 // ===== View state =====
 
-export type ViewState = 'home' | 'selectDivisor' | 'game' | 'result' | 'history' | 'cubic';
+export type ViewState = 'home' | 'selectDivisor' | 'selectBigNineDivisor' | 'game' | 'result' | 'history' | 'cubic';
 
 // ===== Mode key (for future refinement) =====
 

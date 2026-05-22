@@ -108,6 +108,20 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
     },
   },
 
+  bigNineDivSpec: {
+    name: '大九九除法专项',
+    title: '大九九除法专项完成！',
+    hintNote: '三位数除以12-19 (误差3%内)',
+    check: estimateCheck,
+    gen: (n, ex) => {
+      const d = ex?.divisor ?? 12;
+      return genN(n, (): Question => {
+        const dividend = randInt(100, 999);
+        return { dividend, divisor: d, ans: dividend / d, symbol: '÷' };
+      });
+    },
+  },
+
   plus: {
     name: '进位加',
     title: '一位数进位加完成！',
@@ -498,6 +512,7 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
 export const MODE_GROUPS: Record<string, ModeGroup> = {
   basic: { label: '大九九/除法', modes: ['train', 'speed', 'first', 'pairMult'] },
   divSelect: { label: '商首位专项', modes: [] },
+  bigNineDivSelect: { label: '大九九除法专项', modes: [] },
   single: { label: '一位数专项', modes: ['plus', 'minus', 'fourSingleSum'] },
   double: { label: '两位数专项 (完整答案)', modes: ['doublePlus', 'doubleMinus', 'fourSum', 'decompAdd'] },
   triple: {
@@ -513,8 +528,9 @@ export const MODE_GROUPS: Record<string, ModeGroup> = {
 };
 
 export const DIVISOR_LIST = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+export const BIG_NINE_DIVISOR_LIST = [12, 13, 14, 15, 16, 17, 18, 19];
 
-export const ESTIMATE_MODES = ['tripleDiv', 'divSpecA', 'divSpecB', 'divSpecC'];
+export const ESTIMATE_MODES = ['tripleDiv', 'bigNineDivSpec', 'divSpecA', 'divSpecB', 'divSpecC'];
 
 export const getModeConfig = (key: string): GameModeConfig =>
   GAME_MODES[key] || { name: key };
@@ -531,10 +547,20 @@ export const resolveActiveConfig = (
       gen: GAME_MODES.firstSpec.gen,
     };
   }
+  if (modeKey === 'bigNineDivSpec') {
+    return {
+      name: `除数${selectedDivisor}`,
+      title: `除数${selectedDivisor}完成！`,
+      hintNote: `三位数除以${selectedDivisor}：商误差3%内`,
+      check: GAME_MODES.bigNineDivSpec.check,
+      gen: GAME_MODES.bigNineDivSpec.gen,
+    };
+  }
   return GAME_MODES[modeKey] || {};
 };
 
 export const getModeName = (modeKey: string, selectedDivisor: number): string => {
   if (modeKey === 'firstSpec') return `商首位(除${selectedDivisor})`;
+  if (modeKey === 'bigNineDivSpec') return `大九九除法(除${selectedDivisor})`;
   return GAME_MODES[modeKey]?.name || '未知模式';
 };

@@ -17,6 +17,12 @@
               </button>
             </div>
 
+            <div v-else-if="groupKey === 'bigNineDivSelect'" style="margin-bottom: 10px;">
+              <button class="btnGhost glass-btn" style="margin-top:0; height:45px; line-height:45px; font-size:16px;" @click="$emit('toSelectBigNineDivisor')">
+                进入大九九除法专项
+              </button>
+            </div>
+
             <div class="modeRow" v-else>
               <div
                 v-for="modeKey in group.modes"
@@ -63,6 +69,7 @@ defineProps<{
 defineEmits<{
   setMode: [key: string];
   toSelectDivisor: [];
+  toSelectBigNineDivisor: [];
   startGame: [];
   openHistory: [];
   startCubicMode: [mode: 'block' | 'section'];

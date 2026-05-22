@@ -91,8 +91,16 @@ export function useGame({ viewState, history }: GameContext) {
 
   const toSelectDivisor = () => { viewState.value = 'selectDivisor'; };
 
+  const toSelectBigNineDivisor = () => { viewState.value = 'selectBigNineDivisor'; };
+
   const selectDivisorAndStart = (d: number) => {
     currentModeKey.value = 'firstSpec';
+    selectedDivisor.value = d;
+    startGame();
+  };
+
+  const selectBigNineDivisorAndStart = (d: number) => {
+    currentModeKey.value = 'bigNineDivSpec';
     selectedDivisor.value = d;
     startGame();
   };
@@ -485,6 +493,7 @@ export function useGame({ viewState, history }: GameContext) {
     activeConfig, isSmallFont, resultTitle, resultMeta,
     // actions
     setMode, toSelectDivisor, selectDivisorAndStart,
+    toSelectBigNineDivisor, selectBigNineDivisorAndStart,
     startGame,
     pressDigit, pressDot, clearInput, backspace, leftAction,
     confirmAnswer,

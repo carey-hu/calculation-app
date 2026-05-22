@@ -16,6 +16,7 @@
       :currentModeKey="currentModeKey"
       @setMode="setMode"
       @toSelectDivisor="toSelectDivisor"
+      @toSelectBigNineDivisor="toSelectBigNineDivisor"
       @startGame="startGame"
       @openHistory="openHistory"
       @startCubicMode="startCubicMode"
@@ -25,6 +26,16 @@
       v-if="viewState === 'selectDivisor'"
       :divisorList="divisorList"
       @selectDivisorAndStart="selectDivisorAndStart"
+      @goHome="goHome"
+    />
+
+    <SelectDivisorView
+      v-if="viewState === 'selectBigNineDivisor'"
+      :divisorList="bigNineDivisorList"
+      title="大九九除法专项"
+      subtitle="选择除数，三位数随机被除数，商误差3%内"
+      itemLabelPrefix="除数"
+      @selectDivisorAndStart="selectBigNineDivisorAndStart"
       @goHome="goHome"
     />
 
@@ -124,7 +135,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onBeforeUnmount } from 'vue';
-import { MODE_GROUPS, DIVISOR_LIST, getModeConfig } from './lib/game-modes';
+import { MODE_GROUPS, DIVISOR_LIST, BIG_NINE_DIVISOR_LIST, getModeConfig } from './lib/game-modes';
 import { useToast } from './composables/useToast';
 import { useHistory } from './composables/useHistory';
 import { useChart } from './composables/useChart';
@@ -155,6 +166,7 @@ const {
   trainLog, results, isHistoryReview,
   activeConfig, isSmallFont, resultTitle, resultMeta,
   setMode, toSelectDivisor, selectDivisorAndStart,
+  toSelectBigNineDivisor, selectBigNineDivisorAndStart,
   startGame,
   pressDigit, pressDot, clearInput, backspace, leftAction,
   confirmAnswer,
@@ -194,6 +206,7 @@ const {
 // Static menu data
 const modeGroups = MODE_GROUPS;
 const divisorList = DIVISOR_LIST;
+const bigNineDivisorList = BIG_NINE_DIVISOR_LIST;
 
 // View-orchestrating actions
 const openHistory = () => {
