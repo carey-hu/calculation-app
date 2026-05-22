@@ -190,11 +190,13 @@ const divisorList = DIVISOR_LIST;
 const openHistory = () => {
   viewState.value = 'history';
   chart.reopenIfActive();
+  void history.refreshRemote().then(() => chart.reopenIfActive());
 };
 
 const backToHistory = () => {
   viewState.value = 'history';
   chart.reopenIfActive();
+  void history.refreshRemote().then(() => chart.reopenIfActive());
 };
 
 const closeHistory = () => { viewState.value = 'home'; };

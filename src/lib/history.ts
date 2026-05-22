@@ -17,7 +17,7 @@ export const loadHistory = (): HistoryRecord[] => {
 
 export const saveHistory = (list: HistoryRecord[]): void => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(limitHistory(list)));
   } catch (e) {
     console.error('Failed to save history:', e);
   }
@@ -33,12 +33,28 @@ export const clearAllHistory = (): void => {
 
 export const prependRecord = (list: HistoryRecord[], record: HistoryRecord): HistoryRecord[] => {
   const next = [record, ...list];
-  return next.length > MAX_RECORDS ? next.slice(0, MAX_RECORDS) : next;
+  return limitHistory(next);
 };
 
 export const trimOldest = (list: HistoryRecord[], count: number): HistoryRecord[] => {
   const keep = list.length - count;
   return keep > 0 ? list.slice(0, keep) : [];
+};
+
+export const limitHistory = (list: HistoryRecord[]): HistoryRecord[] =>
+  list.length > MAX_RECORDS ? list.slice(0, MAX_RECORDS) : list;
+
+export const historyRecordKey = (record: HistoryRecord): string =>
+  `${record.ts}_${record.mode}_${record.summary}_${record.duration}`;
+
+export const mergeHistory = (...groups: HistoryRecord[][]): HistoryRecord[] => {
+  const map = new Map<string, HistoryRecord>();
+  groups.flat().forEach((record) => {
+    if (!record || typeof record.ts !== 'number') return;
+    const key = historyRecordKey(record);
+    if (!map.has(key)) map.set(key, record);
+  });
+  return limitHistory(Array.from(map.values()).sort((a, b) => b.ts - a.ts));
 };
 
 export const buildRecord = (payload: BuildRecordPayload): HistoryRecord => {
