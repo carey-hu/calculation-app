@@ -419,7 +419,7 @@ function HomeView({
     <Screen>
       <PageHeader title="计算助手" subtitle="每天一点点,心算更轻松" showProgress />
       <div className="surface flex min-h-0 flex-1 flex-col rounded-xl p-[14px]">
-        <div className="scroll-clean min-h-0 flex-1 pr-1 pb-[calc(120px+env(safe-area-inset-bottom))]">
+        <div className="scroll-clean min-h-0 flex-1 pr-1">
             {Object.entries(MODE_GROUPS).map(([groupKey, group]) => (
               <section key={groupKey} className="mt-5">
                 <SectionTitle groupKey={groupKey}>{GROUP_LABELS[groupKey] || group.label}</SectionTitle>
@@ -469,14 +469,14 @@ function HomeView({
               </div>
             </section>
         </div>
-      </div>
-      <div className="fixed-bottom-action grid gap-[10px]">
-        <Button className="h-[50px] text-[17px]" onClick={startGame}>
-          开始练习
-        </Button>
-        <Button variant="secondary" className="h-[50px] border-[#ECE4E7] text-[17px]" onClick={openHistory}>
-          <History className="h-5 w-5" /> 历史记录
-        </Button>
+        <div className="mt-[10px] grid shrink-0 gap-[9px] border-t border-black/[0.06] pt-[14px]">
+          <Button className="h-[50px] text-[17px]" onClick={startGame}>
+            开始练习
+          </Button>
+          <Button variant="secondary" className="h-12 border-[#ECE4E7] text-[17px]" onClick={openHistory}>
+            <History className="h-5 w-5" /> 历史记录
+          </Button>
+        </div>
       </div>
     </Screen>
   );
@@ -592,7 +592,7 @@ function GameView({
   const isJudge = ['carryJudge', 'borrowJudge'].includes(game.currentModeKey);
 
   return (
-    <Screen className="gap-[10px] pb-[calc(320px+env(safe-area-inset-bottom))]">
+    <Screen className="gap-[10px]">
       <div className="flex shrink-0 items-center gap-[10px]">
         <Button variant="secondary" className="h-11 px-4" onClick={game.goHome}>
           <ChevronLeft className="h-5 w-5" /> 返回
@@ -621,38 +621,36 @@ function GameView({
         {game.uiHint ? <div className="semantic-error mt-4 rounded-md px-3 py-2 text-[15px] font-semibold">{game.uiHint}</div> : null}
       </div>
 
-      <div className="fixed-keypad">
-        <div className="surface rounded-xl p-[14px]">
-          <div className="game-function-row mb-[10px] grid grid-cols-3 gap-[10px]">
-            <Button variant="ghost" className="h-13 tone-special" onClick={game.leftAction}>{game.leftText}</Button>
-            <Button variant="ghost" className="h-13 tone-special" onClick={game.clearInput}>清空</Button>
-            <Button variant="ghost" className="h-13 tone-danger-soft" onClick={game.backspace}>退格</Button>
-          </div>
-          {isJudge ? (
-            <div className="grid grid-cols-2 gap-[10px]">
-              <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit(game.currentModeKey === 'borrowJudge' ? '-1' : '1')}>
-                {game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}
-                <span className="block text-[14px] text-muted">{game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}</span>
-              </button>
-              <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit('0')}>
-                0<span className="block text-[14px] text-muted">不变</span>
-              </button>
-              <Button className="col-span-2 h-14" onClick={game.confirmAnswer}>确认</Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-[10px]">
-              {digits.map((item) => (
-                <button key={item} className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(item)}>
-                  {item}
-                </button>
-              ))}
-              <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={game.pressDot}>.</button>
-              <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(0)}>0</button>
-              <Button className="h-[64px] rounded-lg" onClick={game.confirmAnswer}><Check className="h-5 w-5" /></Button>
-            </div>
-          )}
+      <div className="surface shrink-0 rounded-xl p-[14px]">
+        <div className="game-function-row mb-[10px] grid grid-cols-3 gap-[10px]">
+          <Button variant="ghost" className="h-13 tone-special" onClick={game.leftAction}>{game.leftText}</Button>
+          <Button variant="ghost" className="h-13 tone-special" onClick={game.clearInput}>清空</Button>
+          <Button variant="ghost" className="h-13 tone-danger-soft" onClick={game.backspace}>退格</Button>
         </div>
-      </div>
+        {isJudge ? (
+          <div className="grid grid-cols-2 gap-[10px]">
+            <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit(game.currentModeKey === 'borrowJudge' ? '-1' : '1')}>
+              {game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}
+              <span className="block text-[14px] text-muted">{game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}</span>
+            </button>
+            <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit('0')}>
+              0<span className="block text-[14px] text-muted">不变</span>
+            </button>
+            <Button className="col-span-2 h-14" onClick={game.confirmAnswer}>确认</Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-[10px]">
+            {digits.map((item) => (
+              <button key={item} className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(item)}>
+                {item}
+              </button>
+            ))}
+            <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={game.pressDot}>.</button>
+            <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(0)}>0</button>
+            <Button className="h-[64px] rounded-lg" onClick={game.confirmAnswer}><Check className="h-5 w-5" /></Button>
+          </div>
+        )}
+        </div>
     </Screen>
   );
 }
