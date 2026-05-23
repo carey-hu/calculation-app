@@ -108,7 +108,7 @@ function HomeView({
   return (
     <Screen>
       <PageHeader title="计算助手" subtitle="每天一点点,心算更轻松" />
-      <div className="grid min-h-0 flex-1 gap-[10px] md:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid min-h-0 flex-1 gap-[10px]">
         <div className="surface flex min-h-0 flex-col rounded-xl p-[14px]">
           <div className="scroll-clean min-h-0 flex-1 pr-1">
             {Object.entries(MODE_GROUPS).map(([groupKey, group]) => (
@@ -116,11 +116,11 @@ function HomeView({
                 <div className={cn('mb-2 px-1 text-[13px] font-semibold', groupTitleTone(groupKey))}>{GROUP_LABELS[groupKey] || group.label}</div>
                 {groupKey === 'divSelect' ? (
                   <Button variant="secondary" className="tone-special w-full" onClick={toSelectDivisor}>
-                    鍟嗛浣嶉櫎鏁伴€夋嫨 <ChevronLeft className="h-4 w-4 rotate-180" />
+                    商首位除数选择 <ChevronLeft className="h-4 w-4 rotate-180" />
                   </Button>
                 ) : groupKey === 'bigNineDivSelect' ? (
                   <Button variant="secondary" className="tone-special w-full" onClick={toSelectBigNineDivisor}>
-                    澶т節涔濋櫎娉曚笓椤?<ChevronLeft className="h-4 w-4 rotate-180" />
+                    大九九除法专项 <ChevronLeft className="h-4 w-4 rotate-180" />
                   </Button>
                 ) : (
                   <div className="grid grid-cols-2 gap-[10px] sm:grid-cols-3">
@@ -143,28 +143,29 @@ function HomeView({
               </section>
             ))}
             <section className="mb-5">
-              <div className="group-title-space mb-2 px-1 text-[13px] font-semibold">绌洪棿鎬濈淮</div>
+              <div className="group-title-space mb-2 px-1 text-[13px] font-semibold">空间思维</div>
               <div className="grid grid-cols-2 gap-[10px]">
                 <button
                   className="tone-space flex min-h-[60px] items-center justify-center gap-2 rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]"
                   onClick={() => startCubicMode('block')}
                 >
-                  <Box className="h-5 w-5" /> 绔嬩綋鎷煎悎
+                  <Box className="h-5 w-5" /> 立体拼合
                 </button>
                 <button
                   className="tone-space flex min-h-[60px] items-center justify-center gap-2 rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]"
                   onClick={() => startCubicMode('section')}
                 >
-                  <Layers3 className="h-5 w-5" /> 绔嬩綋鎴潰
+                  <Layers3 className="h-5 w-5" /> 立体截面
                 </button>
               </div>
             </section>
           </div>
           <div className="mt-[10px] grid shrink-0 gap-[10px] border-t border-black/[0.06] pt-[14px] sm:grid-cols-2">
             <Button className="h-14 text-[17px]" onClick={startGame}>
-              寮€濮嬬粌涔?            </Button>
+              开始练习
+            </Button>
             <Button variant="secondary" className="h-14 text-[17px]" onClick={openHistory}>
-              <History className="h-5 w-5" /> 鍘嗗彶璁板綍
+              <History className="h-5 w-5" /> 历史记录
             </Button>
           </div>
         </div>
@@ -205,7 +206,7 @@ function SelectDivisorView({
         </div>
       </div>
       <Button variant="secondary" className="mt-4 h-14 w-full" onClick={goHome}>
-        杩斿洖涓婚〉
+        返回主页
       </Button>
     </Screen>
   );
@@ -237,7 +238,7 @@ function AnswerPanel({
   if (['carryJudge', 'borrowJudge'].includes(currentModeKey)) {
     return (
       <div className="mt-5 grid grid-cols-3 gap-3">
-        {['鐧句綅', '鍗佷綅', '涓綅'].map((label, index) => (
+        {['百位', '十位', '个位'].map((label, index) => (
           <div key={label} className="text-center">
             <div className="mb-2 text-[13px] font-medium text-muted">{label}</div>
             <div className={box}>{index === 2 ? '0' : inputArray[index] ?? '_'}</div>
@@ -286,7 +287,7 @@ function GameView({
     <Screen className="gap-[10px]">
       <div className="flex shrink-0 items-center gap-[10px]">
         <Button variant="secondary" className="h-11 px-4" onClick={game.goHome}>
-          <ChevronLeft className="h-5 w-5" /> 杩斿洖
+          <ChevronLeft className="h-5 w-5" /> 返回
         </Button>
         <div className="ml-auto flex items-center gap-[10px]">
           <div className="rounded-md bg-accentSoft px-3 py-2 text-center text-[14px] font-semibold text-accentDeep">{game.progressText}</div>
@@ -375,8 +376,8 @@ function ResultView({
               </div>
               {isResult ? (
                 <div className={cn('rounded-md px-2 py-1 text-right text-[14px] font-semibold', item.ok ? 'semantic-success' : 'semantic-error')}>
-                  {item.ok ? '姝ｇ‘' : `绛旀 ${prettyExpression(item.realAns)}`}
-                  {item.exactAns ? <div className="mt-1 text-[11px] text-muted">鍑?{item.exactAns} 路 璇?{item.errorRate}</div> : null}
+                  {item.ok ? '正确' : `答案 ${prettyExpression(item.realAns)}`}
+                  {item.exactAns ? <div className="mt-1 text-[11px] text-muted">准 {item.exactAns} · 误 {item.errorRate}</div> : null}
                 </div>
               ) : null}
             </div>
@@ -385,7 +386,7 @@ function ResultView({
       </div>
       <div className="mt-[10px] grid gap-[10px] sm:grid-cols-2">
         {game.isHistoryReview ? (
-          <Button className="h-14 sm:col-span-2" onClick={backToHistory}>杩斿洖鍒楄〃</Button>
+          <Button className="h-14 sm:col-span-2" onClick={backToHistory}>返回列表</Button>
         ) : (
           <>
               <Button className="h-14" onClick={game.goHome}>返回主页</Button>
@@ -428,10 +429,10 @@ function HistoryView({
       <div className="surface flex min-h-0 flex-1 flex-col rounded-xl p-[14px]">
         <div className="grid shrink-0 gap-[10px] sm:grid-cols-2">
           <Button variant="secondary" onClick={chart.showChart ? chart.closeChart : chart.initChart}>
-            <BarChart3 className="h-5 w-5" /> {chart.showChart ? '鏀惰捣鍥捐〃' : '瓒嬪娍鍒嗘瀽'}
+            <BarChart3 className="h-5 w-5" /> {chart.showChart ? '收起图表' : '趋势分析'}
           </Button>
           <Button variant="secondary" onClick={exportTool.showExport ? exportTool.closeExport : exportTool.openExport}>
-            <Download className="h-5 w-5" /> {exportTool.showExport ? '鏀惰捣瀵煎嚭' : '瀵煎嚭鏁版嵁'}
+            <Download className="h-5 w-5" /> {exportTool.showExport ? '收起导出' : '导出数据'}
           </Button>
         </div>
 
@@ -470,13 +471,13 @@ function HistoryView({
         ) : null}
 
         <div className="mt-4 flex shrink-0 justify-between px-1 text-[13px] font-semibold text-muted">
-          <span>鏃堕棿 / 妯″紡</span><span>鎴愮哗 / 鑰楁椂</span>
+          <span>时间 / 模式</span><span>成绩 / 耗时</span>
         </div>
-        {syncState === 'syncing' ? <div className="px-1 pt-2 text-[12px] text-muted">姝ｅ湪鍚屾浜戠璁板綍...</div> : null}
+        {syncState === 'syncing' ? <div className="px-1 pt-2 text-[12px] text-muted">正在同步云端记录...</div> : null}
         {syncState === 'error' ? <div className="px-1 pt-2 text-[12px] text-red-600">云端同步失败：{syncMessage}</div> : null}
         <div className="scroll-clean mt-2 min-h-0 flex-1">
           {historyList.length === 0 ? (
-            <div className="py-12 text-center text-[15px] text-muted">鏆傛棤璁板綍</div>
+            <div className="py-12 text-center text-[15px] text-muted">暂无记录</div>
           ) : historyList.map((item, index) => (
             <button key={`${item.ts}-${index}`} className="flex w-full items-center gap-3 border-b border-black/[0.06] px-1 py-4 text-left last:border-b-0" onClick={() => viewHistoryDetail(index)}>
               <div className="min-w-0 flex-1">
@@ -510,8 +511,8 @@ function CubicView({ three }: { three: ReturnType<typeof useThreeScene> }) {
           <Button variant="secondary" className="h-10 rounded-lg px-3" onClick={three.quitCubicMode}><X className="h-5 w-5" /></Button>
           {three.cubicMode === 'section' ? (
             <>
-              <Button variant="secondary" className="h-10 rounded-lg px-3 text-[14px]" onClick={() => three.setShowShapeMenu(!three.showShapeMenu)}>棰樺簱 路 {three.currentShapeName}</Button>
-              <Button variant="secondary" className="h-10 rounded-lg px-3 text-[14px]" onClick={three.lookAtSection}>姝ｈ鎴潰</Button>
+              <Button variant="secondary" className="h-10 rounded-lg px-3 text-[14px]" onClick={() => three.setShowShapeMenu(!three.showShapeMenu)}>题库 · {three.currentShapeName}</Button>
+              <Button variant="secondary" className="h-10 rounded-lg px-3 text-[14px]" onClick={three.lookAtSection}>正视截面</Button>
             </>
           ) : (
             <>
@@ -536,7 +537,7 @@ function CubicView({ three }: { three: ReturnType<typeof useThreeScene> }) {
           ))}
         </div>
         <div className="rounded-md bg-accentSoft px-3 py-2 text-[12px] font-medium text-accentDeep">
-          {three.cubicMode === 'block' ? '鐐瑰嚮鍦伴潰鏀剧疆锛岀偣鍑绘柟鍧楀彔鍔犳垨鍒犻櫎' : '璋冭妭涓嬫柟婊戝潡瑙傚療鎴潰鍙樺寲'}
+          {three.cubicMode === 'block' ? '点击地面放置，点击方块叠加或删除' : '调节下方滑块观察截面变化'}
         </div>
       </div>
 
@@ -560,16 +561,16 @@ function CubicView({ three }: { three: ReturnType<typeof useThreeScene> }) {
       {three.cubicMode === 'section' ? (
         <div className={cn('surface absolute inset-x-[14px] bottom-[max(16px,env(safe-area-inset-bottom))] z-20 mx-auto max-w-[520px] rounded-xl p-[14px] transition-transform', three.sliceMenuCollapsed && 'translate-y-[calc(100%-64px)]')}>
           <button className="flex w-full items-center justify-between pb-3" onClick={() => three.setSliceMenuCollapsed(!three.sliceMenuCollapsed)}>
-            <span className="text-[17px] font-semibold">鍒囬潰璋冭妭</span>
-            <span className="rounded-full bg-black/[0.05] px-3 py-1 text-[13px] font-semibold text-ink">{three.sliceMenuCollapsed ? '灞曞紑' : '鏀惰捣'}</span>
+            <span className="text-[17px] font-semibold">切面调节</span>
+            <span className="rounded-full bg-black/[0.05] px-3 py-1 text-[13px] font-semibold text-ink">{three.sliceMenuCollapsed ? '展开' : '收起'}</span>
           </button>
           {!three.sliceMenuCollapsed ? (
             <div className="grid gap-[10px]">
               {[
-                ['constant', '浣嶇Щ', -8, 8, 0.1],
-                ['rotX', 'X 鏃嬭浆', 0, 180, 1],
-                ['rotY', 'Y 鏃嬭浆', 0, 180, 1],
-                ['rotZ', 'Z 鏃嬭浆', 0, 180, 1],
+                ['constant', '位移', -8, 8, 0.1],
+                ['rotX', 'X 旋转', 0, 180, 1],
+                ['rotY', 'Y 旋转', 0, 180, 1],
+                ['rotZ', 'Z 旋转', 0, 180, 1],
               ].map(([key, label, min, max, step]) => (
                 <label key={key as string} className="grid grid-cols-[64px_1fr] items-center gap-[10px] text-[13px] font-medium text-muted">
                   {label}
@@ -584,7 +585,7 @@ function CubicView({ three }: { three: ReturnType<typeof useThreeScene> }) {
                   />
                 </label>
               ))}
-              <Button variant="secondary" className="h-11" onClick={three.resetSlice}>閲嶇疆浣嶇疆</Button>
+              <Button variant="secondary" className="h-11" onClick={three.resetSlice}>重置位置</Button>
             </div>
           ) : null}
         </div>

@@ -55,4 +55,8 @@ export const prettyModeName = (modeKey: string, selectedDivisor?: number) => {
 };
 
 export const prettyExpression = (value: string) =>
-  value.replaceAll('梅', '÷').replaceAll('脳', '×').replaceAll('鈥?', '—');
+  value
+    .replaceAll('梅', '÷')
+    .replaceAll('脳', '×')
+    .replaceAll('鈥?', '—')
+    .replaceAll('路', '·');
