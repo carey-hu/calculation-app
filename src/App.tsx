@@ -1,5 +1,21 @@
 ﻿import { AnimatePresence, motion } from 'framer-motion';
-import { IconPencil } from '@tabler/icons-react';
+import {
+  IconCalendar,
+  IconCheckbox,
+  IconConfetti,
+  IconCube,
+  IconDivide,
+  IconFlame,
+  IconHandLoveYou,
+  IconMoon,
+  IconMoodSmile,
+  IconPencil,
+  IconPlus,
+  IconSparkles,
+  IconStar,
+  IconSun,
+  IconTrophy,
+} from '@tabler/icons-react';
 import {
   BarChart3,
   Box,
@@ -14,7 +30,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { BIG_NINE_DIVISOR_LIST, DIVISOR_LIST, MODE_GROUPS } from './lib/game-modes';
 import { getAccuracyPercent } from './lib/history';
 import { cn } from './lib/utils';
@@ -28,10 +44,220 @@ import {
 import { useChart, useExportTool, useGame, useHistoryStore, useThreeScene, useToast } from './hooks';
 import type { ExamShapeDef, HistoryRecord, ResultItem, TrainLogItem, ViewState } from './types';
 
-const groupTitleTone = (groupKey: string) =>
-  groupKey === 'divSelect' || groupKey === 'bigNineDivSelect'
-    ? 'group-title-special'
-    : 'group-title-mental';
+const sectionTone = (groupKey: string) => {
+  if (groupKey === 'space') return 'space';
+  if (groupKey === 'divSelect' || groupKey === 'bigNineDivSelect') return 'special';
+  return 'mental';
+};
+
+function SectionTitle({ groupKey, children }: { groupKey: string; children: React.ReactNode }) {
+  const tone = sectionTone(groupKey);
+  const Icon = tone === 'space' ? IconCube : groupKey.includes('Div') || groupKey.includes('div') ? IconDivide : IconPlus;
+
+  return (
+    <div className={cn('section-title', `section-title-${tone}`)}>
+      <span className={cn('section-icon', `section-icon-${tone}`)}>
+        <Icon size={11} stroke={2} />
+      </span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+type TagIconName = 'pencil' | 'confetti' | 'trophy' | 'flame' | 'hand' | 'smile' | 'sun' | 'moon' | 'sparkles';
+
+interface DailyTagState {
+  text: string;
+  icon: TagIconName;
+  surprise: boolean;
+  review: {
+    hasData: boolean;
+    monthDays: number;
+    totalQuestions: number;
+    bestModeName: string;
+    streakDays: number;
+  };
+}
+
+const DAILY_TAG_KEY = 'calc_daily_tag_v1';
+const todayKey = () => new Date().toISOString().slice(0, 10);
+const dateKey = (ts: number) => new Date(ts).toISOString().slice(0, 10);
+const dayMs = 24 * 60 * 60 * 1000;
+
+const dailyTagContext = createContext<DailyTagState | null>(null);
+
+const iconForTag = (name: TagIconName) => {
+  const props = { size: 12, stroke: 1.8 };
+  if (name === 'confetti') return <IconConfetti {...props} />;
+  if (name === 'trophy') return <IconTrophy {...props} />;
+  if (name === 'flame') return <IconFlame {...props} />;
+  if (name === 'hand') return <IconHandLoveYou {...props} />;
+  if (name === 'smile') return <IconMoodSmile {...props} />;
+  if (name === 'sun') return <IconSun {...props} />;
+  if (name === 'moon') return <IconMoon {...props} />;
+  if (name === 'sparkles') return <IconSparkles {...props} />;
+  return <IconPencil {...props} />;
+};
+
+const parseDurationSeconds = (duration: string) => {
+  const value = Number.parseFloat(duration.replace('s', ''));
+  return Number.isFinite(value) ? value : 0;
+};
+
+const computeStreakDays = (dates: string[]) => {
+  const set = new Set(dates);
+  if (set.size === 0) return 0;
+  let cursor = new Date(todayKey());
+  if (!set.has(todayKey())) cursor = new Date(Math.max(...Array.from(set).map((d) => new Date(d).getTime())));
+  let count = 0;
+  while (set.has(cursor.toISOString().slice(0, 10))) {
+    count += 1;
+    cursor = new Date(cursor.getTime() - dayMs);
+  }
+  return count;
+};
+
+const choose = <T,>(items: T[], seed: number) => items[Math.abs(seed) % items.length];
+
+function buildDailyTag(historyList: HistoryRecord[]): DailyTagState {
+  const today = todayKey();
+  const raw = localStorage.getItem(DAILY_TAG_KEY);
+  const saved = raw ? JSON.parse(raw) as {
+    date?: string;
+    text?: string;
+    icon?: TagIconName;
+    surprise?: boolean;
+    triggeredMilestones?: string[];
+  } : {};
+  const triggered = new Set(saved.triggeredMilestones || []);
+
+  const dates = historyList.map((record) => dateKey(record.ts));
+  const uniqueDates = Array.from(new Set(dates));
+  const streakDays = computeStreakDays(uniqueDates);
+  const totalQuestions = historyList.reduce((sum, record) => sum + (record.detail?.length || 0), 0);
+  const modeStats = new Map<string, { name: string; count: number; totalSec: number; questions: number }>();
+
+  historyList.forEach((record) => {
+    const current = modeStats.get(record.mode) || { name: prettyExpression(record.modeName), count: 0, totalSec: 0, questions: 0 };
+    current.count += 1;
+    current.totalSec += parseDurationSeconds(record.duration);
+    current.questions += record.detail?.length || 0;
+    modeStats.set(record.mode, current);
+  });
+
+  const now = new Date();
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthRecords = historyList.filter((record) => dateKey(record.ts).startsWith(monthPrefix));
+  const monthDays = new Set(monthRecords.map((record) => dateKey(record.ts))).size;
+  const monthQuestions = monthRecords.reduce((sum, record) => sum + (record.detail?.length || 0), 0);
+  const bestMode = Array.from(modeStats.values()).sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return (a.totalSec / Math.max(1, a.questions)) - (b.totalSec / Math.max(1, b.questions));
+  })[0];
+
+  const review = {
+    hasData: monthRecords.length > 0,
+    monthDays,
+    totalQuestions: monthQuestions,
+    bestModeName: bestMode?.name || '',
+    streakDays,
+  };
+  const persistedModeStats = Object.fromEntries(Array.from(modeStats.entries()).map(([mode, stat]) => [
+    mode,
+    {
+      name: stat.name,
+      count: stat.count,
+      totalSec: stat.totalSec,
+      questions: stat.questions,
+      averageSecPerQuestion: stat.questions > 0 ? stat.totalSec / stat.questions : 0,
+    },
+  ]));
+  const lastPracticeDate = uniqueDates.sort().at(-1) || '';
+
+  if (saved.date === today && saved.text && saved.icon) {
+    localStorage.setItem(DAILY_TAG_KEY, JSON.stringify({
+      ...saved,
+      totalQuestions,
+      streakDays,
+      lastPracticeDate,
+      modeStats: persistedModeStats,
+    }));
+    return { text: saved.text, icon: saved.icon, surprise: !!saved.surprise, review };
+  }
+
+  let next = { text: '', icon: 'pencil' as TagIconName, surprise: false };
+  const streakMilestones = [3, 7, 14, 30, 50, 100];
+  const questionMilestones = [100, 500, 1000, 5000];
+  const streakHit = streakMilestones.find((n) => streakDays >= n && !triggered.has(`streak:${n}`));
+  const questionHit = questionMilestones.find((n) => totalQuestions >= n && !triggered.has(`questions:${n}`));
+  const modeHit = Array.from(modeStats.keys()).find((mode) => !triggered.has(`mode:${mode}`));
+
+  if (streakHit) {
+    triggered.add(`streak:${streakHit}`);
+    next = {
+      text: streakHit === 3 ? '三天啦,有点厉害' : streakHit === 7 ? '坚持一整周,了不起' : streakHit === 30 ? '满一个月,稳稳的' : `连续 ${streakHit} 天啦`,
+      icon: streakHit >= 30 ? 'trophy' : 'confetti',
+      surprise: true,
+    };
+  } else if (questionHit) {
+    triggered.add(`questions:${questionHit}`);
+    next = { text: `已经算过 ${questionHit} 道题了`, icon: 'trophy', surprise: true };
+  } else if (modeHit) {
+    triggered.add(`mode:${modeHit}`);
+    next = { text: '解锁新练习,试试看', icon: 'confetti', surprise: true };
+  } else if (streakDays >= 2) {
+    next = { text: choose([`陪你到第 ${streakDays} 天啦`, `连续第 ${streakDays} 天,继续`, `第 ${streakDays} 天,稳住`], now.getDate()), icon: 'flame', surprise: false };
+  } else {
+    const lastDate = uniqueDates.sort().at(-1);
+    const daysAway = lastDate ? Math.floor((new Date(today).getTime() - new Date(lastDate).getTime()) / dayMs) : 0;
+    if (daysAway >= 2) {
+      next = { text: choose(['欢迎回来呀', '又见面了,继续吧', '回来啦,正好练一组'], now.getDate()), icon: daysAway > 5 ? 'hand' : 'smile', surprise: false };
+    } else {
+      const hour = now.getHours();
+      const daily = hour >= 5 && hour < 11
+        ? { text: '早呀,清醒一下大脑', icon: 'sun' as TagIconName }
+        : hour >= 11 && hour < 14
+          ? { text: '午后练一会儿吧', icon: 'sun' as TagIconName }
+          : hour >= 14 && hour < 18
+            ? { text: '下午加把劲', icon: 'sun' as TagIconName }
+            : hour >= 18 && hour < 23
+              ? { text: '睡前动动脑', icon: 'moon' as TagIconName }
+              : { text: '夜深了,简单练一组', icon: 'moon' as TagIconName };
+      const warmPool = ['数字也会想你的', '慢慢来,不着急', '今天的大脑状态不错', '练一组就很棒了', '算得对不对都没关系,练就好', '你已经做得很好啦', '动动脑,心情会变好', '一点点进步也是进步', '今天也要加油呀', '深呼吸,开始吧', '你坚持的样子很好看'];
+      next = Math.random() < 0.25 ? { text: choose(warmPool, now.getTime()), icon: 'sparkles', surprise: true } : { ...daily, surprise: false };
+    }
+  }
+
+  localStorage.setItem(DAILY_TAG_KEY, JSON.stringify({
+    date: today,
+    text: next.text,
+    icon: next.icon,
+    surprise: next.surprise,
+    triggeredMilestones: Array.from(triggered),
+    totalQuestions,
+    streakDays,
+    lastPracticeDate,
+    modeStats: persistedModeStats,
+  }));
+
+  return { ...next, review };
+}
+
+function useDailyPracticeTag(historyList: HistoryRecord[]) {
+  return useMemo(() => {
+    try {
+      return buildDailyTag(historyList);
+    } catch (error) {
+      console.error('Failed to build daily tag:', error);
+      return {
+        text: '今日练习',
+        icon: 'pencil' as TagIconName,
+        surprise: false,
+        review: { hasData: false, monthDays: 0, totalQuestions: 0, bestModeName: '', streakDays: 0 },
+      };
+    }
+  }, [historyList]);
+}
 
 function Button({
   children,
@@ -57,14 +283,63 @@ function Button({
 }
 
 function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  const dailyTag = useContext(dailyTagContext);
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [open]);
+
+  const tag = dailyTag || {
+    text: '今日练习',
+    icon: 'pencil' as TagIconName,
+    surprise: false,
+    review: { hasData: false, monthDays: 0, totalQuestions: 0, bestModeName: '', streakDays: 0 },
+  };
+
   return (
-    <div className="mb-[14px] shrink-0 rounded-[18px] border-[0.5px] border-[#ECE4E7] bg-white px-5 py-[18px]">
-      <div className="inline-flex items-center gap-[3px] rounded-[20px] bg-[#F7EDF0] px-[13px] py-[5px] text-[11px] font-medium leading-none text-[#B5879A]">
-        <IconPencil size={12} stroke={1.8} />
-        <span>今日练习</span>
-      </div>
-      <h1 className="mt-[10px] text-[23px] font-medium leading-tight tracking-[-0.3px] text-[#4A3E44]">{title}</h1>
-      {subtitle ? <p className="mt-1 text-[12px] leading-5 text-[#A892A0]">{subtitle}</p> : null}
+    <div ref={wrapRef} className="mb-[14px] shrink-0 rounded-[22px] border-[0.5px] border-[#ECE4E7] bg-white px-5 py-[18px]">
+      <button
+        className={cn(
+          'inline-flex items-center gap-[3px] rounded-[8px] bg-[#F7EDF0] px-[13px] py-[5px] text-[11px] font-medium leading-none text-[#B5879A] transition',
+          tag.surprise && 'scale-[1.04] bg-[#F5E7EC]',
+        )}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {iconForTag(tag.icon)}
+        <span>{tag.text}</span>
+      </button>
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            className="mt-2 rounded-xl border-[0.5px] border-[#ECE4E7] bg-white p-4 text-[12px] text-[#A892A0]"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            {tag.review.hasData ? (
+              <div className="grid gap-2">
+                <div className="flex items-center gap-2"><IconCalendar size={15} color="#B5879A" /><span>这个月你练了 <b className="text-[#4A3E44]">{tag.review.monthDays}</b> 天</span></div>
+                <div className="flex items-center gap-2"><IconCheckbox size={15} color="#7E9CAC" /><span>一共算了 <b className="text-[#4A3E44]">{tag.review.totalQuestions}</b> 道题</span></div>
+                {tag.review.bestModeName ? <div className="flex items-center gap-2"><IconStar size={15} color="#B5879A" /><span>最擅长 <b className="text-[#4A3E44]">{tag.review.bestModeName}</b></span></div> : null}
+                <div className="flex items-center gap-2"><IconFlame size={15} color="#7E9CAC" /><span>目前连续 <b className="text-[#4A3E44]">{tag.review.streakDays}</b> 天</span></div>
+                <div className="pt-1 text-[#B5879A]">这个月很努力呀</div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2"><IconSparkles size={15} color="#B5879A" />练满几天,这里就有你的记录啦</div>
+            )}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+      <h1 className="mt-[10px] text-[28px] font-bold leading-tight tracking-[-0.5px] text-[#3A2F34]">{title}</h1>
+      {subtitle ? <p className="mt-1 text-[12px] font-normal leading-5 text-[#A892A0]">{subtitle}</p> : null}
       <div className="mt-3 flex items-center gap-[5px]">
         <span className="h-1 w-6 rounded-sm bg-[#D9A7B8]" />
         <span className="h-1 w-[10px] rounded-sm bg-[#E8C9D3]" />
@@ -112,8 +387,8 @@ function HomeView({
         <div className="surface flex min-h-0 flex-col rounded-xl p-[14px]">
           <div className="scroll-clean min-h-0 flex-1 pr-1">
             {Object.entries(MODE_GROUPS).map(([groupKey, group]) => (
-              <section key={groupKey} className="mb-5">
-                <div className={cn('mb-2 px-1 text-[13px] font-semibold', groupTitleTone(groupKey))}>{GROUP_LABELS[groupKey] || group.label}</div>
+              <section key={groupKey} className="mt-5 first:mt-0">
+                <SectionTitle groupKey={groupKey}>{GROUP_LABELS[groupKey] || group.label}</SectionTitle>
                 {groupKey === 'divSelect' ? (
                   <Button variant="secondary" className="tone-special w-full" onClick={toSelectDivisor}>
                     商首位除数选择 <ChevronLeft className="h-4 w-4 rotate-180" />
@@ -142,8 +417,8 @@ function HomeView({
                 )}
               </section>
             ))}
-            <section className="mb-5">
-              <div className="group-title-space mb-2 px-1 text-[13px] font-semibold">空间思维</div>
+            <section className="mt-5">
+              <SectionTitle groupKey="space">空间思维</SectionTitle>
               <div className="grid grid-cols-2 gap-[10px]">
                 <button
                   className="tone-space flex min-h-[60px] items-center justify-center gap-2 rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]"
@@ -437,15 +712,15 @@ function HistoryView({
         </div>
 
         {chart.showChart ? (
-          <div className="mt-[10px] rounded-xl bg-[#F4F7F8] p-[14px] hairline">
-            <div className="scroll-clean mb-[10px] flex gap-[10px] overflow-x-auto">
+          <div className="mt-[10px] shrink-0 rounded-xl bg-[#F4F7F8] p-[14px] hairline">
+            <div className="scroll-clean mb-[10px] flex flex-nowrap gap-2 overflow-x-auto pb-1">
               {chart.availableModes.map((mode) => (
-                <button key={mode} className={cn('rounded-md px-3 py-2 text-[13px] font-semibold', chart.chartTab === mode ? 'selected-control' : 'premium-control')} onClick={() => chart.switchChartTab(mode)}>
+                <button key={mode} className={cn('h-9 max-w-[132px] shrink-0 truncate rounded-md px-3 text-[12px] font-semibold leading-9 whitespace-nowrap', chart.chartTab === mode ? 'selected-control' : 'premium-control')} onClick={() => chart.switchChartTab(mode)} title={prettyExpression(mode)}>
                   {prettyExpression(mode)}
                 </button>
               ))}
             </div>
-            <div id="accChart" className="h-[220px] w-full" />
+            <div id="accChart" className="h-[150px] w-full sm:h-[220px]" />
           </div>
         ) : null}
 
@@ -602,6 +877,7 @@ export default function App() {
   const exportTool = useExportTool(history.list, showToast);
   const game = useGame({ viewState, setViewState, addRecord: history.addRecord });
   const three = useThreeScene(setViewState);
+  const dailyTag = useDailyPracticeTag(history.list);
   const lowAccuracyCount = useMemo(
     () => history.list.filter((record) => {
       const accuracy = getAccuracyPercent(record);
@@ -642,6 +918,7 @@ export default function App() {
   };
 
   return (
+    <dailyTagContext.Provider value={dailyTag}>
     <div className="app-shell">
       <AnimatePresence mode="wait">
         {viewState === 'home' && (
@@ -706,5 +983,6 @@ export default function App() {
         ) : null}
       </AnimatePresence>
     </div>
+    </dailyTagContext.Provider>
   );
 }
