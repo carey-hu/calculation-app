@@ -111,11 +111,12 @@
   }
 
   .safe-page {
-    height: 100%;
+    height: calc(100% + 4px);
     min-height: 0;
-    padding: max(22px, env(safe-area-inset-top)) clamp(18px, 4vw, 40px) 4px;
+    padding: max(22px, env(safe-area-inset-top)) clamp(18px, 4vw, 40px) 0;
     display: flex;
     flex-direction: column;
+    transform: translateY(4px);
   }
 
   .surface {
