@@ -57,7 +57,7 @@ function SectionTitle({ groupKey, children }: { groupKey: string; children: Reac
   return (
     <div className={cn('section-title', `section-title-${tone}`)}>
       <span className={cn('section-icon', `section-icon-${tone}`)}>
-        <Icon size={11} stroke={2} />
+        <Icon size={13} stroke={2} />
       </span>
       <span>{children}</span>
     </div>
@@ -76,6 +76,10 @@ interface DailyTagState {
     totalQuestions: number;
     bestModeName: string;
     streakDays: number;
+  };
+  progress: {
+    completed: number;
+    target: number;
   };
 }
 
@@ -148,6 +152,7 @@ function buildDailyTag(historyList: HistoryRecord[]): DailyTagState {
   const now = new Date();
   const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const monthRecords = historyList.filter((record) => dateKey(record.ts).startsWith(monthPrefix));
+  const todayRecords = historyList.filter((record) => dateKey(record.ts) === today);
   const monthDays = new Set(monthRecords.map((record) => dateKey(record.ts))).size;
   const monthQuestions = monthRecords.reduce((sum, record) => sum + (record.detail?.length || 0), 0);
   const bestMode = Array.from(modeStats.values()).sort((a, b) => {
@@ -161,6 +166,10 @@ function buildDailyTag(historyList: HistoryRecord[]): DailyTagState {
     totalQuestions: monthQuestions,
     bestModeName: bestMode?.name || '',
     streakDays,
+  };
+  const progress = {
+    completed: todayRecords.length,
+    target: 5,
   };
   const persistedModeStats = Object.fromEntries(Array.from(modeStats.entries()).map(([mode, stat]) => [
     mode,
@@ -182,7 +191,7 @@ function buildDailyTag(historyList: HistoryRecord[]): DailyTagState {
       lastPracticeDate,
       modeStats: persistedModeStats,
     }));
-    return { text: saved.text, icon: saved.icon, surprise: !!saved.surprise, review };
+    return { text: saved.text, icon: saved.icon, surprise: !!saved.surprise, review, progress };
   }
 
   let next = { text: '', icon: 'pencil' as TagIconName, surprise: false };
@@ -240,7 +249,7 @@ function buildDailyTag(historyList: HistoryRecord[]): DailyTagState {
     modeStats: persistedModeStats,
   }));
 
-  return { ...next, review };
+  return { ...next, review, progress };
 }
 
 function useDailyPracticeTag(historyList: HistoryRecord[]) {
@@ -254,6 +263,7 @@ function useDailyPracticeTag(historyList: HistoryRecord[]) {
         icon: 'pencil' as TagIconName,
         surprise: false,
         review: { hasData: false, monthDays: 0, totalQuestions: 0, bestModeName: '', streakDays: 0 },
+        progress: { completed: 0, target: 5 },
       };
     }
   }, [historyList]);
@@ -282,7 +292,32 @@ function Button({
   );
 }
 
-function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+function ProgressRing({ completed, target }: { completed: number; target: number }) {
+  const done = target > 0 && completed >= target;
+  const ratio = Math.min(1, target > 0 ? completed / target : 0);
+  const degrees = Math.round(ratio * 360);
+
+  return (
+    <div
+      className="relative grid h-[62px] w-[62px] shrink-0 place-items-center"
+      style={{ borderRadius: '50%', background: `conic-gradient(#B5879A ${done ? 360 : degrees}deg, #F0E6EA 0deg)` }}
+      aria-label={`今日进度 ${completed}/${target}`}
+    >
+      <div className="absolute grid h-[46px] w-[46px] place-items-center bg-white" style={{ borderRadius: '50%' }}>
+        {done ? (
+          <Check className="h-5 w-5 text-[#B5879A]" strokeWidth={2.5} />
+        ) : (
+          <div className="text-center leading-none">
+            <div className="text-[13px] font-bold text-[#4A3E44]">{completed}/{target}</div>
+            <div className="mt-[3px] text-[9px] font-medium text-[#A8A1A6]">今日</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PageHeader({ title, subtitle, showProgress = false }: { title: string; subtitle?: string; showProgress?: boolean }) {
   const dailyTag = useContext(dailyTagContext);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -301,20 +336,33 @@ function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
     icon: 'pencil' as TagIconName,
     surprise: false,
     review: { hasData: false, monthDays: 0, totalQuestions: 0, bestModeName: '', streakDays: 0 },
+    progress: { completed: 0, target: 5 },
   };
 
   return (
     <div ref={wrapRef} className="mb-[14px] shrink-0 rounded-[22px] border-[0.5px] border-[#ECE4E7] bg-white px-5 py-[18px]">
-      <button
-        className={cn(
-          'inline-flex items-center gap-[3px] rounded-[8px] bg-[#F7EDF0] px-[13px] py-[5px] text-[11px] font-medium leading-none text-[#B5879A] transition',
-          tag.surprise && 'scale-[1.04] bg-[#F5E7EC]',
-        )}
-        onClick={() => setOpen((value) => !value)}
-      >
-        {iconForTag(tag.icon)}
-        <span>{tag.text}</span>
-      </button>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <button
+            className={cn(
+              'inline-flex items-center gap-[3px] rounded-[8px] bg-[#F7EDF0] px-[13px] py-[5px] text-[11px] font-medium leading-none text-[#B5879A] transition',
+              tag.surprise && 'scale-[1.04] bg-[#F5E7EC]',
+            )}
+            onClick={() => setOpen((value) => !value)}
+          >
+            {iconForTag(tag.icon)}
+            <span>{tag.text}</span>
+          </button>
+          <h1 className="mt-[10px] text-[28px] font-bold leading-tight tracking-[-0.5px] text-[#3A2F34]">{title}</h1>
+          {subtitle ? <p className="mt-1 text-[12px] font-normal leading-5 text-[#A892A0]">{subtitle}</p> : null}
+          <div className="mt-3 flex items-center gap-[5px]">
+            <span className="h-1 w-6 rounded-sm bg-[#D9A7B8]" />
+            <span className="h-1 w-[10px] rounded-sm bg-[#E8C9D3]" />
+            <span className="h-1 w-[10px] rounded-sm bg-[#DCE6EC]" />
+          </div>
+        </div>
+        {showProgress ? <ProgressRing completed={tag.progress.completed} target={tag.progress.target} /> : null}
+      </div>
       <AnimatePresence>
         {open ? (
           <motion.div
@@ -338,13 +386,6 @@ function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
           </motion.div>
         ) : null}
       </AnimatePresence>
-      <h1 className="mt-[10px] text-[28px] font-bold leading-tight tracking-[-0.5px] text-[#3A2F34]">{title}</h1>
-      {subtitle ? <p className="mt-1 text-[12px] font-normal leading-5 text-[#A892A0]">{subtitle}</p> : null}
-      <div className="mt-3 flex items-center gap-[5px]">
-        <span className="h-1 w-6 rounded-sm bg-[#D9A7B8]" />
-        <span className="h-1 w-[10px] rounded-sm bg-[#E8C9D3]" />
-        <span className="h-1 w-[10px] rounded-sm bg-[#DCE6EC]" />
-      </div>
     </div>
   );
 }
@@ -382,10 +423,9 @@ function HomeView({
 }) {
   return (
     <Screen>
-      <PageHeader title="计算助手" subtitle="每天一点点,心算更轻松" />
-      <div className="grid min-h-0 flex-1 gap-[10px]">
-        <div className="surface flex min-h-0 flex-col rounded-xl p-[14px]">
-          <div className="scroll-clean min-h-0 flex-1 pr-1">
+      <PageHeader title="计算助手" subtitle="每天一点点,心算更轻松" showProgress />
+      <div className="surface flex min-h-0 flex-1 flex-col rounded-xl p-[14px]">
+        <div className="scroll-clean min-h-0 flex-1 pr-1">
             {Object.entries(MODE_GROUPS).map(([groupKey, group]) => (
               <section key={groupKey} className="mt-5 first:mt-0">
                 <SectionTitle groupKey={groupKey}>{GROUP_LABELS[groupKey] || group.label}</SectionTitle>
@@ -434,16 +474,15 @@ function HomeView({
                 </button>
               </div>
             </section>
-          </div>
-          <div className="mt-[10px] grid shrink-0 gap-[10px] border-t border-black/[0.06] pt-[14px] sm:grid-cols-2">
-            <Button className="h-14 text-[17px]" onClick={startGame}>
-              开始练习
-            </Button>
-            <Button variant="secondary" className="h-14 text-[17px]" onClick={openHistory}>
-              <History className="h-5 w-5" /> 历史记录
-            </Button>
-          </div>
         </div>
+      </div>
+      <div className="mt-[10px] grid shrink-0 gap-[10px]">
+        <Button className="h-[50px] text-[17px]" onClick={startGame}>
+          开始练习
+        </Button>
+        <Button variant="secondary" className="h-[50px] border-[#ECE4E7] text-[17px]" onClick={openHistory}>
+          <History className="h-5 w-5" /> 历史记录
+        </Button>
       </div>
     </Screen>
   );
