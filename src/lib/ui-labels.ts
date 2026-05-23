@@ -1,4 +1,4 @@
-export const GROUP_LABELS: Record<string, string> = {
+﻿export const GROUP_LABELS: Record<string, string> = {
   basic: '大九九与除法',
   divSelect: '商首位专项',
   bigNineDivSelect: '大九九除法专项',

@@ -61,7 +61,7 @@ function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
     <div className="mb-[14px] shrink-0 rounded-[18px] border-[0.5px] border-[#ECE4E7] bg-white px-5 py-[18px]">
       <div className="inline-flex items-center gap-[3px] rounded-[20px] bg-[#F7EDF0] px-[13px] py-[5px] text-[11px] font-medium leading-none text-[#B5879A]">
         <IconPencil size={12} stroke={1.8} />
-        <span>浠婃棩缁冧範</span>
+        <span>今日练习</span>
       </div>
       <h1 className="mt-[10px] text-[23px] font-medium leading-tight tracking-[-0.3px] text-[#4A3E44]">{title}</h1>
       {subtitle ? <p className="mt-1 text-[12px] leading-5 text-[#A892A0]">{subtitle}</p> : null}
@@ -371,7 +371,7 @@ function ResultView({
                   {prettyExpression(isResult ? `${item.q} = ${item.yourAns}` : item.q)}
                 </div>
                 <div className="mt-1 text-[13px] text-muted">
-                  {item.usedStr}{!isResult ? ` 路 閿?${item.wrong}${item.skipped ? ' 路 璺宠繃' : ''}` : item.detailTimes ? ` 路 ${item.detailTimes}` : ''}
+                  {item.usedStr}{!isResult ? ` · 错 ${item.wrong}${item.skipped ? ' · 跳过' : ''}` : item.detailTimes ? ` · ${item.detailTimes}` : ''}
                 </div>
               </div>
               {isResult ? (
