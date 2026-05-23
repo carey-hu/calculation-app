@@ -88,6 +88,7 @@
       :totalCount="totalCount"
       :lowAccuracyCount="lowAccuracyCount"
       :syncState="history.syncState.value"
+      :syncMessage="history.syncMessage.value"
       @switchChartTab="switchChartTab"
       @closeChart="closeChart"
       @initChart="initChart"

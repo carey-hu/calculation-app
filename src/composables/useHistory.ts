@@ -2,7 +2,7 @@ import { onMounted, ref } from 'vue';
 import type { HistoryRecord, BuildRecordPayload } from '../types';
 import {
   loadHistory, saveHistory, clearAllHistory,
-  prependRecord, trimOldest, buildRecord, historyRecordKey,
+  prependRecord, trimOldest, buildRecord, historyRecordKey, mergeHistory,
   removeLowAccuracyHistory, loadHistorySyncSince, saveHistorySyncSince,
   loadPendingSyncRecords, enqueuePendingSyncRecord, removePendingSyncRecords,
   hasCompletedAuthoritativeSync, markAuthoritativeSyncComplete,
@@ -25,8 +25,12 @@ const latestRecordTs = (records: HistoryRecord[]): number =>
 export function useHistory() {
   const list = ref<HistoryRecord[]>(loadHistory());
   const syncState = ref<'idle' | 'syncing' | 'ok' | 'error'>('idle');
+  const syncMessage = ref('');
   let syncPromise: Promise<void> | null = null;
   let lastSyncStartedAt = 0;
+
+  const errorMessage = (error: unknown): string =>
+    error instanceof Error ? error.message : String(error);
 
   const uploadMissingRecords = async (records: HistoryRecord[], remoteList: HistoryRecord[]) => {
     if (records.length === 0) return remoteList;
@@ -36,11 +40,12 @@ export function useHistory() {
     if (missingRecords.length === 0) return remoteList;
 
     await saveRemoteRecords(missingRecords);
-    return fetchRemoteHistory();
+    return mergeHistory(remoteList, missingRecords);
   };
 
   const runRefreshRemote = async () => {
     syncState.value = 'syncing';
+    syncMessage.value = '';
     try {
       let remoteList = await fetchRemoteHistory();
       const localList = list.value;
@@ -60,9 +65,11 @@ export function useHistory() {
       saveHistory(list.value);
       saveHistorySyncSince(latestRecordTs(list.value));
       syncState.value = 'ok';
+      syncMessage.value = '';
     } catch (e) {
       console.error('Failed to sync remote history:', e);
       syncState.value = 'error';
+      syncMessage.value = errorMessage(e);
     } finally {
       syncPromise = null;
     }
@@ -91,9 +98,11 @@ export function useHistory() {
       removePendingSyncRecords([record]);
       saveHistorySyncSince(Math.max(loadHistorySyncSince() || 0, record.ts));
       syncState.value = 'ok';
+      syncMessage.value = '';
     } catch (e) {
       console.error('Failed to save remote history:', e);
       syncState.value = 'error';
+      syncMessage.value = errorMessage(e);
     }
     return record;
   };
@@ -106,9 +115,11 @@ export function useHistory() {
     try {
       await clearRemoteOldest(count);
       syncState.value = 'ok';
+      syncMessage.value = '';
     } catch (e) {
       console.error('Failed to clear remote history:', e);
       syncState.value = 'error';
+      syncMessage.value = errorMessage(e);
     }
   };
 
@@ -118,9 +129,11 @@ export function useHistory() {
     try {
       await clearRemoteHistory();
       syncState.value = 'ok';
+      syncMessage.value = '';
     } catch (e) {
       console.error('Failed to clear remote history:', e);
       syncState.value = 'error';
+      syncMessage.value = errorMessage(e);
     }
   };
 
@@ -133,9 +146,11 @@ export function useHistory() {
     try {
       await clearRemoteLowAccuracy(LOW_ACCURACY_THRESHOLD);
       syncState.value = 'ok';
+      syncMessage.value = '';
     } catch (e) {
       console.error('Failed to clear low accuracy remote history:', e);
       syncState.value = 'error';
+      syncMessage.value = errorMessage(e);
     }
   };
 
@@ -143,5 +158,5 @@ export function useHistory() {
     void refreshRemote({ force: true });
   });
 
-  return { list, syncState, refreshRemote, addRecord, clearOldest, clearAll, clearLowAccuracy };
+  return { list, syncState, syncMessage, refreshRemote, addRecord, clearOldest, clearAll, clearLowAccuracy };
 }

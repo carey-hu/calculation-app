@@ -55,6 +55,7 @@
       </div>
       <div v-if="syncState === 'syncing'" style="font-size:12px; color:#8e8e93; padding:0 8px 8px;">正在同步云端记录...</div>
       <div v-if="syncState === 'error'" style="font-size:12px; color:#ff3b30; padding:0 8px 8px;">云端同步失败，请检查网络或 API 配置</div>
+      <div v-if="syncState === 'error' && syncMessage" style="font-size:12px; color:#ff3b30; padding:0 8px 8px;">{{ syncMessage }}</div>
       <div class="resultScroll">
         <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; color:rgba(0,0,0,0.4);">暂无记录，快去练习吧！</div>
         <div v-else>
@@ -98,6 +99,7 @@ defineProps<{
   totalCount: number;
   lowAccuracyCount: number;
   syncState: 'idle' | 'syncing' | 'ok' | 'error';
+  syncMessage: string;
 }>();
 
 defineEmits<{

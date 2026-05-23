@@ -2,7 +2,7 @@ import type { HistoryRecord } from '../types';
 
 const API_URL = '/api/history';
 const SAVE_CHUNK_SIZE = 100;
-const REQUEST_TIMEOUT_MS = 10000;
+const REQUEST_TIMEOUT_MS = 30000;
 const SAVE_CHUNK_DELAY_MS = 150;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
@@ -24,7 +24,14 @@ const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
     });
 
     if (!res.ok) {
-      throw new Error(`History API failed: ${res.status}`);
+      let errorText = '';
+      try {
+        const body = await res.json() as { error?: string };
+        errorText = body.error ? `: ${body.error}` : '';
+      } catch {
+        errorText = '';
+      }
+      throw new Error(`History API failed: ${res.status}${errorText}`);
     }
 
     return res.json() as Promise<T>;
