@@ -289,21 +289,18 @@
   .section-title {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     margin-bottom: 10px;
     font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
   }
 
-  .section-icon {
-    display: inline-flex;
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 7px;
+  .section-title-bar {
+    width: 4px;
+    height: 18px;
+    flex: 0 0 4px;
+    border-radius: 2px;
   }
 
   .section-title-mental {
@@ -311,23 +308,39 @@
   }
 
   .section-title-space {
-    color: #4A6F4F;
+    color: #3C5A3F;
   }
 
   .section-title-special {
-    color: #8A6233;
+    color: #7A5A30;
   }
 
-  .section-icon-mental {
-    background: #E3EEF2;
+  .section-title-bar-mental {
+    background: #5E97AE;
   }
 
-  .section-icon-space {
-    background: #EAF1E9;
+  .section-title-bar-space {
+    background: #6F8362;
   }
 
-  .section-icon-special {
-    background: #F7EFE3;
+  .section-title-bar-special {
+    background: #B08D57;
+  }
+
+  .fixed-bottom-action,
+  .fixed-keypad {
+    position: fixed;
+    left: 50%;
+    right: auto;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    z-index: 40;
+    width: calc(100% - 32px);
+    max-width: 992px;
+    transform: translateX(-50%);
+  }
+
+  .fixed-keypad {
+    max-width: 520px;
   }
 
   .game-function-row > button:nth-child(1),

@@ -3,14 +3,11 @@ import {
   IconCalendar,
   IconCheckbox,
   IconConfetti,
-  IconCube,
-  IconDivide,
   IconFlame,
   IconHandLoveYou,
   IconMoon,
   IconMoodSmile,
   IconPencil,
-  IconPlus,
   IconSparkles,
   IconStar,
   IconSun,
@@ -52,13 +49,10 @@ const sectionTone = (groupKey: string) => {
 
 function SectionTitle({ groupKey, children }: { groupKey: string; children: React.ReactNode }) {
   const tone = sectionTone(groupKey);
-  const Icon = tone === 'space' ? IconCube : groupKey.includes('Div') || groupKey.includes('div') ? IconDivide : IconPlus;
 
   return (
     <div className={cn('section-title', `section-title-${tone}`)}>
-      <span className={cn('section-icon', `section-icon-${tone}`)}>
-        <Icon size={13} stroke={2} />
-      </span>
+      <span className={cn('section-title-bar', `section-title-bar-${tone}`)} />
       <span>{children}</span>
     </div>
   );
@@ -425,7 +419,7 @@ function HomeView({
     <Screen>
       <PageHeader title="计算助手" subtitle="每天一点点,心算更轻松" showProgress />
       <div className="surface flex min-h-0 flex-1 flex-col rounded-xl p-[14px]">
-        <div className="scroll-clean min-h-0 flex-1 pr-1">
+        <div className="scroll-clean min-h-0 flex-1 pr-1 pb-[124px]">
             {Object.entries(MODE_GROUPS).map(([groupKey, group]) => (
               <section key={groupKey} className="mt-5 first:mt-0">
                 <SectionTitle groupKey={groupKey}>{GROUP_LABELS[groupKey] || group.label}</SectionTitle>
@@ -476,7 +470,7 @@ function HomeView({
             </section>
         </div>
       </div>
-      <div className="mt-[10px] grid shrink-0 gap-[10px]">
+      <div className="fixed-bottom-action grid gap-[10px]">
         <Button className="h-[50px] text-[17px]" onClick={startGame}>
           开始练习
         </Button>
@@ -598,7 +592,7 @@ function GameView({
   const isJudge = ['carryJudge', 'borrowJudge'].includes(game.currentModeKey);
 
   return (
-    <Screen className="gap-[10px]">
+    <Screen className="gap-[10px] pb-[330px]">
       <div className="flex shrink-0 items-center gap-[10px]">
         <Button variant="secondary" className="h-11 px-4" onClick={game.goHome}>
           <ChevronLeft className="h-5 w-5" /> 返回
@@ -627,7 +621,7 @@ function GameView({
         {game.uiHint ? <div className="semantic-error mt-4 rounded-md px-3 py-2 text-[15px] font-semibold">{game.uiHint}</div> : null}
       </div>
 
-      <div className="surface shrink-0 rounded-xl p-[14px]">
+      <div className="fixed-keypad surface rounded-xl p-[14px]">
         <div className="game-function-row mb-[10px] grid grid-cols-3 gap-[10px]">
           <Button variant="ghost" className="h-13 tone-special" onClick={game.leftAction}>{game.leftText}</Button>
           <Button variant="ghost" className="h-13 tone-special" onClick={game.clearInput}>清空</Button>
