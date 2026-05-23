@@ -1,16 +1,18 @@
 const KV_BINDING = 'CALC_HISTORY_KV';
-const KEY_PREFIX = 'calc_history_';
-const MAX_LIST_LIMIT = 256;
-const DEFAULT_READ_LIMIT = 100;
-const MAX_POST_RECORDS = 100;
+const INDEX_KEY = 'calc_history_index';
+const CHUNK_PREFIX = 'calc_history_chunk_';
+const CHUNK_SIZE = 300;
+const DEFAULT_READ_LIMIT = 300;
+const MAX_READ_LIMIT = 1000;
+const MAX_POST_RECORDS = 300;
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store',
-    },
-  });
+  headers: {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+  },
+});
 
 const getKv = (context) => {
   const bound = context.env && context.env[KV_BINDING];
@@ -40,88 +42,143 @@ const safeRecord = (record) => ({
   detail: record.detail,
 });
 
-const hashString = (value) => {
-  let hash = 5381;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = ((hash << 5) + hash) ^ value.charCodeAt(i);
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
+const recordId = (record) =>
+  `${record.ts}_${record.mode}_${record.summary}_${record.duration}`;
+
+const mergeRecords = (...groups) => {
+  const map = new Map();
+  groups.flat().forEach((record) => {
+    if (!isRecord(record)) return;
+    const key = recordId(record);
+    if (!map.has(key)) map.set(key, safeRecord(record));
+  });
+  return Array.from(map.values()).sort((a, b) => b.ts - a.ts);
 };
-
-const recordKey = (record) =>
-  `${KEY_PREFIX}${String(record.ts).padStart(13, '0')}_${hashString(JSON.stringify(record))}`;
-
-const keyTs = (key) => Number(key.slice(KEY_PREFIX.length, KEY_PREFIX.length + 13));
 
 const normalizeLimit = (value) => {
   const limit = Number(value || DEFAULT_READ_LIMIT);
   if (!Number.isFinite(limit) || limit <= 0) return DEFAULT_READ_LIMIT;
-  return Math.min(Math.floor(limit), MAX_LIST_LIMIT);
+  return Math.min(Math.floor(limit), MAX_READ_LIMIT);
 };
 
-const listKeysPage = async (kv, cursor = '', limit = DEFAULT_READ_LIMIT) => {
-  const result = await kv.list({
-    prefix: KEY_PREFIX,
-    limit,
-    cursor,
-  });
-  const keys = (result.keys || [])
-    .map((item) => (typeof item === 'string' ? item : item.key || item.name))
-    .filter(Boolean);
+const normalizeCursor = (value) => {
+  const cursor = Number(value || '0');
+  return Number.isFinite(cursor) && cursor > 0 ? Math.floor(cursor) : 0;
+};
 
-  return {
-    keys,
-    cursor: result.cursor || '',
-    complete: Boolean(result.complete || !result.cursor),
+const isIndex = (value) =>
+  value
+  && typeof value.version === 'number'
+  && typeof value.total === 'number'
+  && Array.isArray(value.chunks);
+
+const readIndex = async (kv) => {
+  const index = await kv.get(INDEX_KEY, { type: 'json' });
+  return isIndex(index) ? index : null;
+};
+
+const readChunk = async (kv, key) => {
+  const chunk = await kv.get(key, { type: 'json' });
+  if (Array.isArray(chunk)) return chunk.filter(isRecord).map(safeRecord);
+  if (chunk && Array.isArray(chunk.records)) return chunk.records.filter(isRecord).map(safeRecord);
+  return [];
+};
+
+const makeChunkKey = (version, index) =>
+  `${CHUNK_PREFIX}${String(version).padStart(12, '0')}_${String(index).padStart(4, '0')}`;
+
+const writeChunkedRecords = async (kv, records, previousIndex = null) => {
+  const mergedRecords = mergeRecords(records);
+  const version = Math.max(((previousIndex && previousIndex.version) || 0) + 1, Date.now());
+  const chunks = [];
+
+  for (let i = 0; i < mergedRecords.length; i += CHUNK_SIZE) {
+    const recordsChunk = mergedRecords.slice(i, i + CHUNK_SIZE);
+    const chunkNumber = chunks.length;
+    const key = makeChunkKey(version, chunkNumber);
+    chunks.push({
+      key,
+      count: recordsChunk.length,
+      maxTs: recordsChunk[0]?.ts || 0,
+      minTs: recordsChunk[recordsChunk.length - 1]?.ts || 0,
+    });
+    await kv.put(key, JSON.stringify({ records: recordsChunk }));
+  }
+
+  const nextIndex = {
+    version,
+    total: mergedRecords.length,
+    updatedAt: Date.now(),
+    chunkSize: CHUNK_SIZE,
+    chunks,
   };
+
+  await kv.put(INDEX_KEY, JSON.stringify(nextIndex));
+
+  const nextKeys = new Set(chunks.map((chunk) => chunk.key));
+  const oldChunks = previousIndex && Array.isArray(previousIndex.chunks) ? previousIndex.chunks : [];
+  await Promise.all(oldChunks
+    .map((chunk) => chunk.key)
+    .filter((key) => key && !nextKeys.has(key))
+    .map((key) => kv.delete(key)));
+
+  return nextIndex;
 };
 
-const listKeys = async (kv) => {
-  const keys = [];
-  let cursor = '';
+const readAllChunkedRecords = async (kv, index) => {
+  if (!index) return [];
+  const groups = [];
+  for (const chunk of index.chunks) {
+    groups.push(await readChunk(kv, chunk.key));
+  }
+  return mergeRecords(...groups);
+};
 
-  while (true) {
-    const result = await listKeysPage(kv, cursor, MAX_LIST_LIMIT);
-    keys.push(...result.keys);
-    cursor = result.cursor;
-    if (result.complete) break;
+const readRecordsPage = async (kv, { since = 0, cursor = 0, limit = DEFAULT_READ_LIMIT }) => {
+  const index = await readIndex(kv);
+  if (!index) {
+    return { records: [], cursor: '', complete: true, total: 0, version: 0 };
   }
 
-  return keys;
-};
-
-const readRecords = async (kv, since = 0) => {
-  const keys = await listKeys(kv);
-  const recordKeys = since > 0 ? keys.filter((key) => keyTs(key) > since) : keys;
   const records = [];
+  let skipped = cursor;
+  let nextCursor = cursor;
 
-  for (const key of recordKeys) {
-    const value = await kv.get(key, { type: 'json' });
-    if (isRecord(value)) records.push(value);
-  }
+  for (const chunk of index.chunks) {
+    if (skipped >= chunk.count) {
+      skipped -= chunk.count;
+      continue;
+    }
 
-  return records.sort((a, b) => b.ts - a.ts);
-};
-
-const readRecordsPage = async (kv, { since = 0, cursor = '', limit = DEFAULT_READ_LIMIT }) => {
-  const page = await listKeysPage(kv, cursor, limit);
-  const recordKeys = since > 0 ? page.keys.filter((key) => keyTs(key) > since) : page.keys;
-  const records = [];
-
-  for (const key of recordKeys) {
-    const value = await kv.get(key, { type: 'json' });
-    if (isRecord(value)) records.push(value);
+    const chunkRecords = await readChunk(kv, chunk.key);
+    for (let i = skipped; i < chunkRecords.length; i += 1) {
+      const record = chunkRecords[i];
+      nextCursor += 1;
+      if (!since || record.ts > since) records.push(record);
+      if (records.length >= limit) {
+        return {
+          records,
+          cursor: String(nextCursor),
+          complete: nextCursor >= index.total,
+          total: index.total,
+          version: index.version,
+        };
+      }
+    }
+    skipped = 0;
   }
 
   return {
-    records: records.sort((a, b) => b.ts - a.ts),
-    cursor: page.cursor,
-    complete: page.complete,
+    records,
+    cursor: '',
+    complete: true,
+    total: index.total,
+    version: index.version,
   };
 };
 
 const getAccuracyPercent = (record) => {
-  const summaryMatch = record.summary.match(/正确率\s*(\d+(?:\.\d+)?)%/);
+  const summaryMatch = record.summary.match(/姝ｇ‘鐜嘰s*(\d+(?:\.\d+)?)%/);
   if (summaryMatch) return Number(summaryMatch[1]);
 
   const graded = record.detail.filter((item) => item && typeof item.ok === 'boolean');
@@ -136,12 +193,10 @@ export async function onRequestGet(context) {
 
   const url = new URL(context.request.url);
   const since = Number(url.searchParams.get('since') || '0');
-  const cursor = url.searchParams.get('cursor') || '';
-  const limit = normalizeLimit(url.searchParams.get('limit'));
   const page = await readRecordsPage(kv, {
     since: Number.isFinite(since) && since > 0 ? since : 0,
-    cursor,
-    limit,
+    cursor: normalizeCursor(url.searchParams.get('cursor')),
+    limit: normalizeLimit(url.searchParams.get('limit')),
   });
   return json(page);
 }
@@ -162,9 +217,10 @@ export async function onRequestPost(context) {
     return json({ error: 'Invalid history record' }, 400);
   }
 
-  const safeRecords = records.map(safeRecord);
-  await Promise.all(safeRecords.map((record) => kv.put(recordKey(record), JSON.stringify(record))));
-  return json({ ok: true });
+  const index = await readIndex(kv);
+  const existingRecords = await readAllChunkedRecords(kv, index);
+  const nextIndex = await writeChunkedRecords(kv, mergeRecords(existingRecords, records), index);
+  return json({ ok: true, total: nextIndex.total, version: nextIndex.version });
 }
 
 export async function onRequestDelete(context) {
@@ -174,30 +230,29 @@ export async function onRequestDelete(context) {
   const url = new URL(context.request.url);
   const oldestCount = Number(url.searchParams.get('oldest') || '0');
   const belowAccuracy = Number(url.searchParams.get('belowAccuracy') || '0');
-  const records = await readRecords(kv);
-  const keys = await listKeys(kv);
+  const index = await readIndex(kv);
+
+  if (!index) return json({ ok: true, total: 0, version: 0 });
+
+  if (!oldestCount && !belowAccuracy) {
+    await Promise.all(index.chunks.map((chunk) => kv.delete(chunk.key)));
+    await kv.delete(INDEX_KEY);
+    return json({ ok: true, total: 0, version: Date.now() });
+  }
+
+  const records = await readAllChunkedRecords(kv, index);
+  let nextRecords = records;
 
   if (oldestCount > 0) {
-    const oldestTs = new Set(records.slice(-oldestCount).map((record) => record.ts));
-    await Promise.all(keys
-      .filter((key) => oldestTs.has(keyTs(key)))
-      .map((key) => kv.delete(key)));
-    return json({ ok: true });
+    const keep = records.length - oldestCount;
+    nextRecords = keep > 0 ? records.slice(0, keep) : [];
+  } else if (belowAccuracy > 0) {
+    nextRecords = records.filter((record) => {
+      const accuracy = getAccuracyPercent(record);
+      return accuracy === null || accuracy >= belowAccuracy;
+    });
   }
 
-  if (belowAccuracy > 0) {
-    const lowAccuracyTs = new Set(records
-      .filter((record) => {
-        const accuracy = getAccuracyPercent(record);
-        return accuracy !== null && accuracy < belowAccuracy;
-      })
-      .map((record) => record.ts));
-    await Promise.all(keys
-      .filter((key) => lowAccuracyTs.has(keyTs(key)))
-      .map((key) => kv.delete(key)));
-    return json({ ok: true });
-  }
-
-  await Promise.all(keys.map((key) => kv.delete(key)));
-  return json({ ok: true });
+  const nextIndex = await writeChunkedRecords(kv, nextRecords, index);
+  return json({ ok: true, total: nextIndex.total, version: nextIndex.version });
 }

@@ -1,8 +1,8 @@
 import type { HistoryRecord } from '../types';
 
 const API_URL = '/api/history';
-const READ_PAGE_SIZE = 100;
-const SAVE_CHUNK_SIZE = 100;
+const READ_PAGE_SIZE = 300;
+const SAVE_CHUNK_SIZE = 300;
 const REQUEST_TIMEOUT_MS = 30000;
 const SAVE_CHUNK_DELAY_MS = 150;
 
@@ -44,8 +44,15 @@ const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
 export const fetchRemoteHistory = async (since?: number | null): Promise<HistoryRecord[]> => {
   const records: HistoryRecord[] = [];
   let cursor = '';
+  const seenCursors = new Set<string>();
+  let pageCount = 0;
 
   while (true) {
+    pageCount += 1;
+    if (pageCount > 1000) {
+      throw new Error('History API pagination exceeded 1000 pages');
+    }
+
     const params = new URLSearchParams({ limit: String(READ_PAGE_SIZE) });
     if (cursor) params.set('cursor', cursor);
     if (since && since > 0) params.set('since', String(since));
@@ -60,6 +67,10 @@ export const fetchRemoteHistory = async (since?: number | null): Promise<History
 
     cursor = data.cursor || '';
     if (data.complete || !cursor) break;
+    if (seenCursors.has(cursor)) {
+      throw new Error(`History API returned a repeated cursor: ${cursor}`);
+    }
+    seenCursors.add(cursor);
 
     await sleep(SAVE_CHUNK_DELAY_MS);
   }
