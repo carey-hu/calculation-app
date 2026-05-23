@@ -419,16 +419,16 @@ function HomeView({
     <Screen>
       <PageHeader title="计算助手" subtitle="每天一点点,心算更轻松" showProgress />
       <div className="surface flex min-h-0 flex-1 flex-col rounded-xl p-[14px]">
-        <div className="scroll-clean min-h-0 flex-1 pr-1 pb-[124px]">
+        <div className="scroll-clean min-h-0 flex-1 pr-1 pb-[calc(120px+env(safe-area-inset-bottom))]">
             {Object.entries(MODE_GROUPS).map(([groupKey, group]) => (
-              <section key={groupKey} className="mt-5 first:mt-0">
+              <section key={groupKey} className="mt-5">
                 <SectionTitle groupKey={groupKey}>{GROUP_LABELS[groupKey] || group.label}</SectionTitle>
                 {groupKey === 'divSelect' ? (
-                  <Button variant="secondary" className="tone-special w-full" onClick={toSelectDivisor}>
+                  <Button variant="secondary" className="tone-special h-[52px] w-full" onClick={toSelectDivisor}>
                     商首位除数选择 <ChevronLeft className="h-4 w-4 rotate-180" />
                   </Button>
                 ) : groupKey === 'bigNineDivSelect' ? (
-                  <Button variant="secondary" className="tone-special w-full" onClick={toSelectBigNineDivisor}>
+                  <Button variant="secondary" className="tone-special h-[52px] w-full" onClick={toSelectBigNineDivisor}>
                     大九九除法专项 <ChevronLeft className="h-4 w-4 rotate-180" />
                   </Button>
                 ) : (
@@ -437,7 +437,7 @@ function HomeView({
                       <button
                         key={modeKey}
                         className={cn(
-                          'flex min-h-[60px] items-center justify-center rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]',
+                          'flex h-[52px] items-center justify-center rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]',
                           currentModeKey === modeKey
                             ? 'selected-control'
                             : 'tone-mental',
@@ -455,13 +455,13 @@ function HomeView({
               <SectionTitle groupKey="space">空间思维</SectionTitle>
               <div className="grid grid-cols-2 gap-[10px]">
                 <button
-                  className="tone-space flex min-h-[60px] items-center justify-center gap-2 rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]"
+                  className="tone-space flex h-[52px] items-center justify-center gap-2 rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]"
                   onClick={() => startCubicMode('block')}
                 >
                   <Box className="h-5 w-5" /> 立体拼合
                 </button>
                 <button
-                  className="tone-space flex min-h-[60px] items-center justify-center gap-2 rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]"
+                  className="tone-space flex h-[52px] items-center justify-center gap-2 rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]"
                   onClick={() => startCubicMode('section')}
                 >
                   <Layers3 className="h-5 w-5" /> 立体截面
@@ -592,7 +592,7 @@ function GameView({
   const isJudge = ['carryJudge', 'borrowJudge'].includes(game.currentModeKey);
 
   return (
-    <Screen className="gap-[10px] pb-[330px]">
+    <Screen className="gap-[10px] pb-[calc(320px+env(safe-area-inset-bottom))]">
       <div className="flex shrink-0 items-center gap-[10px]">
         <Button variant="secondary" className="h-11 px-4" onClick={game.goHome}>
           <ChevronLeft className="h-5 w-5" /> 返回
@@ -621,35 +621,37 @@ function GameView({
         {game.uiHint ? <div className="semantic-error mt-4 rounded-md px-3 py-2 text-[15px] font-semibold">{game.uiHint}</div> : null}
       </div>
 
-      <div className="fixed-keypad surface rounded-xl p-[14px]">
-        <div className="game-function-row mb-[10px] grid grid-cols-3 gap-[10px]">
-          <Button variant="ghost" className="h-13 tone-special" onClick={game.leftAction}>{game.leftText}</Button>
-          <Button variant="ghost" className="h-13 tone-special" onClick={game.clearInput}>清空</Button>
-          <Button variant="ghost" className="h-13 tone-danger-soft" onClick={game.backspace}>退格</Button>
-        </div>
-        {isJudge ? (
-          <div className="grid grid-cols-2 gap-[10px]">
-            <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit(game.currentModeKey === 'borrowJudge' ? '-1' : '1')}>
-              {game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}
-              <span className="block text-[14px] text-muted">{game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}</span>
-            </button>
-            <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit('0')}>
-              0<span className="block text-[14px] text-muted">不变</span>
-            </button>
-            <Button className="col-span-2 h-14" onClick={game.confirmAnswer}>确认</Button>
+      <div className="fixed-keypad">
+        <div className="surface rounded-xl p-[14px]">
+          <div className="game-function-row mb-[10px] grid grid-cols-3 gap-[10px]">
+            <Button variant="ghost" className="h-13 tone-special" onClick={game.leftAction}>{game.leftText}</Button>
+            <Button variant="ghost" className="h-13 tone-special" onClick={game.clearInput}>清空</Button>
+            <Button variant="ghost" className="h-13 tone-danger-soft" onClick={game.backspace}>退格</Button>
           </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-[10px]">
-            {digits.map((item) => (
-              <button key={item} className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(item)}>
-                {item}
+          {isJudge ? (
+            <div className="grid grid-cols-2 gap-[10px]">
+              <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit(game.currentModeKey === 'borrowJudge' ? '-1' : '1')}>
+                {game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}
+                <span className="block text-[14px] text-muted">{game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}</span>
               </button>
-            ))}
-            <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={game.pressDot}>.</button>
-            <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(0)}>0</button>
-            <Button className="h-[64px] rounded-lg" onClick={game.confirmAnswer}><Check className="h-5 w-5" /></Button>
-          </div>
-        )}
+              <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit('0')}>
+                0<span className="block text-[14px] text-muted">不变</span>
+              </button>
+              <Button className="col-span-2 h-14" onClick={game.confirmAnswer}>确认</Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-[10px]">
+              {digits.map((item) => (
+                <button key={item} className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(item)}>
+                  {item}
+                </button>
+              ))}
+              <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={game.pressDot}>.</button>
+              <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(0)}>0</button>
+              <Button className="h-[64px] rounded-lg" onClick={game.confirmAnswer}><Check className="h-5 w-5" /></Button>
+            </div>
+          )}
+        </div>
       </div>
     </Screen>
   );
