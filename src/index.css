@@ -12,8 +12,8 @@
   body,
   #app {
     width: 100%;
-    height: 100dvh;
-    min-height: 100dvh;
+    height: 100vh;
+    min-height: 100vh;
   }
 
   body {
@@ -94,7 +94,7 @@
 
 @layer components {
   .app-shell {
-    height: 100dvh;
+    height: 100vh;
     width: 100%;
     max-width: 480px;
     margin: 0 auto;
@@ -113,13 +113,9 @@
   .safe-page {
     height: 100%;
     min-height: 0;
-    padding: max(22px, env(safe-area-inset-top)) clamp(18px, 4vw, 40px) 0;
+    padding: max(22px, env(safe-area-inset-top)) clamp(18px, 4vw, 40px) 4px;
     display: flex;
     flex-direction: column;
-  }
-
-  .safe-page > :last-child {
-    margin-bottom: max(4px, calc(env(safe-area-inset-bottom) - 30px));
   }
 
   .surface {
