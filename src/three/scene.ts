@@ -11,8 +11,8 @@ export const createScene = (container: HTMLElement, { showGrid = true }: CreateS
   const height = container.clientHeight;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#f2f2f7');
-  scene.fog = new THREE.Fog('#f2f2f7', 30, 80);
+  scene.background = new THREE.Color('#EBEFF2');
+  scene.fog = new THREE.Fog('#EBEFF2', 30, 80);
 
   const aspect = width / height;
   const d = 16;
@@ -30,7 +30,7 @@ export const createScene = (container: HTMLElement, { showGrid = true }: CreateS
   dirLight.position.set(10, 20, 10);
   scene.add(dirLight);
 
-  const gridHelper = new THREE.GridHelper(20, 20, 0xcccccc, 0xe5e5e5);
+  const gridHelper = new THREE.GridHelper(20, 20, 0xb9cbd4, 0xdce3e7);
   gridHelper.visible = showGrid;
   scene.add(gridHelper);
 
