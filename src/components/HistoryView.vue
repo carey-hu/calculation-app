@@ -53,6 +53,8 @@
       <div style="display:flex; justify-content:space-between; margin-bottom:8px; padding:0 8px; font-weight:700; color:#8e8e93; font-size:13px;">
         <span>时间 / 模式</span><span>成绩 / 耗时</span>
       </div>
+      <div v-if="syncState === 'syncing'" style="font-size:12px; color:#8e8e93; padding:0 8px 8px;">正在同步云端记录...</div>
+      <div v-if="syncState === 'error'" style="font-size:12px; color:#ff3b30; padding:0 8px 8px;">云端同步失败，请检查网络或 API 配置</div>
       <div class="resultScroll">
         <div v-if="historyList.length === 0" style="text-align:center; padding: 20px; color:rgba(0,0,0,0.4);">暂无记录，快去练习吧！</div>
         <div v-else>
@@ -95,6 +97,7 @@ defineProps<{
   filteredCount: number;
   totalCount: number;
   lowAccuracyCount: number;
+  syncState: 'idle' | 'syncing' | 'ok' | 'error';
 }>();
 
 defineEmits<{

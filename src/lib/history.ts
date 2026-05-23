@@ -30,6 +30,7 @@ export const clearAllHistory = (): void => {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(SYNC_SINCE_KEY);
     localStorage.removeItem(PENDING_SYNC_KEY);
+    localStorage.removeItem(AUTHORITATIVE_SYNC_KEY);
   } catch (e) {
     console.error('Failed to clear history:', e);
   }

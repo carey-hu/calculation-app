@@ -43,9 +43,12 @@ export function useHistory() {
     syncState.value = 'syncing';
     try {
       let remoteList = await fetchRemoteHistory();
+      const localList = list.value;
+      const shouldMigrateLocalHistory =
+        localList.length > 0 && (remoteList.length === 0 || !hasCompletedAuthoritativeSync());
 
-      if (!hasCompletedAuthoritativeSync()) {
-        remoteList = await uploadMissingRecords(list.value, remoteList);
+      if (shouldMigrateLocalHistory) {
+        remoteList = await uploadMissingRecords(localList, remoteList);
         markAuthoritativeSyncComplete();
       }
 
