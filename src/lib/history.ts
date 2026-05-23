@@ -2,6 +2,9 @@ import type { HistoryRecord, BuildRecordPayload } from '../types';
 import { formatTime } from './formatters';
 
 const STORAGE_KEY = 'calc_history';
+const SYNC_SINCE_KEY = 'calc_history_sync_since';
+const PENDING_SYNC_KEY = 'calc_history_pending_sync';
+const AUTHORITATIVE_SYNC_KEY = 'calc_history_authoritative_sync_v1';
 
 export const loadHistory = (): HistoryRecord[] => {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -25,8 +28,71 @@ export const saveHistory = (list: HistoryRecord[]): void => {
 export const clearAllHistory = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(SYNC_SINCE_KEY);
+    localStorage.removeItem(PENDING_SYNC_KEY);
   } catch (e) {
     console.error('Failed to clear history:', e);
+  }
+};
+
+export const loadHistorySyncSince = (): number | null => {
+  const raw = localStorage.getItem(SYNC_SINCE_KEY);
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : null;
+};
+
+export const saveHistorySyncSince = (ts: number): void => {
+  if (!Number.isFinite(ts) || ts <= 0) return;
+  try {
+    localStorage.setItem(SYNC_SINCE_KEY, String(ts));
+  } catch (e) {
+    console.error('Failed to save history sync marker:', e);
+  }
+};
+
+export const loadPendingSyncRecords = (): HistoryRecord[] => {
+  const raw = localStorage.getItem(PENDING_SYNC_KEY);
+  if (!raw) return [];
+  try {
+    const records = JSON.parse(raw) as HistoryRecord[];
+    return Array.isArray(records) ? records : [];
+  } catch (e) {
+    console.error('Failed to load pending history sync records:', e);
+    return [];
+  }
+};
+
+export const savePendingSyncRecords = (records: HistoryRecord[]): void => {
+  try {
+    const deduped = mergeHistory(records);
+    if (deduped.length === 0) {
+      localStorage.removeItem(PENDING_SYNC_KEY);
+      return;
+    }
+    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(deduped));
+  } catch (e) {
+    console.error('Failed to save pending history sync records:', e);
+  }
+};
+
+export const enqueuePendingSyncRecord = (record: HistoryRecord): void => {
+  savePendingSyncRecords([record, ...loadPendingSyncRecords()]);
+};
+
+export const removePendingSyncRecords = (records: HistoryRecord[]): void => {
+  const uploadedKeys = new Set(records.map(historyRecordKey));
+  savePendingSyncRecords(loadPendingSyncRecords().filter((record) => !uploadedKeys.has(historyRecordKey(record))));
+};
+
+export const hasCompletedAuthoritativeSync = (): boolean =>
+  localStorage.getItem(AUTHORITATIVE_SYNC_KEY) === '1';
+
+export const markAuthoritativeSyncComplete = (): void => {
+  try {
+    localStorage.setItem(AUTHORITATIVE_SYNC_KEY, '1');
+  } catch (e) {
+    console.error('Failed to mark authoritative history sync complete:', e);
   }
 };
 

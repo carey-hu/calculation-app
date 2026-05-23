@@ -49,6 +49,8 @@ const hashString = (value) => {
 const recordKey = (record) =>
   `${KEY_PREFIX}${String(record.ts).padStart(13, '0')}_${hashString(JSON.stringify(record))}`;
 
+const keyTs = (key) => Number(key.slice(KEY_PREFIX.length, KEY_PREFIX.length + 13));
+
 const listKeys = async (kv) => {
   const keys = [];
   let cursor = '';
@@ -69,11 +71,12 @@ const listKeys = async (kv) => {
   return keys;
 };
 
-const readRecords = async (kv) => {
+const readRecords = async (kv, since = 0) => {
   const keys = await listKeys(kv);
+  const recordKeys = since > 0 ? keys.filter((key) => keyTs(key) > since) : keys;
   const records = [];
 
-  for (const key of keys) {
+  for (const key of recordKeys) {
     const value = await kv.get(key, { type: 'json' });
     if (isRecord(value)) records.push(value);
   }
@@ -95,7 +98,9 @@ export async function onRequestGet(context) {
   const kv = getKv(context);
   if (!kv) return json({ error: `KV binding ${KV_BINDING} is not configured` }, 500);
 
-  const records = await readRecords(kv);
+  const url = new URL(context.request.url);
+  const since = Number(url.searchParams.get('since') || '0');
+  const records = await readRecords(kv, Number.isFinite(since) && since > 0 ? since : 0);
   return json({ records });
 }
 
@@ -133,7 +138,7 @@ export async function onRequestDelete(context) {
   if (oldestCount > 0) {
     const oldestTs = new Set(records.slice(-oldestCount).map((record) => record.ts));
     await Promise.all(keys
-      .filter((key) => oldestTs.has(Number(key.slice(KEY_PREFIX.length, KEY_PREFIX.length + 13))))
+      .filter((key) => oldestTs.has(keyTs(key)))
       .map((key) => kv.delete(key)));
     return json({ ok: true });
   }
@@ -146,7 +151,7 @@ export async function onRequestDelete(context) {
       })
       .map((record) => record.ts));
     await Promise.all(keys
-      .filter((key) => lowAccuracyTs.has(Number(key.slice(KEY_PREFIX.length, KEY_PREFIX.length + 13))))
+      .filter((key) => lowAccuracyTs.has(keyTs(key)))
       .map((key) => kv.delete(key)));
     return json({ ok: true });
   }

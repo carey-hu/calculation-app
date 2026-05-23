@@ -1,26 +1,41 @@
 import type { HistoryRecord } from '../types';
 
 const API_URL = '/api/history';
-const SAVE_CHUNK_SIZE = 25;
+const SAVE_CHUNK_SIZE = 100;
+const REQUEST_TIMEOUT_MS = 10000;
+const SAVE_CHUNK_DELAY_MS = 150;
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
+  window.setTimeout(resolve, ms);
+});
 
 const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
-  const res = await fetch(url, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers || {}),
-    },
-  });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  if (!res.ok) {
-    throw new Error(`History API failed: ${res.status}`);
+  try {
+    const res = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers || {}),
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`History API failed: ${res.status}`);
+    }
+
+    return res.json() as Promise<T>;
+  } finally {
+    window.clearTimeout(timeout);
   }
-
-  return res.json() as Promise<T>;
 };
 
-export const fetchRemoteHistory = async (): Promise<HistoryRecord[]> => {
-  const data = await requestJson<{ records?: HistoryRecord[] }>(API_URL);
+export const fetchRemoteHistory = async (since?: number | null): Promise<HistoryRecord[]> => {
+  const url = since && since > 0 ? `${API_URL}?since=${encodeURIComponent(String(since))}` : API_URL;
+  const data = await requestJson<{ records?: HistoryRecord[] }>(url);
   return Array.isArray(data.records) ? data.records : [];
 };
 
@@ -38,6 +53,9 @@ export const saveRemoteRecords = async (records: HistoryRecord[]): Promise<void>
       method: 'POST',
       body: JSON.stringify({ records: chunk }),
     });
+    if (i + SAVE_CHUNK_SIZE < records.length) {
+      await sleep(SAVE_CHUNK_DELAY_MS);
+    }
   }
 };
 
