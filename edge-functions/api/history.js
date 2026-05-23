@@ -1,6 +1,7 @@
 const KV_BINDING = 'CALC_HISTORY_KV';
 const KEY_PREFIX = 'calc_history_';
 const MAX_LIST_LIMIT = 256;
+const DEFAULT_READ_LIMIT = 100;
 const MAX_POST_RECORDS = 100;
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
@@ -52,21 +53,38 @@ const recordKey = (record) =>
 
 const keyTs = (key) => Number(key.slice(KEY_PREFIX.length, KEY_PREFIX.length + 13));
 
+const normalizeLimit = (value) => {
+  const limit = Number(value || DEFAULT_READ_LIMIT);
+  if (!Number.isFinite(limit) || limit <= 0) return DEFAULT_READ_LIMIT;
+  return Math.min(Math.floor(limit), MAX_LIST_LIMIT);
+};
+
+const listKeysPage = async (kv, cursor = '', limit = DEFAULT_READ_LIMIT) => {
+  const result = await kv.list({
+    prefix: KEY_PREFIX,
+    limit,
+    cursor,
+  });
+  const keys = (result.keys || [])
+    .map((item) => (typeof item === 'string' ? item : item.key || item.name))
+    .filter(Boolean);
+
+  return {
+    keys,
+    cursor: result.cursor || '',
+    complete: Boolean(result.complete || !result.cursor),
+  };
+};
+
 const listKeys = async (kv) => {
   const keys = [];
   let cursor = '';
 
   while (true) {
-    const result = await kv.list({
-      prefix: KEY_PREFIX,
-      limit: MAX_LIST_LIMIT,
-      cursor,
-    });
-    const pageKeys = (result.keys || [])
-      .map((item) => (typeof item === 'string' ? item : item.key || item.name));
-    keys.push(...pageKeys.filter(Boolean));
-    cursor = result.cursor || '';
-    if (result.complete || !cursor) break;
+    const result = await listKeysPage(kv, cursor, MAX_LIST_LIMIT);
+    keys.push(...result.keys);
+    cursor = result.cursor;
+    if (result.complete) break;
   }
 
   return keys;
@@ -85,6 +103,23 @@ const readRecords = async (kv, since = 0) => {
   return records.sort((a, b) => b.ts - a.ts);
 };
 
+const readRecordsPage = async (kv, { since = 0, cursor = '', limit = DEFAULT_READ_LIMIT }) => {
+  const page = await listKeysPage(kv, cursor, limit);
+  const recordKeys = since > 0 ? page.keys.filter((key) => keyTs(key) > since) : page.keys;
+  const records = [];
+
+  for (const key of recordKeys) {
+    const value = await kv.get(key, { type: 'json' });
+    if (isRecord(value)) records.push(value);
+  }
+
+  return {
+    records: records.sort((a, b) => b.ts - a.ts),
+    cursor: page.cursor,
+    complete: page.complete,
+  };
+};
+
 const getAccuracyPercent = (record) => {
   const summaryMatch = record.summary.match(/正确率\s*(\d+(?:\.\d+)?)%/);
   if (summaryMatch) return Number(summaryMatch[1]);
@@ -101,8 +136,14 @@ export async function onRequestGet(context) {
 
   const url = new URL(context.request.url);
   const since = Number(url.searchParams.get('since') || '0');
-  const records = await readRecords(kv, Number.isFinite(since) && since > 0 ? since : 0);
-  return json({ records });
+  const cursor = url.searchParams.get('cursor') || '';
+  const limit = normalizeLimit(url.searchParams.get('limit'));
+  const page = await readRecordsPage(kv, {
+    since: Number.isFinite(since) && since > 0 ? since : 0,
+    cursor,
+    limit,
+  });
+  return json(page);
 }
 
 export async function onRequestPost(context) {

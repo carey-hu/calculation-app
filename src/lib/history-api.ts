@@ -1,6 +1,7 @@
 import type { HistoryRecord } from '../types';
 
 const API_URL = '/api/history';
+const READ_PAGE_SIZE = 100;
 const SAVE_CHUNK_SIZE = 100;
 const REQUEST_TIMEOUT_MS = 30000;
 const SAVE_CHUNK_DELAY_MS = 150;
@@ -41,9 +42,29 @@ const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
 };
 
 export const fetchRemoteHistory = async (since?: number | null): Promise<HistoryRecord[]> => {
-  const url = since && since > 0 ? `${API_URL}?since=${encodeURIComponent(String(since))}` : API_URL;
-  const data = await requestJson<{ records?: HistoryRecord[] }>(url);
-  return Array.isArray(data.records) ? data.records : [];
+  const records: HistoryRecord[] = [];
+  let cursor = '';
+
+  while (true) {
+    const params = new URLSearchParams({ limit: String(READ_PAGE_SIZE) });
+    if (cursor) params.set('cursor', cursor);
+    if (since && since > 0) params.set('since', String(since));
+
+    const data = await requestJson<{
+      records?: HistoryRecord[];
+      cursor?: string;
+      complete?: boolean;
+    }>(`${API_URL}?${params.toString()}`);
+
+    if (Array.isArray(data.records)) records.push(...data.records);
+
+    cursor = data.cursor || '';
+    if (data.complete || !cursor) break;
+
+    await sleep(SAVE_CHUNK_DELAY_MS);
+  }
+
+  return records.sort((a, b) => b.ts - a.ts);
 };
 
 export const saveRemoteRecord = async (record: HistoryRecord): Promise<void> => {
