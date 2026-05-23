@@ -87,23 +87,31 @@ const readChunk = async (kv, key) => {
 const makeChunkKey = (version, index) =>
   `${CHUNK_PREFIX}${String(version).padStart(12, '0')}_${String(index).padStart(4, '0')}`;
 
+const chunkMeta = (key, records) => ({
+  key,
+  count: records.length,
+  maxTs: records[0]?.ts || 0,
+  minTs: records[records.length - 1]?.ts || 0,
+});
+
+const writeNewChunks = async (kv, records, version, startIndex = 0) => {
+  const chunks = [];
+  const sortedRecords = mergeRecords(records);
+
+  for (let i = 0; i < sortedRecords.length; i += CHUNK_SIZE) {
+    const recordsChunk = sortedRecords.slice(i, i + CHUNK_SIZE);
+    const key = makeChunkKey(version, startIndex + chunks.length);
+    chunks.push(chunkMeta(key, recordsChunk));
+    await kv.put(key, JSON.stringify({ records: recordsChunk }));
+  }
+
+  return chunks;
+};
+
 const writeChunkedRecords = async (kv, records, previousIndex = null) => {
   const mergedRecords = mergeRecords(records);
   const version = Math.max(((previousIndex && previousIndex.version) || 0) + 1, Date.now());
-  const chunks = [];
-
-  for (let i = 0; i < mergedRecords.length; i += CHUNK_SIZE) {
-    const recordsChunk = mergedRecords.slice(i, i + CHUNK_SIZE);
-    const chunkNumber = chunks.length;
-    const key = makeChunkKey(version, chunkNumber);
-    chunks.push({
-      key,
-      count: recordsChunk.length,
-      maxTs: recordsChunk[0]?.ts || 0,
-      minTs: recordsChunk[recordsChunk.length - 1]?.ts || 0,
-    });
-    await kv.put(key, JSON.stringify({ records: recordsChunk }));
-  }
+  const chunks = await writeNewChunks(kv, mergedRecords, version);
 
   const nextIndex = {
     version,
@@ -123,6 +131,49 @@ const writeChunkedRecords = async (kv, records, previousIndex = null) => {
     .map((key) => kv.delete(key)));
 
   return nextIndex;
+};
+
+const appendOrPrependRecords = async (kv, records, previousIndex) => {
+  const safeRecords = mergeRecords(records);
+  if (safeRecords.length === 0) return previousIndex;
+  if (!previousIndex || previousIndex.total === 0 || !Array.isArray(previousIndex.chunks) || previousIndex.chunks.length === 0) {
+    return writeChunkedRecords(kv, safeRecords, previousIndex);
+  }
+
+  const firstChunk = previousIndex.chunks[0];
+  const lastChunk = previousIndex.chunks[previousIndex.chunks.length - 1];
+  const newestIncoming = safeRecords[0].ts;
+  const oldestIncoming = safeRecords[safeRecords.length - 1].ts;
+  const version = Math.max((previousIndex.version || 0) + 1, Date.now());
+
+  if (oldestIncoming > firstChunk.maxTs) {
+    const chunks = await writeNewChunks(kv, safeRecords, version);
+    const nextIndex = {
+      version,
+      total: previousIndex.total + safeRecords.length,
+      updatedAt: Date.now(),
+      chunkSize: CHUNK_SIZE,
+      chunks: [...chunks, ...previousIndex.chunks],
+    };
+    await kv.put(INDEX_KEY, JSON.stringify(nextIndex));
+    return nextIndex;
+  }
+
+  if (newestIncoming < lastChunk.minTs) {
+    const chunks = await writeNewChunks(kv, safeRecords, version, previousIndex.chunks.length);
+    const nextIndex = {
+      version,
+      total: previousIndex.total + safeRecords.length,
+      updatedAt: Date.now(),
+      chunkSize: CHUNK_SIZE,
+      chunks: [...previousIndex.chunks, ...chunks],
+    };
+    await kv.put(INDEX_KEY, JSON.stringify(nextIndex));
+    return nextIndex;
+  }
+
+  const existingRecords = await readAllChunkedRecords(kv, previousIndex);
+  return writeChunkedRecords(kv, mergeRecords(existingRecords, safeRecords), previousIndex);
 };
 
 const readAllChunkedRecords = async (kv, index) => {
@@ -218,8 +269,7 @@ export async function onRequestPost(context) {
   }
 
   const index = await readIndex(kv);
-  const existingRecords = await readAllChunkedRecords(kv, index);
-  const nextIndex = await writeChunkedRecords(kv, mergeRecords(existingRecords, records), index);
+  const nextIndex = await appendOrPrependRecords(kv, records, index);
   return json({ ok: true, total: nextIndex.total, version: nextIndex.version });
 }
 
