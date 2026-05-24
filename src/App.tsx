@@ -611,8 +611,8 @@ function GameView({
         </Button>
         <div className="ml-auto flex items-center gap-[10px]">
           <div className="rounded-md bg-accentSoft px-3 py-2 text-center text-[14px] font-semibold text-accentDeep">{game.progressText}</div>
-          <div className="rounded-md bg-accentSoft px-3 py-2 text-center text-[14px] font-semibold text-accentDeep">
-            <Clock3 className="mr-1 inline h-4 w-4" />{game.totalText}
+          <div className="inline-flex items-center justify-center gap-1 rounded-md bg-accentSoft px-3 py-2 text-center text-[14px] font-semibold text-accentDeep">
+            <Clock3 className="h-4 w-4" />{game.totalText}
           </div>
         </div>
       </div>
@@ -641,24 +641,25 @@ function GameView({
         </div>
         {isJudge ? (
           <div className="grid grid-cols-2 gap-[10px]">
-            <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit(game.currentModeKey === 'borrowJudge' ? '-1' : '1')}>
-              {game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}
-              <span className="block text-[14px] text-muted">{game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}</span>
+            <button className="tone-number flex h-[120px] flex-col items-center justify-center rounded-lg text-center text-[44px] font-semibold leading-none" onClick={() => game.pressDigit(game.currentModeKey === 'borrowJudge' ? '-1' : '1')}>
+              <span>{game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}</span>
+              <span className="mt-1 text-[14px] font-medium text-muted">{game.currentModeKey === 'borrowJudge' ? '退位' : '进位'}</span>
             </button>
-            <button className="tone-number h-[120px] rounded-lg text-center text-[44px] font-semibold" onClick={() => game.pressDigit('0')}>
-              0<span className="block text-[14px] text-muted">不变</span>
+            <button className="tone-number flex h-[120px] flex-col items-center justify-center rounded-lg text-center text-[44px] font-semibold leading-none" onClick={() => game.pressDigit('0')}>
+              <span>0</span>
+              <span className="mt-1 text-[14px] font-medium text-muted">不变</span>
             </button>
             <Button className="col-span-2 h-14" onClick={game.confirmAnswer}>确认</Button>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-[10px]">
             {digits.map((item) => (
-              <button key={item} className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(item)}>
+              <button key={item} className="tone-number flex h-[64px] items-center justify-center rounded-lg text-center text-[28px] font-semibold leading-none active:scale-[0.99]" onClick={() => game.pressDigit(item)}>
                 {item}
               </button>
             ))}
-            <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={game.pressDot}>.</button>
-            <button className="tone-number h-[64px] rounded-lg text-center text-[28px] font-semibold active:scale-[0.99]" onClick={() => game.pressDigit(0)}>0</button>
+            <button className="tone-number flex h-[64px] items-center justify-center rounded-lg text-center text-[28px] font-semibold leading-none active:scale-[0.99]" onClick={game.pressDot}>.</button>
+            <button className="tone-number flex h-[64px] items-center justify-center rounded-lg text-center text-[28px] font-semibold leading-none active:scale-[0.99]" onClick={() => game.pressDigit(0)}>0</button>
             <Button className="h-[64px] rounded-lg" onClick={game.confirmAnswer}><Check className="h-5 w-5" /></Button>
           </div>
         )}
@@ -704,9 +705,9 @@ function ResultView({
           );
         })}
       </div>
-      <div className="mt-[10px] grid gap-[10px] sm:grid-cols-2">
+      <div className="mt-[10px] grid grid-cols-2 gap-[10px]">
         {game.isHistoryReview ? (
-          <Button className="h-14 sm:col-span-2" onClick={backToHistory}>返回列表</Button>
+          <Button className="col-span-2 h-14" onClick={backToHistory}>返回列表</Button>
         ) : (
           <>
               <Button className="h-14" onClick={game.goHome}>返回主页</Button>
