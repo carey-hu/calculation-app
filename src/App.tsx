@@ -537,7 +537,7 @@ function AnswerPanel({
     return (
       <div className="mt-5 flex items-center justify-center gap-3">
         <div className={cn(box, 'min-w-[120px]')}>{input.slice(0, 3) || '___'}</div>
-        <div className="text-[24px] text-muted">梅</div>
+        <div className="text-[24px] text-muted">÷</div>
         <div className={box}>{input.slice(3, 4) || '_'}</div>
       </div>
     );
