@@ -728,7 +728,7 @@ function HistoryView({
   lowAccuracyCount,
   viewHistoryDetail,
   clearLowAccuracy,
-  clearOldest,
+  clearPartial,
   clearHistory,
   closeHistory,
 }: {
@@ -740,7 +740,7 @@ function HistoryView({
   lowAccuracyCount: number;
   viewHistoryDetail: (index: number) => void;
   clearLowAccuracy: () => void;
-  clearOldest: () => void;
+  clearPartial: () => void;
   clearHistory: () => void;
   closeHistory: () => void;
 }) {
@@ -812,11 +812,11 @@ function HistoryView({
             </button>
           ))}
         </div>
-        <div className="mt-[10px] grid shrink-0 gap-[10px] sm:grid-cols-2">
-          {lowAccuracyCount > 0 ? <Button variant="ghost" onClick={clearLowAccuracy}>清理低正确率 {lowAccuracyCount} 条</Button> : null}
-          {historyList.length > 1000 ? <Button variant="danger" onClick={clearOldest}>清理最早 1000 条</Button> : null}
+        <div className="mt-[10px] grid shrink-0 grid-cols-2 gap-[10px]">
+          {lowAccuracyCount > 0 ? <Button variant="ghost" className="col-span-2" onClick={clearLowAccuracy}>清理低正确率 {lowAccuracyCount} 条</Button> : null}
+          <Button variant="danger" onClick={clearPartial}>清理部分</Button>
           <Button variant="danger" onClick={clearHistory}><Trash2 className="h-5 w-5" /> 清空全部</Button>
-          <Button onClick={closeHistory}>返回主页</Button>
+          <Button className="col-span-2" onClick={closeHistory}>返回主页</Button>
         </div>
       </div>
     </Screen>
@@ -943,10 +943,22 @@ export default function App() {
     void history.refreshRemote().then(chart.reopenIfActive);
   };
   const viewHistoryDetail = (index: number) => game.viewHistoryDetail(history.list[index]);
-  const clearOldest = () => {
-    if (!confirm(`当前共有 ${history.list.length} 条记录。\n确定清理最早的 1000 条吗？`)) return;
-    void history.clearOldest(1000);
-    showToast('清理成功');
+  const clearPartial = () => {
+    const total = history.list.length;
+    if (total === 0) {
+      showToast('暂无记录');
+      return;
+    }
+    const raw = prompt(`当前共有 ${total} 条记录。\n输入要清理的最早记录条数：`, '100');
+    if (raw == null) return;
+    const n = parseInt(raw.trim(), 10);
+    if (!Number.isFinite(n) || n <= 0) {
+      showToast('请输入有效正整数');
+      return;
+    }
+    const count = Math.min(n, total);
+    void history.clearOldest(count);
+    showToast(`已清理最早 ${count} 条`);
   };
   const clearLowAccuracy = () => {
     if (lowAccuracyCount === 0) {
@@ -958,7 +970,13 @@ export default function App() {
     showToast(`已删除 ${lowAccuracyCount} 条`);
   };
   const clearHistory = () => {
-    if (!confirm('确定清空全部历史记录吗？此操作不可恢复。')) return;
+    const total = history.list.length;
+    if (total === 0) {
+      showToast('暂无记录');
+      return;
+    }
+    if (!confirm(`确定清空全部 ${total} 条历史记录吗？\n此操作不可恢复。`)) return;
+    if (!confirm('再次确认：真的要清空全部历史吗？')) return;
     void history.clearAll();
     showToast('已清空');
   };
@@ -1013,7 +1031,7 @@ export default function App() {
             lowAccuracyCount={lowAccuracyCount}
             viewHistoryDetail={viewHistoryDetail}
             clearLowAccuracy={clearLowAccuracy}
-            clearOldest={clearOldest}
+            clearPartial={clearPartial}
             clearHistory={clearHistory}
             closeHistory={() => setViewState('home')}
           />
