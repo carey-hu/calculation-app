@@ -311,7 +311,10 @@ function ProgressRing({ completed, target }: { completed: number; target: number
     >
       <div className="absolute grid h-[46px] w-[46px] place-items-center bg-white" style={{ borderRadius: '50%' }}>
         {done ? (
-          <Check className="h-5 w-5 text-[#B5879A]" strokeWidth={2.5} />
+          <div className="flex flex-col items-center gap-[2px] leading-none">
+            <Check className="h-[18px] w-[18px] text-[#B5879A]" strokeWidth={2.6} />
+            <span className="text-[10px] font-bold text-[#4A3E44]">{completed} 组</span>
+          </div>
         ) : (
           <div className="text-center leading-none">
             <div className="text-[13px] font-bold text-[#4A3E44]">{completed}/{target}</div>
