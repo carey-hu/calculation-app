@@ -118,6 +118,11 @@
     flex-direction: column;
   }
 
+  .safe-page > .surface:last-child {
+    border-bottom-left-radius: 34px !important;
+    border-bottom-right-radius: 34px !important;
+  }
+
   .surface {
     background: #FFFFFF;
     border: 0.5px solid #DCE3E7;
