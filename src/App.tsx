@@ -78,8 +78,14 @@ interface DailyTagState {
 }
 
 const DAILY_TAG_KEY = 'calc_daily_tag_v1';
-const todayKey = () => new Date().toISOString().slice(0, 10);
-const dateKey = (ts: number) => new Date(ts).toISOString().slice(0, 10);
+const dateKey = (ts: number) => {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+const todayKey = () => dateKey(Date.now());
 const dayMs = 24 * 60 * 60 * 1000;
 
 const dailyTagContext = createContext<DailyTagState | null>(null);
@@ -105,12 +111,18 @@ const parseDurationSeconds = (duration: string) => {
 const computeStreakDays = (dates: string[]) => {
   const set = new Set(dates);
   if (set.size === 0) return 0;
-  let cursor = new Date(todayKey());
-  if (!set.has(todayKey())) cursor = new Date(Math.max(...Array.from(set).map((d) => new Date(d).getTime())));
+  const today = todayKey();
+  const yesterday = dateKey(Date.now() - dayMs);
+  let cursorKey: string;
+  if (set.has(today)) cursorKey = today;
+  else if (set.has(yesterday)) cursorKey = yesterday;
+  else return 0;
   let count = 0;
-  while (set.has(cursor.toISOString().slice(0, 10))) {
+  while (set.has(cursorKey)) {
     count += 1;
-    cursor = new Date(cursor.getTime() - dayMs);
+    const d = new Date(`${cursorKey}T00:00:00`);
+    d.setDate(d.getDate() - 1);
+    cursorKey = dateKey(d.getTime());
   }
   return count;
 };
@@ -369,7 +381,7 @@ function PageHeader({ title, subtitle, showProgress = false }: { title: string; 
             {tag.review.hasData ? (
               <div className="grid gap-2">
                 <div className="flex items-center gap-2"><IconCalendar size={15} color="#B5879A" /><span>这个月你练了 <b className="text-[#4A3E44]">{tag.review.monthDays}</b> 天</span></div>
-                <div className="flex items-center gap-2"><IconCheckbox size={15} color="#7E9CAC" /><span>一共算了 <b className="text-[#4A3E44]">{tag.review.totalQuestions}</b> 道题</span></div>
+                <div className="flex items-center gap-2"><IconCheckbox size={15} color="#7E9CAC" /><span>本月一共算了 <b className="text-[#4A3E44]">{tag.review.totalQuestions}</b> 道题</span></div>
                 {tag.review.bestModeName ? <div className="flex items-center gap-2"><IconStar size={15} color="#B5879A" /><span>最擅长 <b className="text-[#4A3E44]">{tag.review.bestModeName}</b></span></div> : null}
                 <div className="flex items-center gap-2"><IconFlame size={15} color="#7E9CAC" /><span>目前连续 <b className="text-[#4A3E44]">{tag.review.streakDays}</b> 天</span></div>
                 <div className="pt-1 text-[#B5879A]">这个月很努力呀</div>
