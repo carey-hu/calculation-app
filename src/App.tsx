@@ -696,9 +696,9 @@ function ResultView({
                 </div>
               </div>
               {isResult ? (
-                <div className={cn('rounded-md px-2 py-1 text-right text-[14px] font-semibold', item.ok ? 'semantic-success' : 'semantic-error')}>
-                  {item.ok ? '正确' : `答案 ${prettyExpression(item.realAns)}`}
-                  {item.exactAns ? <div className="mt-1 text-[11px] text-muted">准 {item.exactAns} · 误 {item.errorRate}</div> : null}
+                <div className={cn('flex flex-col items-end justify-center self-center rounded-md px-2 py-1 text-right text-[14px] font-semibold', item.ok ? 'semantic-success' : 'semantic-error')}>
+                  <span>{item.ok ? '正确' : `答案 ${prettyExpression(item.realAns)}`}</span>
+                  {item.exactAns ? <span className="mt-1 text-[11px] font-medium text-muted">准 {item.exactAns} · 误 {item.errorRate}</span> : null}
                 </div>
               ) : null}
             </div>
