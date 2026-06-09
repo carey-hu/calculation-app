@@ -452,7 +452,7 @@ function HomeView({
                       <button
                         key={modeKey}
                         className={cn(
-                          'flex h-[52px] items-center justify-center rounded-lg px-3 text-center text-[15px] font-semibold transition active:scale-[0.99]',
+                          'flex h-[52px] items-center justify-center rounded-lg px-3 text-center text-[15px] font-semibold whitespace-nowrap transition active:scale-[0.99]',
                           currentModeKey === modeKey
                             ? 'selected-control'
                             : 'tone-mental',
@@ -579,8 +579,8 @@ function AnswerPanel({
     );
   }
 
-  if (['pairMult', 'decompAdd'].includes(currentModeKey)) {
-    const labels = currentModeKey === 'pairMult' ? ['左边', '右边'] : ['十位和', '个位和', '总和'];
+  if (['pairMult', 'decompAdd', 'firstDiffBorrow', 'middleDiffBorrow'].includes(currentModeKey)) {
+    const labels = currentModeKey === 'pairMult' ? ['左边', '右边'] : currentModeKey === 'firstDiffBorrow' ? ['准确差', '退位差'] : currentModeKey === 'middleDiffBorrow' ? ['直接差', '借位后差'] : ['十位和', '个位和', '总和'];
     return (
       <div className="mt-5 grid gap-2">
         {labels.map((label, index) => (

@@ -507,6 +507,67 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
       return { dividend, divisor, ans: dividend / divisor, symbol: '÷' };
     }),
   },
+
+  firstDiffBorrow: {
+    name: '首位差与退位',
+    title: '首位差与退位完成！',
+    hintNote: '先填准确差，确认后填退位差',
+    check: (v, t, inputStr, inputArray): CheckResult => {
+      const target = t as PairAnswer;
+      if (!inputArray || inputArray.length < 2) {
+        return { ok: false, display: `准确 ${target.ans1}, 退位 ${target.ans2}` };
+      }
+      const ok = parseInt(inputArray[0], 10) === target.ans1
+        && parseInt(inputArray[1], 10) === target.ans2;
+      return { ok, display: `准确 ${target.ans1}, 退位 ${target.ans2}` };
+    },
+    gen: (n) => genN(n, (): Question => {
+      const { a, b } = rejectSample(
+        () => ({ a: randInt(1, 9), b: randInt(1, 9) }),
+        ({ a, b }) => a > b && a - b >= 2,
+      );
+      return { dividend: a, divisor: b, ans: { ans1: a - b, ans2: a - 1 - b }, symbol: '−' };
+    }),
+  },
+
+  middleDiffBorrow: {
+    name: '次位差与退位',
+    title: '次位差与退位完成！',
+    hintNote: '先填直接差，确认后填被借位后的差',
+    check: (v, t, inputStr, inputArray): CheckResult => {
+      const target = t as PairAnswer;
+      if (!inputArray || inputArray.length < 2) {
+        return { ok: false, display: `直接 ${target.ans1}, 借位后 ${target.ans2}` };
+      }
+      const ok = parseInt(inputArray[0], 10) === target.ans1
+        && parseInt(inputArray[1], 10) === target.ans2;
+      return { ok, display: `直接 ${target.ans1}, 借位后 ${target.ans2}` };
+    },
+    gen: (n) => genN(n, (): Question => {
+      const a = randInt(0, 9);
+      const b = randInt(0, 9);
+      const computeDiff = (x: number, y: number): number =>
+        x >= y ? x - y : x + 10 - y;
+      return {
+        dividend: a,
+        divisor: b,
+        ans: { ans1: computeDiff(a, b), ans2: computeDiff(a - 1, b) },
+        symbol: '−',
+      };
+    }),
+  },
+
+  lastDiff: {
+    name: '末位差与退位',
+    title: '末位差与退位完成！',
+    hintNote: '个位差，需退位则加10',
+    gen: (n) => genN(n, (): Question => {
+      const a = randInt(0, 9);
+      const b = randInt(0, 9);
+      const ans = a >= b ? a - b : a + 10 - b;
+      return { dividend: a, divisor: b, ans, symbol: '−' };
+    }),
+  },
 };
 
 export const MODE_GROUPS: Record<string, ModeGroup> = {
@@ -522,6 +583,7 @@ export const MODE_GROUPS: Record<string, ModeGroup> = {
       'triplePlus', 'tripleMinus', 'tripleAnyPlus', 'tripleAnyMinus',
       'tripleMix', 'tripleMult', 'tripleDiv',
       'sumTruncated', 'diffTruncated',
+      'firstDiffBorrow', 'middleDiffBorrow', 'lastDiff',
     ],
   },
   spec: { label: '五除三专项 (允许3%误差)', modes: ['divSpecA', 'divSpecB', 'divSpecC', 'divScale'] },

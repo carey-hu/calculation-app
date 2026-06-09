@@ -38,6 +38,9 @@ export const MODE_LABELS: Record<string, string> = {
   divSpecB: '平移法',
   divSpecC: '任意五除三',
   divScale: '放缩被除数',
+  firstDiffBorrow: '首位差与退位',
+  middleDiffBorrow: '次位差与退位',
+  lastDiff: '末位差与退位',
 };
 
 export const SHAPE_GROUP_LABELS: Record<string, string> = {

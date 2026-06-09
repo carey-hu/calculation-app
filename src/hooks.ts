@@ -72,7 +72,7 @@ import { loadShape, lookAtSection as csgLookAtSection, updateSlice } from './thr
 import { EXAM_SHAPES } from './three/shapes';
 
 const MULTI_BOX_MODES = ['carryJudge', 'borrowJudge'];
-const STEPPED_MODES = ['decompAdd', 'pairMult'];
+const STEPPED_MODES = ['decompAdd', 'pairMult', 'firstDiffBorrow', 'middleDiffBorrow'];
 const STAGE_TIMED_MODES = ['digitDetermine'];
 const LOW_ACCURACY_THRESHOLD = 30;
 const SYNC_THROTTLE_MS = 60000;
@@ -633,6 +633,12 @@ export function useGame(context: {
     if (mode === 'pairMult') {
       return { detailTimes: `左:${((times[0] || 0) / 1000).toFixed(1)}s 右:${((times[1] || 0) / 1000).toFixed(1)}s` };
     }
+    if (mode === 'firstDiffBorrow') {
+      return { detailTimes: `准确:${((times[0] || 0) / 1000).toFixed(1)}s 退位:${((times[1] || 0) / 1000).toFixed(1)}s` };
+    }
+    if (mode === 'middleDiffBorrow') {
+      return { detailTimes: `直接:${((times[0] || 0) / 1000).toFixed(1)}s 借位后:${((times[1] || 0) / 1000).toFixed(1)}s` };
+    }
     return {};
   };
 
@@ -685,6 +691,8 @@ export function useGame(context: {
     if (MULTI_BOX_MODES.includes(mode)) yourAnsStr = `${inputArrayRef.current.join(' ')} 0`;
     if (mode === 'decompAdd') yourAnsStr = `${inputArrayRef.current[0]}, ${inputArrayRef.current[1]}, ${inputArrayRef.current[2]}`;
     if (mode === 'pairMult') yourAnsStr = `${inputArrayRef.current[0]}, ${inputArrayRef.current[1]}`;
+    if (mode === 'firstDiffBorrow') yourAnsStr = `准确 ${inputArrayRef.current[0]}, 退位 ${inputArrayRef.current[1]}`;
+    if (mode === 'middleDiffBorrow') yourAnsStr = `直接 ${inputArrayRef.current[0]}, 借位后 ${inputArrayRef.current[1]}`;
     if (mode === 'divScale') yourAnsStr = `${inputRef.current.slice(0, 3)}÷${inputRef.current.slice(3, 4)}`;
     extraInfo = { ...extraInfo, ...buildDetailTimes(mode) };
 
