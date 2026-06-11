@@ -127,7 +127,7 @@ export function useHistoryStore() {
       let remoteList = await fetchRemoteHistory(loadHistorySyncSince());
       const localList = listRef.current;
       const shouldMigrateLocalHistory =
-        localList.length > 0 && (remoteList.length === 0 || !hasCompletedAuthoritativeSync());
+        localList.length > 0 && !hasCompletedAuthoritativeSync();
 
       if (shouldMigrateLocalHistory) {
         remoteList = await uploadMissingRecords(localList, remoteList);
