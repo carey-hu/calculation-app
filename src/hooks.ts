@@ -124,7 +124,7 @@ export function useHistoryStore() {
     setSyncState('syncing');
     setSyncMessage('');
     try {
-      let remoteList = await fetchRemoteHistory();
+      let remoteList = await fetchRemoteHistory(loadHistorySyncSince());
       const localList = listRef.current;
       const shouldMigrateLocalHistory =
         localList.length > 0 && (remoteList.length === 0 || !hasCompletedAuthoritativeSync());
@@ -138,10 +138,11 @@ export function useHistoryStore() {
       remoteList = await uploadMissingRecords(pendingRecords, remoteList);
       removePendingSyncRecords(pendingRecords);
 
-      listRef.current = remoteList;
-      setList(remoteList);
-      saveHistory(remoteList);
-      saveHistorySyncSince(latestRecordTs(remoteList));
+      const mergedList = mergeHistory(remoteList, listRef.current);
+      listRef.current = mergedList;
+      setList(mergedList);
+      saveHistory(mergedList);
+      saveHistorySyncSince(latestRecordTs(mergedList));
       setSyncState('ok');
       setSyncMessage('');
     } catch (e) {
@@ -208,6 +209,14 @@ export function useHistoryStore() {
   }, []);
 
   const clearAll = useCallback(async () => {
+    const pendingRecords = loadPendingSyncRecords();
+    if (pendingRecords.length > 0) {
+      try {
+        await saveRemoteRecords(pendingRecords);
+      } catch (e) {
+        console.error('Failed to upload pending records before clearing:', e);
+      }
+    }
     clearAllHistory();
     listRef.current = [];
     setList([]);
