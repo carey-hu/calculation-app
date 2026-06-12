@@ -28,6 +28,7 @@ import {
   historyRecordKey,
   loadHistory,
   loadHistorySyncSince,
+  loadLastHistorySyncedAt,
   loadPendingSyncRecords,
   markAuthoritativeSyncComplete,
   mergeHistory,
@@ -36,6 +37,7 @@ import {
   removePendingSyncRecords,
   saveHistory,
   saveHistorySyncSince,
+  saveLastHistorySyncedAt,
   trimOldest,
 } from './lib/history';
 import {
@@ -100,6 +102,8 @@ export function useHistoryStore() {
   const listRef = useRef(list);
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'ok' | 'error'>('idle');
   const [syncMessage, setSyncMessage] = useState('');
+  const [pendingCount, setPendingCount] = useState(() => loadPendingSyncRecords().length);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(() => loadLastHistorySyncedAt());
   const syncPromiseRef = useRef<Promise<void> | null>(null);
   const lastSyncStartedAtRef = useRef(0);
 
@@ -110,6 +114,17 @@ export function useHistoryStore() {
   const errorMessage = (error: unknown) => error instanceof Error ? error.message : String(error);
   const latestRecordTs = (records: HistoryRecord[]) =>
     records.reduce((latest, record) => Math.max(latest, record.ts || 0), 0);
+  const refreshPendingCount = useCallback(() => {
+    setPendingCount(loadPendingSyncRecords().length);
+  }, []);
+  const markSyncOk = useCallback(() => {
+    const syncedAt = Date.now();
+    saveLastHistorySyncedAt(syncedAt);
+    setLastSyncedAt(syncedAt);
+    setPendingCount(loadPendingSyncRecords().length);
+    setSyncState('ok');
+    setSyncMessage('');
+  }, []);
 
   const uploadMissingRecords = useCallback(async (records: HistoryRecord[], remoteList: HistoryRecord[]) => {
     if (records.length === 0) return remoteList;
@@ -143,8 +158,7 @@ export function useHistoryStore() {
       setList(mergedList);
       saveHistory(mergedList);
       saveHistorySyncSince(latestRecordTs(mergedList));
-      setSyncState('ok');
-      setSyncMessage('');
+      markSyncOk();
     } catch (e) {
       console.error('Failed to sync remote history:', e);
       setSyncState('error');
@@ -152,7 +166,7 @@ export function useHistoryStore() {
     } finally {
       syncPromiseRef.current = null;
     }
-  }, [uploadMissingRecords]);
+  }, [markSyncOk, uploadMissingRecords]);
 
   const refreshRemote = useCallback((options: { force?: boolean } = {}) => {
     if (syncPromiseRef.current) return syncPromiseRef.current;
@@ -167,6 +181,21 @@ export function useHistoryStore() {
 
   useEffect(() => {
     void refreshRemote({ force: true });
+    const handleOnline = () => {
+      void refreshRemote({ force: true });
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && loadPendingSyncRecords().length > 0) {
+        void refreshRemote({ force: true });
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [refreshRemote]);
 
   const addRecord = useCallback(async (payload: BuildRecordPayload) => {
@@ -176,19 +205,19 @@ export function useHistoryStore() {
     setList(next);
     saveHistory(next);
     enqueuePendingSyncRecord(record);
+    refreshPendingCount();
     try {
       await saveRemoteRecord(record);
       removePendingSyncRecords([record]);
       saveHistorySyncSince(Math.max(loadHistorySyncSince() || 0, record.ts));
-      setSyncState('ok');
-      setSyncMessage('');
+      markSyncOk();
     } catch (e) {
       console.error('Failed to save remote history:', e);
       setSyncState('error');
       setSyncMessage(errorMessage(e));
     }
     return record;
-  }, []);
+  }, [markSyncOk, refreshPendingCount]);
 
   const clearOldest = useCallback(async (count: number) => {
     const removedRecords = listRef.current.slice(-count);
@@ -197,16 +226,16 @@ export function useHistoryStore() {
     setList(next);
     saveHistory(next);
     removePendingSyncRecords(removedRecords);
+    refreshPendingCount();
     try {
       await clearRemoteOldest(count);
-      setSyncState('ok');
-      setSyncMessage('');
+      markSyncOk();
     } catch (e) {
       console.error('Failed to clear remote history:', e);
       setSyncState('error');
       setSyncMessage(errorMessage(e));
     }
-  }, []);
+  }, [markSyncOk, refreshPendingCount]);
 
   const clearAll = useCallback(async () => {
     const pendingRecords = loadPendingSyncRecords();
@@ -220,16 +249,17 @@ export function useHistoryStore() {
     clearAllHistory();
     listRef.current = [];
     setList([]);
+    setPendingCount(0);
+    setLastSyncedAt(null);
     try {
       await clearRemoteHistory();
-      setSyncState('ok');
-      setSyncMessage('');
+      markSyncOk();
     } catch (e) {
       console.error('Failed to clear remote history:', e);
       setSyncState('error');
       setSyncMessage(errorMessage(e));
     }
-  }, []);
+  }, [markSyncOk]);
 
   const clearLowAccuracy = useCallback(async () => {
     const oldList = listRef.current;
@@ -239,18 +269,30 @@ export function useHistoryStore() {
     saveHistory(next);
     const keptKeys = new Set(next.map(historyRecordKey));
     removePendingSyncRecords(oldList.filter((record) => !keptKeys.has(historyRecordKey(record))));
+    refreshPendingCount();
     try {
       await clearRemoteLowAccuracy(LOW_ACCURACY_THRESHOLD);
-      setSyncState('ok');
-      setSyncMessage('');
+      markSyncOk();
     } catch (e) {
       console.error('Failed to clear low accuracy remote history:', e);
       setSyncState('error');
       setSyncMessage(errorMessage(e));
     }
-  }, []);
+  }, [markSyncOk, refreshPendingCount]);
 
-  return { list, listRef, syncState, syncMessage, refreshRemote, addRecord, clearOldest, clearAll, clearLowAccuracy };
+  return {
+    list,
+    listRef,
+    syncState,
+    syncMessage,
+    pendingCount,
+    lastSyncedAt,
+    refreshRemote,
+    addRecord,
+    clearOldest,
+    clearAll,
+    clearLowAccuracy,
+  };
 }
 
 export function useChart(historyList: HistoryRecord[]) {

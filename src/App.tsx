@@ -722,10 +722,29 @@ function ResultView({
   );
 }
 
+function formatLastSyncedAt(ts: number | null): string {
+  if (!ts) return '尚未成功同步';
+  const diffMs = Math.max(0, Date.now() - ts);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (diffMs < minute) return '刚刚同步';
+  if (diffMs < hour) return `${Math.floor(diffMs / minute)} 分钟前同步`;
+  if (diffMs < day) return `${Math.floor(diffMs / hour)} 小时前同步`;
+  return `上次同步 ${new Date(ts).toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })}`;
+}
+
 function HistoryView({
   historyList,
   syncState,
   syncMessage,
+  pendingCount,
+  lastSyncedAt,
   chart,
   exportTool,
   lowAccuracyCount,
@@ -733,11 +752,14 @@ function HistoryView({
   clearLowAccuracy,
   clearPartial,
   clearHistory,
+  retrySync,
   closeHistory,
 }: {
   historyList: HistoryRecord[];
   syncState: 'idle' | 'syncing' | 'ok' | 'error';
   syncMessage: string;
+  pendingCount: number;
+  lastSyncedAt: number | null;
   chart: ReturnType<typeof useChart>;
   exportTool: ReturnType<typeof useExportTool>;
   lowAccuracyCount: number;
@@ -745,8 +767,42 @@ function HistoryView({
   clearLowAccuracy: () => void;
   clearPartial: () => void;
   clearHistory: () => void;
+  retrySync: () => void;
   closeHistory: () => void;
 }) {
+  const hasSuccessfulSync = lastSyncedAt !== null;
+  const canRetrySync = syncState === 'error' || (pendingCount > 0 && syncState !== 'syncing');
+  const syncTitle = syncState === 'syncing'
+    ? pendingCount > 0 ? `正在同步云端记录 · 待上传 ${pendingCount} 条` : '正在同步云端记录'
+    : syncState === 'error'
+      ? pendingCount > 0 ? `离线保存 · 待上传 ${pendingCount} 条` : '云端同步失败'
+      : pendingCount > 0
+        ? `离线保存 · 待上传 ${pendingCount} 条`
+        : hasSuccessfulSync
+          ? `同步成功 · ${formatLastSyncedAt(lastSyncedAt)}`
+          : '尚未同步云端记录';
+  const syncDetail = syncState === 'error'
+    ? (syncMessage || '请稍后重试')
+    : pendingCount > 0
+      ? '记录已保存在本机，网络恢复后会继续上传'
+      : hasSuccessfulSync
+        ? '本地与云端记录已更新'
+        : '打开历史页时会自动同步云端记录';
+  const syncTone = syncState === 'error'
+    ? 'bg-red-50 text-red-700'
+    : pendingCount > 0
+      ? 'bg-amber-50 text-amber-700'
+      : 'bg-[#F4F7F8] text-muted';
+  const dotTone = syncState === 'error'
+    ? 'bg-red-500'
+    : syncState === 'syncing'
+      ? 'bg-accent'
+      : pendingCount > 0
+        ? 'bg-amber-500'
+        : hasSuccessfulSync
+          ? 'bg-emerald-500'
+          : 'bg-hint';
+
   return (
     <Screen>
       <PageHeader title="计算助手" subtitle="每天一点点,心算更轻松" />
@@ -794,11 +850,22 @@ function HistoryView({
           </div>
         ) : null}
 
+        <div className={cn('mt-3 flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 text-[12px] hairline', syncTone)}>
+          <span className={cn('h-2 w-2 shrink-0 rounded-full', dotTone)} />
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-semibold">{syncTitle}</div>
+            <div className="truncate opacity-80">{syncDetail}</div>
+          </div>
+          {canRetrySync ? (
+            <button className="flex h-8 shrink-0 items-center gap-1 rounded-md bg-white px-3 text-[12px] font-semibold text-ink hairline active:bg-pressed" onClick={retrySync}>
+              <RotateCcw className="h-3.5 w-3.5" /> {syncState === 'error' ? '重试' : '同步'}
+            </button>
+          ) : null}
+        </div>
+
         <div className="mt-4 flex shrink-0 justify-between px-1 text-[13px] font-semibold text-muted">
           <span>时间 / 模式</span><span>成绩 / 耗时</span>
         </div>
-        {syncState === 'syncing' ? <div className="px-1 pt-2 text-[12px] text-muted">正在同步云端记录...</div> : null}
-        {syncState === 'error' ? <div className="px-1 pt-2 text-[12px] text-red-600">云端同步失败：{syncMessage}</div> : null}
         <div className="scroll-clean mt-2 min-h-0 flex-1">
           {historyList.length === 0 ? (
             <div className="py-12 text-center text-[15px] text-muted">暂无记录</div>
@@ -1029,6 +1096,8 @@ export default function App() {
             historyList={history.list}
             syncState={history.syncState}
             syncMessage={history.syncMessage}
+            pendingCount={history.pendingCount}
+            lastSyncedAt={history.lastSyncedAt}
             chart={chart}
             exportTool={exportTool}
             lowAccuracyCount={lowAccuracyCount}
@@ -1036,6 +1105,7 @@ export default function App() {
             clearLowAccuracy={clearLowAccuracy}
             clearPartial={clearPartial}
             clearHistory={clearHistory}
+            retrySync={() => void history.refreshRemote({ force: true }).then(chart.reopenIfActive)}
             closeHistory={() => setViewState('home')}
           />
         )}

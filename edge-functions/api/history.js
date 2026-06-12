@@ -201,10 +201,29 @@ const readRecordsPage = async (kv, { since = 0, cursor = 0, limit = DEFAULT_READ
       continue;
     }
 
+    if (since && chunk.maxTs <= since) {
+      return {
+        records,
+        cursor: '',
+        complete: true,
+        total: index.total,
+        version: index.version,
+      };
+    }
+
     const chunkRecords = await readChunk(kv, chunk.key);
     for (let i = skipped; i < chunkRecords.length; i += 1) {
       const record = chunkRecords[i];
       nextCursor += 1;
+      if (since && record.ts <= since) {
+        return {
+          records,
+          cursor: '',
+          complete: true,
+          total: index.total,
+          version: index.version,
+        };
+      }
       if (!since || record.ts > since) records.push(record);
       if (records.length >= limit) {
         return {

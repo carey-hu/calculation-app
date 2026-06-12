@@ -5,6 +5,7 @@ const STORAGE_KEY = 'calc_history';
 const SYNC_SINCE_KEY = 'calc_history_sync_since';
 const PENDING_SYNC_KEY = 'calc_history_pending_sync';
 const AUTHORITATIVE_SYNC_KEY = 'calc_history_authoritative_sync_v1';
+const LAST_SYNCED_AT_KEY = 'calc_history_last_synced_at';
 
 export const loadHistory = (): HistoryRecord[] => {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -31,6 +32,7 @@ export const clearAllHistory = (): void => {
     localStorage.removeItem(SYNC_SINCE_KEY);
     localStorage.removeItem(PENDING_SYNC_KEY);
     localStorage.removeItem(AUTHORITATIVE_SYNC_KEY);
+    localStorage.removeItem(LAST_SYNCED_AT_KEY);
   } catch (e) {
     console.error('Failed to clear history:', e);
   }
@@ -49,6 +51,22 @@ export const saveHistorySyncSince = (ts: number): void => {
     localStorage.setItem(SYNC_SINCE_KEY, String(ts));
   } catch (e) {
     console.error('Failed to save history sync marker:', e);
+  }
+};
+
+export const loadLastHistorySyncedAt = (): number | null => {
+  const raw = localStorage.getItem(LAST_SYNCED_AT_KEY);
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : null;
+};
+
+export const saveLastHistorySyncedAt = (ts: number): void => {
+  if (!Number.isFinite(ts) || ts <= 0) return;
+  try {
+    localStorage.setItem(LAST_SYNCED_AT_KEY, String(ts));
+  } catch (e) {
+    console.error('Failed to save last history synced time:', e);
   }
 };
 
