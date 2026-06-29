@@ -349,7 +349,7 @@ function PageHeader({ title, subtitle, showProgress = false }: { title: string; 
   };
 
   return (
-    <div ref={wrapRef} className="mb-[14px] shrink-0 rounded-[22px] border-[0.5px] border-[#ECE4E7] bg-white px-5 py-[18px]">
+    <div ref={wrapRef} className="mt-4 mb-3 shrink-0 rounded-[22px] border-[0.5px] border-[#ECE4E7] bg-white px-5 py-[18px]">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <button
@@ -484,7 +484,7 @@ function HomeView({
               </div>
             </section>
         </div>
-        <div className="mt-[10px] grid shrink-0 gap-[9px] border-t border-black/[0.06] pt-[14px]">
+        <div className="mt-[10px] mb-3 grid shrink-0 gap-[9px] border-t border-black/[0.06] pt-[14px]">
           <Button className="h-[50px] text-[17px]" onClick={startGame}>
             开始练习
           </Button>
