@@ -9,6 +9,164 @@ interface Digits3 {
   units: number;
 }
 
+interface Fraction {
+  n: number;
+  d: number;
+}
+
+const VAR_NAMES = ['甲', '乙', '丙', '丁'];
+
+const gcd = (a: number, b: number): number => {
+  let x = Math.abs(a);
+  let y = Math.abs(b);
+  while (y !== 0) {
+    const t = x % y;
+    x = y;
+    y = t;
+  }
+  return x || 1;
+};
+
+const simplifyIntRatio = (values: number[]): number[] => {
+  const g = values.reduce((acc, value) => gcd(acc, value));
+  return values.map((value) => value / g);
+};
+
+const fraction = (n: number, d: number): Fraction => {
+  if (d === 0) return { n: 0, d: 1 };
+  const sign = d < 0 ? -1 : 1;
+  const g = gcd(n, d);
+  return { n: (n / g) * sign, d: Math.abs(d / g) };
+};
+
+const fractionSub = (a: Fraction, b: Fraction): Fraction =>
+  fraction(a.n * b.d - b.n * a.d, a.d * b.d);
+
+const canUsePercent = (f: Fraction): boolean => {
+  const percent = (f.n * 100) / f.d;
+  return Number.isInteger(percent) || Number.isInteger(percent * 10);
+};
+
+const formatPercent = (f: Fraction): string => {
+  const percent = (f.n * 100) / f.d;
+  return `${Number.isInteger(percent) ? percent : percent.toFixed(1)}%`;
+};
+
+const formatRatioValue = (f: Fraction, preferPercent = Math.random() < 0.45): string => {
+  if (preferPercent && canUsePercent(f)) return formatPercent(f);
+  if (f.d === 1) return `${f.n * 100}%`;
+  return `${f.n}/${f.d}`;
+};
+
+const joinVars = (indices: number[]): string => indices.map((index) => VAR_NAMES[index]).join('、');
+
+const relationIs = (left: number[], right: number[], leftValue: number, rightValue: number): string => {
+  const leftText = left.length === 1 ? VAR_NAMES[left[0]] : `${joinVars(left)}的和`;
+  const rightText = right.length === 1 ? VAR_NAMES[right[0]] : `${joinVars(right)}的和`;
+  return `${leftText}是${rightText}的${formatRatioValue(fraction(leftValue, rightValue))}`;
+};
+
+const relationDelta = (left: number[], right: number[], leftValue: number, rightValue: number): string => {
+  const leftText = left.length === 1 ? VAR_NAMES[left[0]] : `${joinVars(left)}的和`;
+  const rightText = right.length === 1 ? VAR_NAMES[right[0]] : `${joinVars(right)}的和`;
+  if (leftValue === rightValue) return `${leftText}和${rightText}相等`;
+  if (leftValue > rightValue) {
+    const delta = fractionSub(fraction(leftValue, rightValue), fraction(1, 1));
+    return `${leftText}比${rightText}多${formatRatioValue(delta)}`;
+  }
+  const delta = fractionSub(fraction(1, 1), fraction(leftValue, rightValue));
+  return `${leftText}比${rightText}少${formatRatioValue(delta)}`;
+};
+
+const sumValues = (values: number[], indices: number[]): number =>
+  indices.reduce((sum, index) => sum + values[index], 0);
+
+const buildRelation = (values: number[], left: number[], right: number[], preferDelta = Math.random() < 0.35): string => {
+  const leftValue = sumValues(values, left);
+  const rightValue = sumValues(values, right);
+  if (preferDelta && leftValue !== rightValue) return relationDelta(left, right, leftValue, rightValue);
+  return relationIs(left, right, leftValue, rightValue);
+};
+
+const sampleRatioValues = (count: number): number[] => {
+  while (true) {
+    const values = genN(count, () => randInt(1, 15));
+    const simplified = simplifyIntRatio(values);
+    if (simplified.every((value) => value <= 15)) return simplified;
+  }
+};
+
+const generateRatioQuestion = (): Question => {
+  const count = Math.random() < 0.58 ? 3 : 4;
+  const values = sampleRatioValues(count);
+  const answer = values.join(',');
+  const relationSets = count === 3
+    ? [
+        () => [
+          buildRelation(values, [0], [1], true),
+          buildRelation(values, [2], [0]),
+        ],
+        () => [
+          buildRelation(values, [1], [0], true),
+          buildRelation(values, [0, 2], [1]),
+        ],
+        () => [
+          buildRelation(values, [0], [1]),
+          buildRelation(values, [0], [1, 2]),
+        ],
+        () => [
+          buildRelation(values, [0, 1], [2]),
+          buildRelation(values, [1], [0], true),
+        ],
+      ]
+    : [
+        () => [
+          buildRelation(values, [1], [0], true),
+          buildRelation(values, [2], [0]),
+          buildRelation(values, [3], [1]),
+        ],
+        () => [
+          buildRelation(values, [1], [0], true),
+          buildRelation(values, [0, 1], [2], true),
+          buildRelation(values, [3], [1]),
+        ],
+        () => [
+          buildRelation(values, [0], [1]),
+          buildRelation(values, [0], [2]),
+          buildRelation(values, [3], [0, 1, 2]),
+        ],
+        () => [
+          buildRelation(values, [1, 2], [0]),
+          buildRelation(values, [0, 1, 3], [2]),
+          buildRelation(values, [3], [0]),
+        ],
+      ];
+  const relations = relationSets[randInt(0, relationSets.length - 1)]();
+  const names = VAR_NAMES.slice(0, count).join('');
+  return {
+    dividend: `${names}是${count}个整数，${relations.join('，')}。求它们的比例。（逗号分隔）`,
+    divisor: '',
+    ans: answer,
+    symbol: '',
+  };
+};
+
+const checkRatioAnswer = (_v: number, t: Ans, inputStr = ''): CheckResult => {
+  const target = String(t);
+  const parse = (value: string): number[] => value
+    .replaceAll('，', ',')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => Number(part));
+  const targetParts = parse(target);
+  const inputParts = parse(inputStr);
+  const ok = inputParts.length === targetParts.length
+    && inputParts.every(Number.isInteger)
+    && inputParts.every((value, index) => value === targetParts[index]);
+  return { ok, display: target };
+};
+
 const buildBasePool = (): Question[] => {
   const pool: Question[] = [];
   for (let d = 11; d <= 19; d++) {
@@ -44,6 +202,15 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
     title: '竞速完成！',
     hintNote: '精确到整数',
     gen: () => shuffle(buildBasePool()).slice(0, 10),
+  },
+
+  ratioExpr: {
+    name: '比例表达式',
+    title: '比例表达式完成',
+    hintNote: '按题目顺序输入最简整数比，逗号分隔',
+    isSmallFont: true,
+    check: checkRatioAnswer,
+    gen: (n) => genN(n, generateRatioQuestion),
   },
 
   pairMult: {
@@ -572,6 +739,7 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
 
 export const MODE_GROUPS: Record<string, ModeGroup> = {
   basic: { label: '大九九/除法', modes: ['train', 'speed', 'first', 'pairMult'] },
+  reasoning: { label: '数量关系专项', modes: ['ratioExpr'] },
   divSelect: { label: '商首位专项', modes: [] },
   bigNineDivSelect: { label: '大九九除法专项', modes: [] },
   single: { label: '一位数专项', modes: ['plus', 'minus', 'fourSingleSum'] },

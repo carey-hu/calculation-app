@@ -76,6 +76,7 @@ import { EXAM_SHAPES } from './three/shapes';
 const MULTI_BOX_MODES = ['carryJudge', 'borrowJudge'];
 const STEPPED_MODES = ['decompAdd', 'pairMult', 'firstDiffBorrow', 'middleDiffBorrow'];
 const STAGE_TIMED_MODES = ['digitDetermine'];
+const RATIO_EXPR_MODE = 'ratioExpr';
 const LOW_ACCURACY_THRESHOLD = 30;
 const SYNC_THROTTLE_MS = 60000;
 const DEFAULT_SLICE: SliceConfig = { constant: 0, rotX: 90, rotY: 0, rotZ: 0 };
@@ -583,6 +584,7 @@ export function useGame(context: {
     const cur = inputRef.current || '';
     let maxLen = 6;
     if (mode === 'divScale' || mode === 'digitDetermine') maxLen = 4;
+    if (mode === RATIO_EXPR_MODE) maxLen = 14;
     if (cur.length >= maxLen) return;
     if (STAGE_TIMED_MODES.includes(mode)) {
       const now = Date.now();
@@ -594,6 +596,13 @@ export function useGame(context: {
 
   const pressDot = useCallback(() => {
     const mode = modeRef.current;
+    if (mode === RATIO_EXPR_MODE) {
+      const cur = inputRef.current || '';
+      const commaCount = (cur.match(/,/g) || []).length;
+      if (!cur || cur.endsWith(',') || commaCount >= 3 || cur.length >= 14) return;
+      setInputValue(`${cur},`);
+      return;
+    }
     if (mode === 'divScale' || MULTI_BOX_MODES.includes(mode) || mode === 'digitDetermine' || STEPPED_MODES.includes(mode)) return;
     let cur = inputRef.current || '';
     if (cur.length >= 6 || cur.includes('.')) return;

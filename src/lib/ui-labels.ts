@@ -1,5 +1,6 @@
 ﻿export const GROUP_LABELS: Record<string, string> = {
   basic: '大九九与除法',
+  reasoning: '数量关系专项',
   divSelect: '商首位专项',
   bigNineDivSelect: '大九九除法专项',
   single: '一位数专项',
@@ -11,6 +12,7 @@
 export const MODE_LABELS: Record<string, string> = {
   train: '基础训练',
   speed: '竞速',
+  ratioExpr: '比例表达式',
   pairMult: '大九九对乘',
   first: '商首位',
   firstSpec: '商首位专项',
