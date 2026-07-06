@@ -77,7 +77,8 @@ const MULTI_BOX_MODES = ['carryJudge', 'borrowJudge'];
 const STEPPED_MODES = ['decompAdd', 'pairMult', 'firstDiffBorrow', 'middleDiffBorrow'];
 const STAGE_TIMED_MODES = ['digitDetermine'];
 const RATIO_EXPR_MODE = 'ratioExpr';
-const RELATION_EXPR_MODE = 'relationExpr';
+const RELATION_EXPR_ENTRY_MODE = 'relationExpr';
+const RELATION_EXPR_MODES = ['relationExprV1', 'relationExprV2'];
 const LOW_ACCURACY_THRESHOLD = 30;
 const SYNC_THROTTLE_MS = 60000;
 const DEFAULT_SLICE: SliceConfig = { constant: 0, rotX: 90, rotY: 0, rotZ: 0 };
@@ -534,6 +535,10 @@ export function useGame(context: {
 
   const startGame = useCallback((overrideMode?: string, overrideDivisor?: number) => {
     const mode = overrideMode || modeRef.current;
+    if (mode === RELATION_EXPR_ENTRY_MODE) {
+      setViewState('selectRelationVersion');
+      return;
+    }
     const divisor = overrideDivisor ?? selectedDivisorRef.current;
     const cfg = resolveActiveConfig(mode, divisor);
     if (!cfg.gen) return;
@@ -569,6 +574,9 @@ export function useGame(context: {
 
   const selectDivisorAndStart = useCallback((d: number) => startGame('firstSpec', d), [startGame]);
   const selectBigNineDivisorAndStart = useCallback((d: number) => startGame('bigNineDivSpec', d), [startGame]);
+  const selectRelationVersionAndStart = useCallback((version: '1.0' | '2.0') => {
+    startGame(version === '1.0' ? 'relationExprV1' : 'relationExprV2');
+  }, [startGame]);
 
   const pressDigit = useCallback((d: number | string) => {
     const mode = modeRef.current;
@@ -586,9 +594,9 @@ export function useGame(context: {
     let maxLen = 6;
     if (mode === 'divScale' || mode === 'digitDetermine') maxLen = 4;
     if (mode === RATIO_EXPR_MODE) maxLen = 14;
-    if (mode === RELATION_EXPR_MODE) maxLen = 2;
+    if (RELATION_EXPR_MODES.includes(mode)) maxLen = 2;
     if (cur.length >= maxLen) return;
-    if (mode === RELATION_EXPR_MODE && !/^[1-9]$/.test(String(d))) return;
+    if (RELATION_EXPR_MODES.includes(mode) && !/^[1-9]$/.test(String(d))) return;
     if (STAGE_TIMED_MODES.includes(mode)) {
       const now = Date.now();
       boxTimesRef.current.push(now - lastInputTsRef.current);
@@ -599,7 +607,7 @@ export function useGame(context: {
 
   const pressDot = useCallback(() => {
     const mode = modeRef.current;
-    if (mode === RELATION_EXPR_MODE) {
+    if (RELATION_EXPR_MODES.includes(mode)) {
       const cur = inputRef.current || '';
       if (cur.includes('多') || cur.includes('少') || cur.length >= 2) return;
       setInputValue(`${cur}多`);
@@ -621,7 +629,7 @@ export function useGame(context: {
 
   const pressMinus = useCallback(() => {
     const mode = modeRef.current;
-    if (mode !== RELATION_EXPR_MODE) return;
+    if (!RELATION_EXPR_MODES.includes(mode)) return;
     const cur = inputRef.current || '';
     if (cur.includes('多') || cur.includes('少') || cur.length >= 2) return;
     setInputValue(`${cur}少`);
@@ -888,6 +896,7 @@ export function useGame(context: {
     toSelectBigNineDivisor: () => setViewState('selectBigNineDivisor'),
     selectDivisorAndStart,
     selectBigNineDivisorAndStart,
+    selectRelationVersionAndStart,
     startGame: () => startGame(),
     pressDigit,
     pressDot,

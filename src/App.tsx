@@ -535,6 +535,36 @@ function SelectDivisorView({
   );
 }
 
+function SelectRelationVersionView({
+  onSelect,
+  goHome,
+}: {
+  onSelect: (version: '1.0' | '2.0') => void;
+  goHome: () => void;
+}) {
+  return (
+    <Screen>
+      <PageHeader title="关系表达式" subtitle="选择训练版本。" />
+      <div className="surface scroll-clean min-h-0 flex-1 rounded-xl p-[14px]">
+        <div className="grid grid-cols-2 gap-[10px]">
+          {(['1.0', '2.0'] as const).map((version) => (
+            <button
+              key={version}
+              className="tone-special flex h-20 items-center justify-center rounded-lg text-center text-[22px] font-semibold transition active:scale-[0.99]"
+              onClick={() => onSelect(version)}
+            >
+              {version}版本
+            </button>
+          ))}
+        </div>
+      </div>
+      <Button variant="secondary" className="mt-4 h-14 w-full" onClick={goHome}>
+        返回主页
+      </Button>
+    </Screen>
+  );
+}
+
 function AnswerPanel({
   currentModeKey,
   input,
@@ -606,7 +636,7 @@ function GameView({
   const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const isJudge = ['carryJudge', 'borrowJudge'].includes(game.currentModeKey);
   const isRatioExpr = game.currentModeKey === 'ratioExpr';
-  const isRelationExpr = game.currentModeKey === 'relationExpr';
+  const isRelationExpr = ['relationExprV1', 'relationExprV2'].includes(game.currentModeKey);
   const isLongQuestion = isRatioExpr || isRelationExpr;
 
   return (
@@ -1091,6 +1121,13 @@ export default function App() {
             divisorList={BIG_NINE_DIVISOR_LIST}
             labelPrefix="÷"
             onSelect={game.selectBigNineDivisorAndStart}
+            goHome={game.goHome}
+          />
+        )}
+        {viewState === 'selectRelationVersion' && (
+          <SelectRelationVersionView
+            key="selectRelationVersion"
+            onSelect={game.selectRelationVersionAndStart}
             goHome={game.goHome}
           />
         )}

@@ -167,20 +167,23 @@ const checkRatioAnswer = (_v: number, t: Ans, inputStr = ''): CheckResult => {
   return { ok, display: target };
 };
 
-const generateRelationQuestion = (): Question => {
+const generateRelationQuestion = (count = 3): Question => {
   while (true) {
-    const baseIndex = randInt(0, 2);
-    const otherIndices = [0, 1, 2].filter((index) => index !== baseIndex);
-    const firstOffset = randInt(1, 9) * (Math.random() < 0.5 ? 1 : -1);
-    const secondOffset = randInt(1, 9) * (Math.random() < 0.5 ? 1 : -1);
-    const diff = firstOffset - secondOffset;
-    if (diff === 0 || Math.abs(diff) > 9) continue;
+    const baseIndex = randInt(0, count - 1);
+    const otherIndices = Array.from({ length: count }, (_, index) => index).filter((index) => index !== baseIndex);
+    const offsets = new Map<number, number>(
+      otherIndices.map((index) => [index, randInt(1, 9) * (Math.random() < 0.5 ? 1 : -1)]),
+    );
+    const candidatePairs: [number, number][] = [];
+    otherIndices.forEach((left) => {
+      otherIndices.forEach((right) => {
+        const diff = (offsets.get(left) ?? 0) - (offsets.get(right) ?? 0);
+        if (left !== right && diff !== 0 && Math.abs(diff) <= 9) candidatePairs.push([left, right]);
+      });
+    });
+    if (candidatePairs.length === 0) continue;
 
-    const [aIndex, bIndex] = Math.random() < 0.5 ? otherIndices : [otherIndices[1], otherIndices[0]];
-    const offsets = new Map<number, number>([
-      [otherIndices[0], firstOffset],
-      [otherIndices[1], secondOffset],
-    ]);
+    const [aIndex, bIndex] = candidatePairs[randInt(0, candidatePairs.length - 1)];
     const answerDiff = (offsets.get(aIndex) ?? 0) - (offsets.get(bIndex) ?? 0);
     if (answerDiff === 0 || Math.abs(answerDiff) > 9) continue;
 
@@ -188,12 +191,11 @@ const generateRelationQuestion = (): Question => {
       const offset = offsets.get(index) ?? 0;
       return `${VAR_NAMES[index]}比${VAR_NAMES[baseIndex]}${offset > 0 ? '多' : '少'}${Math.abs(offset)}`;
     };
-    const sentences = Math.random() < 0.5
-      ? [sentenceFor(otherIndices[0]), sentenceFor(otherIndices[1])]
-      : [sentenceFor(otherIndices[1]), sentenceFor(otherIndices[0])];
+    const sentences = shuffle(otherIndices.map(sentenceFor));
+    const names = VAR_NAMES.slice(0, count).join('');
 
     return {
-      dividend: `甲乙丙三个整数，${sentences.join('，')}。问${VAR_NAMES[aIndex]}比${VAR_NAMES[bIndex]}？`,
+      dividend: `${names}是${count}个整数，${sentences.join('，')}。问${VAR_NAMES[aIndex]}比${VAR_NAMES[bIndex]}？`,
       divisor: '',
       ans: `${answerDiff > 0 ? '多' : '少'}${Math.abs(answerDiff)}`,
       symbol: '',
@@ -263,11 +265,24 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
 
   relationExpr: {
     name: '关系表达式',
+  },
+
+  relationExprV1: {
+    name: '关系表达式 1.0',
     title: '关系表达式完成',
     hintNote: '输入多/少和差值，顺序不限',
     isSmallFont: true,
     check: checkRelationAnswer,
-    gen: (n) => genN(n, generateRelationQuestion),
+    gen: (n) => genN(n, () => generateRelationQuestion(3)),
+  },
+
+  relationExprV2: {
+    name: '关系表达式 2.0',
+    title: '关系表达式 2.0完成',
+    hintNote: '输入多/少和差值，顺序不限',
+    isSmallFont: true,
+    check: checkRelationAnswer,
+    gen: (n) => genN(n, () => generateRelationQuestion(4)),
   },
 
   pairMult: {

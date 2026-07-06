@@ -14,6 +14,8 @@ export const MODE_LABELS: Record<string, string> = {
   speed: '竞速',
   ratioExpr: '比例表达式',
   relationExpr: '关系表达式',
+  relationExprV1: '关系表达式 1.0',
+  relationExprV2: '关系表达式 2.0',
   pairMult: '大九九对乘',
   first: '商首位',
   firstSpec: '商首位专项',
