@@ -167,6 +167,54 @@ const checkRatioAnswer = (_v: number, t: Ans, inputStr = ''): CheckResult => {
   return { ok, display: target };
 };
 
+const generateRelationQuestion = (): Question => {
+  while (true) {
+    const baseIndex = randInt(0, 2);
+    const otherIndices = [0, 1, 2].filter((index) => index !== baseIndex);
+    const firstOffset = randInt(1, 9) * (Math.random() < 0.5 ? 1 : -1);
+    const secondOffset = randInt(1, 9) * (Math.random() < 0.5 ? 1 : -1);
+    const diff = firstOffset - secondOffset;
+    if (diff === 0 || Math.abs(diff) > 9) continue;
+
+    const [aIndex, bIndex] = Math.random() < 0.5 ? otherIndices : [otherIndices[1], otherIndices[0]];
+    const offsets = new Map<number, number>([
+      [otherIndices[0], firstOffset],
+      [otherIndices[1], secondOffset],
+    ]);
+    const answerDiff = (offsets.get(aIndex) ?? 0) - (offsets.get(bIndex) ?? 0);
+    if (answerDiff === 0 || Math.abs(answerDiff) > 9) continue;
+
+    const sentenceFor = (index: number): string => {
+      const offset = offsets.get(index) ?? 0;
+      return `${VAR_NAMES[index]}比${VAR_NAMES[baseIndex]}${offset > 0 ? '多' : '少'}${Math.abs(offset)}`;
+    };
+    const sentences = Math.random() < 0.5
+      ? [sentenceFor(otherIndices[0]), sentenceFor(otherIndices[1])]
+      : [sentenceFor(otherIndices[1]), sentenceFor(otherIndices[0])];
+
+    return {
+      dividend: `甲乙丙三个整数，${sentences.join('，')}。问${VAR_NAMES[aIndex]}比${VAR_NAMES[bIndex]}？`,
+      divisor: '',
+      ans: `${answerDiff > 0 ? '多' : '少'}${Math.abs(answerDiff)}`,
+      symbol: '',
+    };
+  }
+};
+
+const checkRelationAnswer = (_v: number, t: Ans, inputStr = ''): CheckResult => {
+  const target = String(t);
+  const targetKind = target.includes('多') ? '多' : '少';
+  const targetNum = Number(target.replace(/[多少]/g, ''));
+  const raw = inputStr.replace(/\s/g, '');
+  const inputKind = raw.includes('多') ? '多' : raw.includes('少') ? '少' : '';
+  const numberMatch = raw.match(/[1-9]/);
+  const inputNum = numberMatch ? Number(numberMatch[0]) : NaN;
+  return {
+    ok: inputKind === targetKind && inputNum === targetNum,
+    display: target,
+  };
+};
+
 const buildBasePool = (): Question[] => {
   const pool: Question[] = [];
   for (let d = 11; d <= 19; d++) {
@@ -211,6 +259,15 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
     isSmallFont: true,
     check: checkRatioAnswer,
     gen: (n) => genN(n, generateRatioQuestion),
+  },
+
+  relationExpr: {
+    name: '关系表达式',
+    title: '关系表达式完成',
+    hintNote: '输入多/少和差值，顺序不限',
+    isSmallFont: true,
+    check: checkRelationAnswer,
+    gen: (n) => genN(n, generateRelationQuestion),
   },
 
   pairMult: {
@@ -739,7 +796,7 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
 
 export const MODE_GROUPS: Record<string, ModeGroup> = {
   basic: { label: '大九九/除法', modes: ['train', 'speed', 'first', 'pairMult'] },
-  reasoning: { label: '数量关系专项', modes: ['ratioExpr'] },
+  reasoning: { label: '数量关系专项', modes: ['ratioExpr', 'relationExpr'] },
   divSelect: { label: '商首位专项', modes: [] },
   bigNineDivSelect: { label: '大九九除法专项', modes: [] },
   single: { label: '一位数专项', modes: ['plus', 'minus', 'fourSingleSum'] },

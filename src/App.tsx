@@ -606,6 +606,8 @@ function GameView({
   const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const isJudge = ['carryJudge', 'borrowJudge'].includes(game.currentModeKey);
   const isRatioExpr = game.currentModeKey === 'ratioExpr';
+  const isRelationExpr = game.currentModeKey === 'relationExpr';
+  const isLongQuestion = isRatioExpr || isRelationExpr;
 
   return (
     <Screen className="gap-[10px]">
@@ -621,14 +623,14 @@ function GameView({
         </div>
       </div>
 
-      <div className={cn('surface flex min-h-0 flex-1 flex-col rounded-xl p-[14px]', isRatioExpr ? 'justify-start text-left' : 'justify-center text-center')}>
+      <div className={cn('surface flex min-h-0 flex-1 flex-col rounded-xl p-[14px]', isLongQuestion ? 'justify-start text-left' : 'justify-center text-center')}>
         <div className={cn(
           'font-semibold tracking-normal text-ink',
-          isRatioExpr ? 'mx-auto max-w-[620px] text-[22px] leading-[1.65] md:text-[26px]' : game.isSmallFont ? 'text-[46px]' : 'text-[64px] md:text-[84px]',
+          isLongQuestion ? 'mx-auto max-w-[620px] text-[22px] leading-[1.65] md:text-[26px]' : game.isSmallFont ? 'text-[46px]' : 'text-[64px] md:text-[84px]',
         )}>
           {prettyExpression(game.qText)}
         </div>
-        <div className={cn('mx-auto mt-2 max-w-[520px] text-[15px] leading-6 text-muted', isRatioExpr && 'text-center')}>
+        <div className={cn('mx-auto mt-2 max-w-[520px] text-[15px] leading-6 text-muted', isLongQuestion && 'text-center')}>
           {prettyExpression(game.activeConfig.hintNote || game.activeConfig.hint || '精确到整数')}
         </div>
         <AnswerPanel
@@ -665,8 +667,8 @@ function GameView({
                 {item}
               </button>
             ))}
-            <button className="tone-number flex h-[64px] items-center justify-center rounded-lg text-center text-[28px] font-semibold leading-none active:scale-[0.99]" onClick={game.pressDot}>{isRatioExpr ? ',' : '.'}</button>
-            <button className="tone-number flex h-[64px] items-center justify-center rounded-lg text-center text-[28px] font-semibold leading-none active:scale-[0.99]" onClick={() => game.pressDigit(0)}>0</button>
+            <button className="tone-number flex h-[64px] items-center justify-center rounded-lg text-center text-[28px] font-semibold leading-none active:scale-[0.99]" onClick={game.pressDot}>{isRelationExpr ? '多' : isRatioExpr ? ',' : '.'}</button>
+            <button className="tone-number flex h-[64px] items-center justify-center rounded-lg text-center text-[28px] font-semibold leading-none active:scale-[0.99]" onClick={isRelationExpr ? game.pressMinus : () => game.pressDigit(0)}>{isRelationExpr ? '少' : '0'}</button>
             <Button className="h-[64px] rounded-lg" onClick={game.confirmAnswer}><Check className="h-5 w-5" /></Button>
           </div>
         )}

@@ -77,6 +77,7 @@ const MULTI_BOX_MODES = ['carryJudge', 'borrowJudge'];
 const STEPPED_MODES = ['decompAdd', 'pairMult', 'firstDiffBorrow', 'middleDiffBorrow'];
 const STAGE_TIMED_MODES = ['digitDetermine'];
 const RATIO_EXPR_MODE = 'ratioExpr';
+const RELATION_EXPR_MODE = 'relationExpr';
 const LOW_ACCURACY_THRESHOLD = 30;
 const SYNC_THROTTLE_MS = 60000;
 const DEFAULT_SLICE: SliceConfig = { constant: 0, rotX: 90, rotY: 0, rotZ: 0 };
@@ -585,7 +586,9 @@ export function useGame(context: {
     let maxLen = 6;
     if (mode === 'divScale' || mode === 'digitDetermine') maxLen = 4;
     if (mode === RATIO_EXPR_MODE) maxLen = 14;
+    if (mode === RELATION_EXPR_MODE) maxLen = 2;
     if (cur.length >= maxLen) return;
+    if (mode === RELATION_EXPR_MODE && !/^[1-9]$/.test(String(d))) return;
     if (STAGE_TIMED_MODES.includes(mode)) {
       const now = Date.now();
       boxTimesRef.current.push(now - lastInputTsRef.current);
@@ -596,6 +599,12 @@ export function useGame(context: {
 
   const pressDot = useCallback(() => {
     const mode = modeRef.current;
+    if (mode === RELATION_EXPR_MODE) {
+      const cur = inputRef.current || '';
+      if (cur.includes('多') || cur.includes('少') || cur.length >= 2) return;
+      setInputValue(`${cur}多`);
+      return;
+    }
     if (mode === RATIO_EXPR_MODE) {
       const cur = inputRef.current || '';
       const commaCount = (cur.match(/,/g) || []).length;
@@ -608,6 +617,14 @@ export function useGame(context: {
     if (cur.length >= 6 || cur.includes('.')) return;
     if (cur === '') cur += '0';
     setInputValue(cur + '.');
+  }, []);
+
+  const pressMinus = useCallback(() => {
+    const mode = modeRef.current;
+    if (mode !== RELATION_EXPR_MODE) return;
+    const cur = inputRef.current || '';
+    if (cur.includes('多') || cur.includes('少') || cur.length >= 2) return;
+    setInputValue(`${cur}少`);
   }, []);
 
   const clearInput = useCallback(() => {
@@ -874,6 +891,7 @@ export function useGame(context: {
     startGame: () => startGame(),
     pressDigit,
     pressDot,
+    pressMinus,
     clearInput,
     backspace,
     leftAction,
