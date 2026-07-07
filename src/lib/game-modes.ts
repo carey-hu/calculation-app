@@ -217,6 +217,68 @@ const checkRelationAnswer = (_v: number, t: Ans, inputStr = ''): CheckResult => 
   };
 };
 
+const RELATION_V1_NAMES = ['甲', '乙', '丙'];
+
+const formatRelationDiff = (diff: number): string =>
+  `${diff > 0 ? '多' : '少'}${Math.abs(diff)}`;
+
+const generateFlexibleRelationQuestion = (): Question => {
+  while (true) {
+    const values = genN(RELATION_V1_NAMES.length, () => randInt(0, 18));
+    const pairs = shuffle(
+      RELATION_V1_NAMES.flatMap((_, left) =>
+        RELATION_V1_NAMES.map((__, right) => [left, right] as [number, number]),
+      ).filter(([left, right]) => left !== right),
+    );
+    const relationCandidates = pairs
+      .map(([left, right]) => {
+        const diff = values[left] - values[right];
+        if (diff === 0 || Math.abs(diff) > 9) return null;
+        return {
+          key: `${left}:${right}`,
+          text: `${RELATION_V1_NAMES[left]}比${RELATION_V1_NAMES[right]}${formatRelationDiff(diff)}`,
+        };
+      })
+      .filter((item): item is { key: string; text: string } => item !== null);
+
+    if (relationCandidates.length < 2) continue;
+
+    const conditions = relationCandidates.slice(0, 2);
+    const conditionKeys = new Set(conditions.map((item) => item.key));
+    const questionCandidates = pairs
+      .map(([left, right]) => ({ left, right, diff: values[left] - values[right] }))
+      .filter(({ left, right, diff }) =>
+        diff !== 0
+        && Math.abs(diff) <= 9
+        && !conditionKeys.has(`${left}:${right}`),
+      );
+
+    if (questionCandidates.length === 0) continue;
+
+    const question = questionCandidates[randInt(0, questionCandidates.length - 1)];
+    return {
+      dividend: `${RELATION_V1_NAMES.join('')}是3个整数，${conditions.map((item) => item.text).join('，')}。问${RELATION_V1_NAMES[question.left]}比${RELATION_V1_NAMES[question.right]}？`,
+      divisor: '',
+      ans: formatRelationDiff(question.diff),
+      symbol: '',
+    };
+  }
+};
+
+const checkFlexibleRelationAnswer = (_v: number, t: Ans, inputStr = ''): CheckResult => {
+  const target = String(t);
+  const targetKind = target.includes('多') ? '多' : '少';
+  const targetNum = Number(target.replace(/[多少]/g, ''));
+  const raw = inputStr.replace(/\s/g, '');
+  const inputKind = raw.includes('多') ? '多' : raw.includes('少') ? '少' : '';
+  const numberMatch = raw.match(/[1-9]/);
+  const inputNum = numberMatch ? Number(numberMatch[0]) : NaN;
+  return {
+    ok: inputKind === targetKind && inputNum === targetNum,
+    display: target,
+  };
+};
+
 const buildBasePool = (): Question[] => {
   const pool: Question[] = [];
   for (let d = 11; d <= 19; d++) {
@@ -272,8 +334,8 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
     title: '关系表达式完成',
     hintNote: '输入多/少和差值，顺序不限',
     isSmallFont: true,
-    check: checkRelationAnswer,
-    gen: (n) => genN(n, () => generateRelationQuestion(3)),
+    check: checkFlexibleRelationAnswer,
+    gen: (n) => genN(n, generateFlexibleRelationQuestion),
   },
 
   relationExprV2: {
