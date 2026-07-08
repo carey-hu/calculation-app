@@ -222,6 +222,9 @@ const RELATION_V1_NAMES = ['甲', '乙', '丙'];
 const formatRelationDiff = (diff: number): string =>
   `${diff > 0 ? '多' : '少'}${Math.abs(diff)}`;
 
+const relationPairKey = (left: number, right: number): string =>
+  [left, right].sort((a, b) => a - b).join(':');
+
 const generateFlexibleRelationQuestion = (): Question => {
   while (true) {
     const values = genN(RELATION_V1_NAMES.length, () => randInt(0, 18));
@@ -236,21 +239,30 @@ const generateFlexibleRelationQuestion = (): Question => {
         if (diff === 0 || Math.abs(diff) > 9) return null;
         return {
           key: `${left}:${right}`,
+          pairKey: relationPairKey(left, right),
           text: `${RELATION_V1_NAMES[left]}比${RELATION_V1_NAMES[right]}${formatRelationDiff(diff)}`,
         };
       })
-      .filter((item): item is { key: string; text: string } => item !== null);
+      .filter((item): item is { key: string; pairKey: string; text: string } => item !== null);
 
     if (relationCandidates.length < 2) continue;
 
-    const conditions = relationCandidates.slice(0, 2);
-    const conditionKeys = new Set(conditions.map((item) => item.key));
+    const usedPairKeys = new Set<string>();
+    const conditions = relationCandidates.filter((item) => {
+      if (usedPairKeys.has(item.pairKey)) return false;
+      usedPairKeys.add(item.pairKey);
+      return true;
+    }).slice(0, 2);
+
+    if (conditions.length < 2) continue;
+
+    const conditionPairKeys = new Set(conditions.map((item) => item.pairKey));
     const questionCandidates = pairs
       .map(([left, right]) => ({ left, right, diff: values[left] - values[right] }))
       .filter(({ left, right, diff }) =>
         diff !== 0
         && Math.abs(diff) <= 9
-        && !conditionKeys.has(`${left}:${right}`),
+        && !conditionPairKeys.has(relationPairKey(left, right)),
       );
 
     if (questionCandidates.length === 0) continue;
