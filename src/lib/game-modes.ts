@@ -217,7 +217,7 @@ const checkRelationAnswer = (_v: number, t: Ans, inputStr = ''): CheckResult => 
   };
 };
 
-const RELATION_V1_NAMES = ['甲', '乙', '丙'];
+const FLEXIBLE_RELATION_NAMES = ['甲', '乙', '丙', '丁'];
 
 const formatRelationDiff = (diff: number): string =>
   `${diff > 0 ? '多' : '少'}${Math.abs(diff)}`;
@@ -225,12 +225,35 @@ const formatRelationDiff = (diff: number): string =>
 const relationPairKey = (left: number, right: number): string =>
   [left, right].sort((a, b) => a - b).join(':');
 
-const generateFlexibleRelationQuestion = (): Question => {
+const hasConnectedRelations = (relations: Array<{ pairKey: string }>, count: number): boolean => {
+  const seen = new Set<number>([0]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    relations.forEach(({ pairKey }) => {
+      const [left, right] = pairKey.split(':').map(Number);
+      if (seen.has(left) && !seen.has(right)) {
+        seen.add(right);
+        changed = true;
+      }
+      if (seen.has(right) && !seen.has(left)) {
+        seen.add(left);
+        changed = true;
+      }
+    });
+  }
+  return seen.size === count;
+};
+
+const generateFlexibleRelationQuestion = (count = 3): Question => {
+  const names = FLEXIBLE_RELATION_NAMES.slice(0, count);
+  const conditionCount = count - 1;
+
   while (true) {
-    const values = genN(RELATION_V1_NAMES.length, () => randInt(0, 18));
+    const values = genN(names.length, () => randInt(0, 18));
     const pairs = shuffle(
-      RELATION_V1_NAMES.flatMap((_, left) =>
-        RELATION_V1_NAMES.map((__, right) => [left, right] as [number, number]),
+      names.flatMap((_, left) =>
+        names.map((__, right) => [left, right] as [number, number]),
       ).filter(([left, right]) => left !== right),
     );
     const relationCandidates = pairs
@@ -240,21 +263,22 @@ const generateFlexibleRelationQuestion = (): Question => {
         return {
           key: `${left}:${right}`,
           pairKey: relationPairKey(left, right),
-          text: `${RELATION_V1_NAMES[left]}比${RELATION_V1_NAMES[right]}${formatRelationDiff(diff)}`,
+          text: `${names[left]}比${names[right]}${formatRelationDiff(diff)}`,
         };
       })
       .filter((item): item is { key: string; pairKey: string; text: string } => item !== null);
 
-    if (relationCandidates.length < 2) continue;
+    if (relationCandidates.length < conditionCount) continue;
 
     const usedPairKeys = new Set<string>();
     const conditions = relationCandidates.filter((item) => {
       if (usedPairKeys.has(item.pairKey)) return false;
       usedPairKeys.add(item.pairKey);
       return true;
-    }).slice(0, 2);
+    }).slice(0, conditionCount);
 
-    if (conditions.length < 2) continue;
+    if (conditions.length < conditionCount) continue;
+    if (!hasConnectedRelations(conditions, count)) continue;
 
     const conditionPairKeys = new Set(conditions.map((item) => item.pairKey));
     const questionCandidates = pairs
@@ -269,7 +293,7 @@ const generateFlexibleRelationQuestion = (): Question => {
 
     const question = questionCandidates[randInt(0, questionCandidates.length - 1)];
     return {
-      dividend: `${RELATION_V1_NAMES.join('')}是3个整数，${conditions.map((item) => item.text).join('，')}。问${RELATION_V1_NAMES[question.left]}比${RELATION_V1_NAMES[question.right]}？`,
+      dividend: `${names.join('')}是${count}个整数，${conditions.map((item) => item.text).join('，')}。问${names[question.left]}比${names[question.right]}？`,
       divisor: '',
       ans: formatRelationDiff(question.diff),
       symbol: '',
@@ -347,7 +371,7 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
     hintNote: '输入多/少和差值，顺序不限',
     isSmallFont: true,
     check: checkFlexibleRelationAnswer,
-    gen: (n) => genN(n, generateFlexibleRelationQuestion),
+    gen: (n) => genN(n, () => generateFlexibleRelationQuestion(3)),
   },
 
   relationExprV2: {
@@ -355,8 +379,8 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
     title: '关系表达式 2.0完成',
     hintNote: '输入多/少和差值，顺序不限',
     isSmallFont: true,
-    check: checkRelationAnswer,
-    gen: (n) => genN(n, () => generateRelationQuestion(4)),
+    check: checkFlexibleRelationAnswer,
+    gen: (n) => genN(n, () => generateFlexibleRelationQuestion(4)),
   },
 
   pairMult: {
