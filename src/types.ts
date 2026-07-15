@@ -44,6 +44,7 @@ export interface GameModeConfig {
   hintNote?: string;
   hint?: string;
   isSmallFont?: boolean;
+  isLongQuestion?: boolean;
   gen?: (count: number, extra?: GameGenExtra) => Question[];
   check?: (
     userValue: number,
