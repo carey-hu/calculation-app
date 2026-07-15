@@ -447,7 +447,7 @@ function HomeView({
                     大九九除法专项 <ChevronLeft className="h-4 w-4 rotate-180" />
                   </Button>
                 ) : (
-                  <div className="grid grid-cols-2 gap-[10px] sm:grid-cols-3">
+                  <div className={cn('grid gap-[10px]', group.modes.length === 1 ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3')}>
                     {group.modes.map((modeKey) => (
                       <button
                         key={modeKey}
@@ -637,7 +637,7 @@ function GameView({
   const isJudge = ['carryJudge', 'borrowJudge'].includes(game.currentModeKey);
   const isRatioExpr = game.currentModeKey === 'ratioExpr';
   const isRelationExpr = ['relationExprV1', 'relationExprV2'].includes(game.currentModeKey);
-  const isLongQuestion = isRatioExpr || isRelationExpr;
+  const isLongQuestion = !!game.activeConfig.isLongQuestion || isRatioExpr || isRelationExpr;
 
   return (
     <Screen className="gap-[10px]">

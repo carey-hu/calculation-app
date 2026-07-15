@@ -12,6 +12,7 @@
 export const MODE_LABELS: Record<string, string> = {
   train: '基础训练',
   speed: '竞速',
+  quantityRelation: '数量关系训练',
   ratioExpr: '比例表达式',
   relationExpr: '关系表达式',
   relationExprV1: '关系表达式 1.0',

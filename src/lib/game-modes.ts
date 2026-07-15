@@ -337,6 +337,318 @@ const estimateCheck = (v: number, t: Ans): CheckResult => {
   return { ok: r <= 0.03, display: String(Math.round(num)) };
 };
 
+type QuantityRelationCategory =
+  | 'sumDiffRatio'
+  | 'proportion'
+  | 'substitution'
+  | 'surplusDeficit'
+  | 'reverse';
+
+interface QuantityRelationTemplate {
+  category: QuantityRelationCategory;
+  create: () => Question;
+}
+
+const pickOne = <T,>(items: T[]): T => items[randInt(0, items.length - 1)];
+
+const quantityQuestion = (text: string, answer: number): Question => ({
+  dividend: text,
+  divisor: '',
+  ans: answer,
+  symbol: '',
+});
+
+const QUANTITY_RELATION_TEMPLATES: QuantityRelationTemplate[] = [
+  {
+    category: 'sumDiffRatio',
+    create: () => {
+      const smaller = randInt(8, 36);
+      const multiple = randInt(2, 5);
+      const total = smaller * (multiple + 1);
+      return quantityQuestion(
+        `甲、乙两个部门共有${total}人，甲部门人数是乙部门的${multiple}倍。甲部门有多少人？`,
+        smaller * multiple,
+      );
+    },
+  },
+  {
+    category: 'sumDiffRatio',
+    create: () => {
+      const smaller = randInt(10, 42);
+      const multiple = randInt(2, 5);
+      const difference = smaller * (multiple - 1);
+      return quantityQuestion(
+        `甲仓库存货是乙仓的${multiple}倍，并且比乙仓多${difference}箱。甲仓有多少箱货物？`,
+        smaller * multiple,
+      );
+    },
+  },
+  {
+    category: 'sumDiffRatio',
+    create: () => {
+      const smaller = randInt(24, 80);
+      const difference = randInt(4, 20) * 2;
+      const larger = smaller + difference;
+      return quantityQuestion(
+        `两批资料共有${smaller + larger}份，第一批比第二批多${difference}份。第一批有多少份？`,
+        larger,
+      );
+    },
+  },
+  {
+    category: 'sumDiffRatio',
+    create: () => {
+      const [leftRatio, rightRatio] = pickOne<[number, number]>([
+        [2, 3], [3, 4], [3, 5], [4, 5], [5, 7],
+      ]);
+      const unit = randInt(6, 24);
+      const askLeft = Math.random() < 0.5;
+      return quantityQuestion(
+        `甲、乙两队人数之比为${leftRatio}:${rightRatio}，两队共有${(leftRatio + rightRatio) * unit}人。${askLeft ? '甲' : '乙'}队有多少人？`,
+        (askLeft ? leftRatio : rightRatio) * unit,
+      );
+    },
+  },
+  {
+    category: 'proportion',
+    create: () => {
+      const [smallRatio, largeRatio] = pickOne<[number, number]>([
+        [1, 2], [2, 3], [2, 5], [3, 4],
+      ]);
+      const smallHours = randInt(2, 7);
+      const largeHours = randInt(2, 7);
+      const unit = randInt(3, 10);
+      const total = (smallRatio * smallHours + largeRatio * largeHours) * unit;
+      return quantityQuestion(
+        `小水泵抽水${largeRatio}小时的水量等于大水泵抽水${smallRatio}小时的水量。小泵工作${smallHours}小时、大泵工作${largeHours}小时，共抽水${total}立方米。大水泵每小时抽水多少立方米？`,
+        largeRatio * unit,
+      );
+    },
+  },
+  {
+    category: 'proportion',
+    create: () => {
+      const walkSpeed = randInt(5, 12);
+      const multiple = randInt(3, 6);
+      const carHours = randInt(1, 4);
+      const walkHours = randInt(1, 4);
+      const distance = walkSpeed * (multiple * carHours + walkHours);
+      return quantityQuestion(
+        `某人乘车${carHours}小时、步行${walkHours}小时，共行${distance}千米。汽车速度是步行速度的${multiple}倍，汽车每小时行多少千米？`,
+        walkSpeed * multiple,
+      );
+    },
+  },
+  {
+    category: 'proportion',
+    create: () => {
+      const baseEfficiency = randInt(4, 15);
+      const multiple = randInt(2, 5);
+      const aDays = randInt(2, 6);
+      const bDays = randInt(2, 6);
+      const total = baseEfficiency * (multiple * aDays + bDays);
+      return quantityQuestion(
+        `甲队每天完成的工作量是乙队的${multiple}倍。甲队工作${aDays}天、乙队工作${bDays}天，共完成${total}件任务。甲队每天完成多少件？`,
+        baseEfficiency * multiple,
+      );
+    },
+  },
+  {
+    category: 'substitution',
+    create: () => {
+      const chairPrice = randInt(8, 28);
+      const multiple = randInt(2, 4);
+      const tableCount = randInt(1, 4);
+      const chairCount = randInt(2, 7);
+      const total = chairPrice * (tableCount * multiple + chairCount);
+      return quantityQuestion(
+        `购买${tableCount}张桌子和${chairCount}把椅子共花${total}元，每张桌子的价格是每把椅子的${multiple}倍。每张桌子多少元？`,
+        chairPrice * multiple,
+      );
+    },
+  },
+  {
+    category: 'substitution',
+    create: () => {
+      const relation = pickOne([
+        { a: 3, b: 2, c: 5, query: 6 },
+        { a: 4, b: 6, c: 3, query: 4 },
+        { a: 5, b: 3, c: 6, query: 5 },
+      ]);
+      const abGcd = gcd(relation.a, relation.b);
+      const bcGcd = gcd(relation.b, relation.c);
+      const aCount = relation.b / abGcd;
+      const bCountForA = relation.a / abGcd;
+      const bCountForC = relation.c / bcGcd;
+      const cCount = relation.b / bcGcd;
+      return quantityQuestion(
+        `${aCount}箱甲货物与${bCountForA}箱乙货物同重，${bCountForC}箱乙货物与${cCount}箱丙货物同重。${relation.query}箱丙货物相当于多少箱甲货物？`,
+        relation.query * relation.c / relation.a,
+      );
+    },
+  },
+  {
+    category: 'substitution',
+    create: () => {
+      const colorPenPrice = randInt(6, 20);
+      const notebookPrice = randInt(5, 18);
+      const firstPenCount = randInt(2, 4);
+      const firstBookCount = randInt(1, 3);
+      const scale = randInt(2, 3);
+      const secondPenCount = firstPenCount * scale;
+      const secondBookCount = firstBookCount * scale + 1;
+      const firstTotal = firstPenCount * colorPenPrice + firstBookCount * notebookPrice;
+      const secondTotal = secondPenCount * colorPenPrice + secondBookCount * notebookPrice;
+      return quantityQuestion(
+        `${firstPenCount}盒彩笔和${firstBookCount}本练习册共${firstTotal}元，${secondPenCount}盒彩笔和${secondBookCount}本练习册共${secondTotal}元。每本练习册多少元？`,
+        notebookPrice,
+      );
+    },
+  },
+  {
+    category: 'substitution',
+    create: () => {
+      const a = randInt(20, 55);
+      const b = randInt(20, 55);
+      const c = randInt(20, 55);
+      const d = randInt(20, 55);
+      return quantityQuestion(
+        `甲、乙共有${a + b}人，乙、丙共有${b + c}人，丙、丁共有${c + d}人。甲、丁共有多少人？`,
+        a + d,
+      );
+    },
+  },
+  {
+    category: 'substitution',
+    create: () => {
+      const orange = randInt(18, 46);
+      const apple = randInt(18, 46);
+      const pear = randInt(18, 46);
+      return quantityQuestion(
+        `橘子和苹果共重${orange + apple}千克，苹果和梨共重${apple + pear}千克，橘子和梨共重${orange + pear}千克。橘子重多少千克？`,
+        orange,
+      );
+    },
+  },
+  {
+    category: 'surplusDeficit',
+    create: () => {
+      const people = randInt(8, 30);
+      const firstShare = randInt(3, 8);
+      const shareDiff = randInt(2, 4);
+      const surplus = randInt(2, Math.min(18, people * shareDiff - 1));
+      const shortage = people * shareDiff - surplus;
+      return quantityQuestion(
+        `给学生分资料，每人分${firstShare}份还剩${surplus}份；每人分${firstShare + shareDiff}份则少${shortage}份。共有多少名学生？`,
+        people,
+      );
+    },
+  },
+  {
+    category: 'surplusDeficit',
+    create: () => {
+      const unitPrice = randInt(6, 25);
+      const firstCount = randInt(3, 8);
+      const countDiff = randInt(2, 4);
+      const surplus = randInt(1, unitPrice - 1);
+      const shortage = countDiff * unitPrice - surplus;
+      return quantityQuestion(
+        `现有的钱买${firstCount}个水杯还剩${surplus}元，买${firstCount + countDiff}个同样的水杯则少${shortage}元。每个水杯多少元？`,
+        unitPrice,
+      );
+    },
+  },
+  {
+    category: 'surplusDeficit',
+    create: () => {
+      const relation = pickOne([
+        { teaCount: 5, sugarCount: 4, teaRatio: 2, sugarRatio: 3 },
+        { teaCount: 6, sugarCount: 5, teaRatio: 3, sugarRatio: 4 },
+        { teaCount: 4, sugarCount: 5, teaRatio: 3, sugarRatio: 2 },
+      ]);
+      const unit = randInt(2, 10);
+      const total = unit * (
+        relation.teaCount * relation.teaRatio
+        + relation.sugarCount * relation.sugarRatio
+      );
+      return quantityQuestion(
+        `天平左边放${relation.teaCount}包茶叶，右边放${relation.sugarCount}包糖，共重${total}千克。两边各取一包互换后恰好平衡。每包茶叶重多少千克？`,
+        relation.teaRatio * unit,
+      );
+    },
+  },
+  {
+    category: 'reverse',
+    create: () => {
+      const original = randInt(6, 40);
+      const added = randInt(5, 25);
+      const multiple = randInt(2, 5);
+      const beforeSubtract = (original + added) * multiple;
+      const subtracted = randInt(2, Math.min(30, beforeSubtract - 1));
+      const result = beforeSubtract - subtracted;
+      return quantityQuestion(
+        `一个数先加${added}，再乘${multiple}，最后减${subtracted}，结果是${result}。原数是多少？`,
+        original,
+      );
+    },
+  },
+  {
+    category: 'reverse',
+    create: () => {
+      const denominator = randInt(3, 6);
+      const denominatorText = ['零', '一', '二', '三', '四', '五', '六'][denominator];
+      const unit = randInt(5, 25);
+      const original = denominator * 2 * unit;
+      const remaining = unit * (denominator - 1);
+      return quantityQuestion(
+        `一批材料先用去总数的${denominatorText}分之一，又用去剩余材料的一半，最后还剩${remaining}件。原来有多少件？`,
+        original,
+      );
+    },
+  },
+  {
+    category: 'reverse',
+    create: () => {
+      const remaining = randInt(20, 60);
+      const firstShipment = randInt(10, 40);
+      const original = remaining * 2 + firstShipment;
+      return quantityQuestion(
+        `仓库先运出${firstShipment}件货物，又运出当时剩余货物的一半，最后还剩${remaining}件。仓库原有多少件货物？`,
+        original,
+      );
+    },
+  },
+];
+
+const generateQuantityRelationQuestions = (count: number): Question[] => {
+  const categories: QuantityRelationCategory[] = [
+    'sumDiffRatio',
+    'proportion',
+    'substitution',
+    'surplusDeficit',
+    'reverse',
+  ];
+  const selected: QuantityRelationTemplate[] = [];
+
+  shuffle([...categories])
+    .slice(0, Math.min(count, categories.length))
+    .forEach((category) => {
+      selected.push(pickOne(QUANTITY_RELATION_TEMPLATES.filter((item) => item.category === category)));
+    });
+
+  const remaining = shuffle(
+    QUANTITY_RELATION_TEMPLATES.filter((item) => !selected.includes(item)),
+  );
+  while (selected.length < count && remaining.length > 0) {
+    selected.push(remaining.pop()!);
+  }
+  while (selected.length < count) {
+    selected.push(pickOne(QUANTITY_RELATION_TEMPLATES));
+  }
+
+  return shuffle(selected.map((item) => item.create()));
+};
+
 export const GAME_MODES: Record<string, GameModeConfig> = {
   train: {
     name: '训练',
@@ -350,6 +662,19 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
     title: '竞速完成！',
     hintNote: '精确到整数',
     gen: () => shuffle(buildBasePool()).slice(0, 10),
+  },
+
+  quantityRelation: {
+    name: '数量关系训练',
+    title: '数量关系训练完成！',
+    hintNote: '只输入数字，不用填写单位',
+    isSmallFont: true,
+    isLongQuestion: true,
+    check: (v, t): CheckResult => {
+      const answer = Number(t);
+      return { ok: Number.isFinite(v) && v === answer, display: String(answer) };
+    },
+    gen: (n) => generateQuantityRelationQuestions(n),
   },
 
   ratioExpr: {
@@ -909,7 +1234,7 @@ export const GAME_MODES: Record<string, GameModeConfig> = {
 
 export const MODE_GROUPS: Record<string, ModeGroup> = {
   basic: { label: '大九九/除法', modes: ['train', 'speed', 'first', 'pairMult'] },
-  reasoning: { label: '数量关系专项', modes: ['ratioExpr', 'relationExpr'] },
+  reasoning: { label: '数量关系专项', modes: ['quantityRelation', 'ratioExpr', 'relationExpr'] },
   divSelect: { label: '商首位专项', modes: [] },
   bigNineDivSelect: { label: '大九九除法专项', modes: [] },
   single: { label: '一位数专项', modes: ['plus', 'minus', 'fourSingleSum'] },
