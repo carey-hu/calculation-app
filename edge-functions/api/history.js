@@ -1,6 +1,8 @@
 const KV_BINDING = 'CALC_HISTORY_KV';
 const INDEX_KEY = 'calc_history_index';
 const CHUNK_PREFIX = 'calc_history_chunk_';
+const TOMBSTONE_INDEX_KEY = 'calc_history_tombstones';
+const TOMBSTONE_PREFIX = 'calc_history_deleted_';
 const CHUNK_SIZE = 300;
 const DEFAULT_READ_LIMIT = 300;
 const MAX_READ_LIMIT = 1000;
@@ -44,6 +46,39 @@ const safeRecord = (record) => ({
 
 const recordId = (record) =>
   `${record.ts}_${record.mode}_${record.summary}_${record.duration}`;
+
+const tombstoneKey = (id) => `${TOMBSTONE_PREFIX}${encodeURIComponent(id)}`;
+
+const readTombstones = async (kv) => {
+  const value = await kv.get(TOMBSTONE_INDEX_KEY, { type: 'json' });
+  return Array.isArray(value)
+    ? value.filter((item) => item && typeof item.id === 'string' && typeof item.deletedAt === 'number')
+    : [];
+};
+
+const addTombstones = async (kv, ids) => {
+  const uniqueIDs = Array.from(new Set(ids.filter((id) => typeof id === 'string' && id.length > 0)));
+  if (uniqueIDs.length === 0) return;
+
+  const deletedAt = Date.now();
+  await Promise.all(uniqueIDs.map((id) => kv.put(
+    tombstoneKey(id),
+    JSON.stringify({ id, deletedAt }),
+  )));
+
+  const byID = new Map((await readTombstones(kv)).map((item) => [item.id, item]));
+  uniqueIDs.forEach((id) => byID.set(id, { id, deletedAt }));
+  const next = Array.from(byID.values()).sort((a, b) => b.deletedAt - a.deletedAt);
+  await kv.put(TOMBSTONE_INDEX_KEY, JSON.stringify(next));
+};
+
+const withoutTombstones = async (kv, records) => {
+  const results = await Promise.all(records.map(async (record) => ({
+    record,
+    deleted: Boolean(await kv.get(tombstoneKey(recordId(record)))),
+  })));
+  return results.filter((result) => !result.deleted).map((result) => result.record);
+};
 
 const mergeRecords = (...groups) => {
   const map = new Map();
@@ -268,7 +303,8 @@ export async function onRequestGet(context) {
     cursor: normalizeCursor(url.searchParams.get('cursor')),
     limit: normalizeLimit(url.searchParams.get('limit')),
   });
-  return json(page);
+  const deletedIDs = (await readTombstones(kv)).map((item) => item.id);
+  return json({ ...page, deletedIDs });
 }
 
 export async function onRequestPost(context) {
@@ -287,8 +323,12 @@ export async function onRequestPost(context) {
     return json({ error: 'Invalid history record' }, 400);
   }
 
+  const acceptedRecords = await withoutTombstones(kv, records);
   const index = await readIndex(kv);
-  const nextIndex = await appendOrPrependRecords(kv, records, index);
+  if (acceptedRecords.length === 0) {
+    return json({ ok: true, total: index?.total || 0, version: index?.version || 0 });
+  }
+  const nextIndex = await appendOrPrependRecords(kv, acceptedRecords, index);
   return json({ ok: true, total: nextIndex.total, version: nextIndex.version });
 }
 
@@ -297,19 +337,33 @@ export async function onRequestDelete(context) {
   if (!kv) return json({ error: `KV binding ${KV_BINDING} is not configured` }, 500);
 
   const url = new URL(context.request.url);
+  const id = url.searchParams.get('id') || '';
   const oldestCount = Number(url.searchParams.get('oldest') || '0');
   const belowAccuracy = Number(url.searchParams.get('belowAccuracy') || '0');
   const index = await readIndex(kv);
 
-  if (!index) return json({ ok: true, total: 0, version: 0 });
-
-  if (!oldestCount && !belowAccuracy) {
-    await Promise.all(index.chunks.map((chunk) => kv.delete(chunk.key)));
-    await kv.delete(INDEX_KEY);
-    return json({ ok: true, total: 0, version: Date.now() });
+  if (id) {
+    await addTombstones(kv, [id]);
+    if (!index) return json({ ok: true, total: 0, version: Date.now(), deletedID: id });
+    const records = await readAllChunkedRecords(kv, index);
+    const nextIndex = await writeChunkedRecords(
+      kv,
+      records.filter((record) => recordId(record) !== id),
+      index,
+    );
+    return json({ ok: true, total: nextIndex.total, version: nextIndex.version, deletedID: id });
   }
 
+  if (!index) return json({ ok: true, total: 0, version: 0 });
+
   const records = await readAllChunkedRecords(kv, index);
+
+  if (!oldestCount && !belowAccuracy) {
+    await addTombstones(kv, records.map(recordId));
+    const nextIndex = await writeChunkedRecords(kv, [], index);
+    return json({ ok: true, total: 0, version: nextIndex.version });
+  }
+
   let nextRecords = records;
 
   if (oldestCount > 0) {
@@ -322,6 +376,8 @@ export async function onRequestDelete(context) {
     });
   }
 
+  const nextIDs = new Set(nextRecords.map(recordId));
+  await addTombstones(kv, records.map(recordId).filter((recordID) => !nextIDs.has(recordID)));
   const nextIndex = await writeChunkedRecords(kv, nextRecords, index);
   return json({ ok: true, total: nextIndex.total, version: nextIndex.version });
 }
