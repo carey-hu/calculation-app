@@ -8,6 +8,11 @@ const SAVE_CHUNK_DELAY_MS = 150;
 const REQUEST_RETRY_DELAYS_MS = [800, 2000, 5000];
 const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
+export interface HistoryFetchResult {
+  records: HistoryRecord[];
+  deletedIDs: string[];
+}
+
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
   window.setTimeout(resolve, ms);
 });
@@ -76,8 +81,9 @@ const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   throw lastError instanceof Error ? lastError : new Error('History API request failed');
 };
 
-export const fetchRemoteHistory = async (since?: number | null): Promise<HistoryRecord[]> => {
+export const fetchRemoteHistory = async (since?: number | null): Promise<HistoryFetchResult> => {
   const records: HistoryRecord[] = [];
+  const deletedIDs = new Set<string>();
   let cursor = '';
   const seenCursors = new Set<string>();
   let pageCount = 0;
@@ -94,11 +100,17 @@ export const fetchRemoteHistory = async (since?: number | null): Promise<History
 
     const data = await requestJson<{
       records?: HistoryRecord[];
+      deletedIDs?: string[];
       cursor?: string;
       complete?: boolean;
     }>(`${API_URL}?${params.toString()}`);
 
     if (Array.isArray(data.records)) records.push(...data.records);
+    if (Array.isArray(data.deletedIDs)) {
+      data.deletedIDs.forEach((id) => {
+        if (typeof id === 'string' && id) deletedIDs.add(id);
+      });
+    }
 
     cursor = data.cursor || '';
     if (data.complete || !cursor) break;
@@ -110,7 +122,10 @@ export const fetchRemoteHistory = async (since?: number | null): Promise<History
     await sleep(SAVE_CHUNK_DELAY_MS);
   }
 
-  return records.sort((a, b) => b.ts - a.ts);
+  return {
+    records: records.sort((a, b) => b.ts - a.ts),
+    deletedIDs: Array.from(deletedIDs),
+  };
 };
 
 export const saveRemoteRecord = async (record: HistoryRecord): Promise<void> => {
