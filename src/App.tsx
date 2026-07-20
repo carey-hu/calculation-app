@@ -1041,7 +1041,7 @@ export default function App() {
   const openHistory = () => {
     setViewState('history');
     chart.reopenIfActive();
-    void history.refreshRemote().then(chart.reopenIfActive);
+    void history.refreshRemote({ force: true }).then(chart.reopenIfActive);
   };
   const backToHistory = () => {
     setViewState('history');

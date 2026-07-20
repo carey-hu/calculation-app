@@ -5,6 +5,7 @@ const STORAGE_KEY = 'calc_history';
 const SYNC_SINCE_KEY = 'calc_history_sync_since';
 const PENDING_SYNC_KEY = 'calc_history_pending_sync';
 const AUTHORITATIVE_SYNC_KEY = 'calc_history_authoritative_sync_v1';
+const FULL_SYNC_DONE_KEY = 'calc_history_full_sync_done_v1';
 const LAST_SYNCED_AT_KEY = 'calc_history_last_synced_at';
 
 export const loadHistory = (): HistoryRecord[] => {
@@ -32,6 +33,7 @@ export const clearAllHistory = (): void => {
     localStorage.removeItem(SYNC_SINCE_KEY);
     localStorage.removeItem(PENDING_SYNC_KEY);
     localStorage.removeItem(AUTHORITATIVE_SYNC_KEY);
+    localStorage.removeItem(FULL_SYNC_DONE_KEY);
     localStorage.removeItem(LAST_SYNCED_AT_KEY);
   } catch (e) {
     console.error('Failed to clear history:', e);
@@ -112,6 +114,19 @@ export const markAuthoritativeSyncComplete = (): void => {
     localStorage.setItem(AUTHORITATIVE_SYNC_KEY, '1');
   } catch (e) {
     console.error('Failed to mark authoritative history sync complete:', e);
+  }
+};
+
+// 增量游标只有在当前设备成功完成过一次完整云端拉取后才可信。
+// 旧版本可能在首次拉取前就写入游标，从而永久漏掉另一设备的较早记录。
+export const hasCompletedFullRemoteSync = (): boolean =>
+  localStorage.getItem(FULL_SYNC_DONE_KEY) === '1';
+
+export const markFullRemoteSyncComplete = (): void => {
+  try {
+    localStorage.setItem(FULL_SYNC_DONE_KEY, '1');
+  } catch (e) {
+    console.error('Failed to mark full history sync complete:', e);
   }
 };
 

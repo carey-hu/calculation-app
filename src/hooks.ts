@@ -25,12 +25,14 @@ import {
   clearAllHistory,
   enqueuePendingSyncRecord,
   hasCompletedAuthoritativeSync,
+  hasCompletedFullRemoteSync,
   historyRecordKey,
   loadHistory,
   loadHistorySyncSince,
   loadLastHistorySyncedAt,
   loadPendingSyncRecords,
   markAuthoritativeSyncComplete,
+  markFullRemoteSyncComplete,
   mergeHistory,
   prependRecord,
   removeLowAccuracyHistory,
@@ -81,6 +83,8 @@ const RELATION_EXPR_ENTRY_MODE = 'relationExpr';
 const RELATION_EXPR_MODES = ['relationExprV1', 'relationExprV2'];
 const LOW_ACCURACY_THRESHOLD = 30;
 const SYNC_THROTTLE_MS = 60000;
+// 为设备时钟偏差和并发写入保留重叠窗口，重复数据由统一记录 ID 去重。
+const SYNC_SINCE_REFETCH_BUFFER_MS = 5 * 60 * 1000;
 const DEFAULT_SLICE: SliceConfig = { constant: 0, rotX: 90, rotY: 0, rotZ: 0 };
 
 export function useToast() {
@@ -142,8 +146,12 @@ export function useHistoryStore() {
     setSyncState('syncing');
     setSyncMessage('');
     try {
-      let remoteList = await fetchRemoteHistory(loadHistorySyncSince());
-      const localList = listRef.current;
+      const remoteSince = hasCompletedFullRemoteSync() ? loadHistorySyncSince() : null;
+      const remoteResult = await fetchRemoteHistory(remoteSince);
+      const deletedIDs = new Set(remoteResult.deletedIDs);
+      const isDeleted = (record: HistoryRecord) => deletedIDs.has(historyRecordKey(record));
+      let remoteList = remoteResult.records.filter((record) => !isDeleted(record));
+      const localList = listRef.current.filter((record) => !isDeleted(record));
       const shouldMigrateLocalHistory =
         localList.length > 0 && !hasCompletedAuthoritativeSync();
 
@@ -152,15 +160,22 @@ export function useHistoryStore() {
         markAuthoritativeSyncComplete();
       }
 
-      const pendingRecords = loadPendingSyncRecords();
+      const allPendingRecords = loadPendingSyncRecords();
+      const deletedPendingRecords = allPendingRecords.filter(isDeleted);
+      if (deletedPendingRecords.length > 0) removePendingSyncRecords(deletedPendingRecords);
+      const pendingRecords = allPendingRecords.filter((record) => !isDeleted(record));
       remoteList = await uploadMissingRecords(pendingRecords, remoteList);
       removePendingSyncRecords(pendingRecords);
 
-      const mergedList = mergeHistory(remoteList, listRef.current);
+      // 同步期间用户可能刚完成一组练习；最终合并重新读取最新本机状态，
+      // 避免较早的同步快照覆盖这条刚创建的记录。
+      const latestLocalList = listRef.current.filter((record) => !isDeleted(record));
+      const mergedList = mergeHistory(remoteList, latestLocalList);
       listRef.current = mergedList;
       setList(mergedList);
       saveHistory(mergedList);
-      saveHistorySyncSince(latestRecordTs(mergedList));
+      if (remoteSince === null) markFullRemoteSyncComplete();
+      saveHistorySyncSince(Math.max(1, latestRecordTs(mergedList) - SYNC_SINCE_REFETCH_BUFFER_MS));
       markSyncOk();
     } catch (e) {
       console.error('Failed to sync remote history:', e);
@@ -188,7 +203,7 @@ export function useHistoryStore() {
       void refreshRemote({ force: true });
     };
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && loadPendingSyncRecords().length > 0) {
+      if (document.visibilityState === 'visible') {
         void refreshRemote({ force: true });
       }
     };
@@ -212,7 +227,12 @@ export function useHistoryStore() {
     try {
       await saveRemoteRecord(record);
       removePendingSyncRecords([record]);
-      saveHistorySyncSince(Math.max(loadHistorySyncSince() || 0, record.ts));
+      if (hasCompletedFullRemoteSync()) {
+        saveHistorySyncSince(Math.max(
+          loadHistorySyncSince() || 0,
+          record.ts - SYNC_SINCE_REFETCH_BUFFER_MS,
+        ));
+      }
       markSyncOk();
     } catch (e) {
       console.error('Failed to save remote history:', e);
