@@ -8,6 +8,7 @@ const CHUNK_SIZE = 300;
 const DEFAULT_READ_LIMIT = 300;
 const MAX_READ_LIMIT = 1000;
 const MAX_POST_RECORDS = 300;
+const MAX_IMAGES = 4;
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status,
@@ -25,29 +26,79 @@ const getKv = (context) => {
   return null;
 };
 
+const safeImageURLs = (value) => {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value
+    .filter((item) => {
+      if (typeof item !== 'string' || seen.has(item)) return false;
+      try {
+        const url = new URL(item);
+        if (url.protocol !== 'https:' || !url.hostname) return false;
+        seen.add(item);
+        return true;
+      } catch {
+        return false;
+      }
+    })
+    .slice(0, MAX_IMAGES);
+};
+
+const safeImageKeys = (value) => {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value
+    .filter((item) => typeof item === 'string'
+      && item.length <= 512
+      && item.startsWith('mistakes/')
+      && item.endsWith('.jpg')
+      && !item.includes('..')
+      && /^[A-Za-z0-9/_-]+\.jpg$/.test(item)
+      && !seen.has(item)
+      && seen.add(item))
+    .slice(0, MAX_IMAGES);
+};
+
 const isRecord = (value) =>
   value
   && typeof value.id === 'string'
   && value.id.length > 0
   && typeof value.question === 'string'
-  && value.question.trim().length > 0
+  && (value.question.trim().length > 0
+    || safeImageURLs(value.imageURLs).length > 0
+    || safeImageKeys(value.imageKeys).length > 0)
   && typeof value.answer === 'string'
   && value.answer.trim().length > 0
+  && (value.imageURLs === undefined
+    || (Array.isArray(value.imageURLs)
+      && value.imageURLs.length <= MAX_IMAGES
+      && safeImageURLs(value.imageURLs).length === value.imageURLs.length))
+  && (value.imageKeys === undefined
+    || (Array.isArray(value.imageKeys)
+      && value.imageKeys.length <= MAX_IMAGES
+      && safeImageKeys(value.imageKeys).length === value.imageKeys.length))
+  && safeImageURLs(value.imageURLs).length + safeImageKeys(value.imageKeys).length <= MAX_IMAGES
   && typeof value.createdAt === 'number'
   && typeof value.updatedAt === 'number'
   && typeof value.syncUpdatedAt === 'number'
   && Array.isArray(value.reviewedAt)
   && value.reviewedAt.every((timestamp) => typeof timestamp === 'number');
 
-const safeRecord = (record) => ({
-  id: record.id,
-  question: record.question.trim(),
-  answer: record.answer.trim(),
-  createdAt: record.createdAt,
-  updatedAt: record.updatedAt,
-  syncUpdatedAt: record.syncUpdatedAt,
-  reviewedAt: Array.from(new Set(record.reviewedAt)).sort((a, b) => a - b),
-});
+const safeRecord = (record) => {
+  const imageURLs = safeImageURLs(record.imageURLs);
+  const imageKeys = safeImageKeys(record.imageKeys);
+  return {
+    id: record.id,
+    question: record.question.trim(),
+    answer: record.answer.trim(),
+    ...(imageKeys.length > 0 ? { imageKeys } : {}),
+    ...(imageURLs.length > 0 ? { imageURLs } : {}),
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+    syncUpdatedAt: record.syncUpdatedAt,
+    reviewedAt: Array.from(new Set(record.reviewedAt)).sort((a, b) => a - b),
+  };
+};
 
 const tombstoneKey = (id) => `${TOMBSTONE_PREFIX}${encodeURIComponent(id)}`;
 

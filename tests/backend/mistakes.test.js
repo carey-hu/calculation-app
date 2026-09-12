@@ -73,6 +73,35 @@ test('incremental reads use syncUpdatedAt so review progress can sync without re
   assert.equal(body.records[0].updatedAt, 1000);
 });
 
+test('private COS image keys survive storage while unsafe keys are rejected', async () => {
+  const kv = new MemoryKV();
+  const imageKeys = [
+    'mistakes/2026/09/12/one.jpg',
+    'mistakes/2026/09/12/two.jpg',
+  ];
+  let response = await onRequestPost(context(kv, 'https://example.com/api/mistakes', {
+    record: record({ question: '', imageKeys }),
+  }));
+  assert.equal(response.status, 200);
+
+  response = await onRequestGet(context(kv, 'https://example.com/api/mistakes'));
+  let body = await response.json();
+  assert.deepEqual(body.records[0].imageKeys, imageKeys);
+
+  response = await onRequestPost(context(kv, 'https://example.com/api/mistakes', {
+    record: record({ imageKeys: ['mistakes/../private.jpg'] }),
+  }));
+  assert.equal(response.status, 400);
+
+  response = await onRequestPost(context(kv, 'https://example.com/api/mistakes', {
+    record: record({
+      imageURLs: ['https://example.com/legacy.jpg'],
+      imageKeys: Array.from({ length: 4 }, (_, index) => `mistakes/2026/09/12/${index}.jpg`),
+    }),
+  }));
+  assert.equal(response.status, 400);
+});
+
 test('deleting a mistake removes it and prevents a stale client from restoring it', async () => {
   const kv = new MemoryKV();
   await onRequestPost(context(kv, 'https://example.com/api/mistakes', { record: record() }));
